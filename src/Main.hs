@@ -2,10 +2,11 @@
 
 module Main where
 
-import Control.Applicative
-import qualified Data.ByteString.Lazy as BL
-import Data.Csv
-import qualified Data.Vector as V
+import Control.Applicative                  ((<$>), (<*>))
+import qualified Data.ByteString.Lazy as BL (readFile)
+import Data.Csv                             (FromNamedRecord, parseNamedRecord, decodeByName, (.:))
+import qualified Data.Vector          as V  (forM_)
+import System.Environment                   (getArgs)
 
 import ObsTmy
 
@@ -20,14 +21,20 @@ data Test = Test
 
 instance FromNamedRecord Test where
     parseNamedRecord r = Test <$> r .: "Foo" 
-                             <*> r .: "Bar" 
-                             <*> r .: "Woo" 
-                             <*> r .: "Wibble"
+                              <*> r .: "Bar" 
+                              <*> r .: "Woo" 
+                              <*> r .: "Wibble"
 
 
 main :: IO ()
 main = do
-    csvData <- BL.readFile "test.csv"
+    args <- getArgs
+    mapM_ printCsv args
+
+
+printCsv :: String -> IO ()
+printCsv fn = do
+    csvData <- BL.readFile fn
     case decodeByName csvData of
         Left err -> putStrLn err
         Right (_, v) -> V.forM_ v $ \ t ->
