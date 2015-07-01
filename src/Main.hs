@@ -3,9 +3,10 @@
 module Main where
 
 import Control.Applicative                  ((<$>), (<*>))
-import qualified Data.ByteString.Lazy as BL (readFile)
-import Data.Csv                             (FromNamedRecord, parseNamedRecord, decodeByName, (.:))
-import qualified Data.Vector          as V  (forM_)
+import Control.Monad                        (liftM)
+import qualified Data.ByteString.Lazy as BL (ByteString, readFile)
+import Data.Csv                             (FromNamedRecord, Header, parseNamedRecord, decodeByName, (.:))
+import qualified Data.Vector          as V  (Vector, mapM_, concat)
 import System.Environment                   (getArgs)
 
 import ObsTmy
@@ -16,7 +17,7 @@ data Test = Test
     , bar    :: !Int
     , woo    :: !Double
     , wibble :: !String
-    }
+    } deriving (Show, Eq, Ord)
 
 
 instance FromNamedRecord Test where
@@ -29,13 +30,15 @@ instance FromNamedRecord Test where
 main :: IO ()
 main = do
     args <- getArgs
-    mapM_ printCsv args
+    vs <- liftM V.concat (mapM parseCsv args)
+    V.mapM_ print vs
 
 
-printCsv :: String -> IO ()
-printCsv fn = do
-    csvData <- BL.readFile fn
-    case decodeByName csvData of
-        Left err -> putStrLn err
-        Right (_, v) -> V.forM_ v $ \ t ->
-            putStrLn $ foo t ++ "; " ++ show (bar t) ++ "; " ++ show (woo t) ++ "; " ++ wibble t
+parseCsv :: String -> IO (V.Vector Test)
+parseCsv fn = do
+    bs <- BL.readFile fn
+    case decodeByName bs of
+        Left err -> undefined
+        --Right (_, v) -> V.forM v $ \ t -> return $ foo t ++ "; " ++ show (bar t) ++ "; " ++ show (woo t) ++ "; " ++ wibble t
+        Right (_, v) -> return v
+
