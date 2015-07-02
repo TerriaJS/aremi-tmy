@@ -10,6 +10,8 @@ import Data.Text                            (Text, strip)
 import qualified Data.Vector          as V  (Vector, mapM_, concat)
 import System.Environment                   (getArgs)
 
+import ObsTmy.Import
+
 
 data Site = Site
     { foo    :: !Text
