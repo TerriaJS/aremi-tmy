@@ -18,10 +18,10 @@ main = do
     V.mapM_ print vs
 
 
-parseCsv :: String -> IO (V.Vector Site)
+parseCsv :: String -> IO (V.Vector OneMinSolarSite)
 parseCsv fn = do
     bs <- BL.readFile fn
     case decodeByName bs of
-        Left err -> undefined
+        Left err -> error err
         Right (_, v) -> return v
 
