@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module ObsTmy.Import where
+module Tmy.Import where
 
 import Control.Applicative                  ((<$>), (<*>))
 import Data.Csv                             (FromNamedRecord, parseNamedRecord, (.:))
@@ -16,7 +16,7 @@ data Site = Site
 
 
 instance FromNamedRecord Site where
-    parseNamedRecord r = Site <$> r .: "Foo" 
-                              <*> r .: "Bar" 
-                              <*> r .: "Woo" 
+    parseNamedRecord r = Site <$> r .: "Foo"
+                              <*> r .: "Bar"
+                              <*> r .: "Woo"
                               <*> r .: "Wibble"

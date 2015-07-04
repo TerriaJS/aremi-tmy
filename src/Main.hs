@@ -8,7 +8,7 @@ import Data.Csv                             (Header, decodeByName, (.:))
 import qualified Data.Vector          as V  (Vector, mapM_, concat)
 import System.Environment                   (getArgs)
 
-import ObsTmy.Import
+import Tmy.Import
 
 
 main :: IO ()
