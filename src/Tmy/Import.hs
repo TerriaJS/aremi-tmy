@@ -22,14 +22,15 @@ data OneMinSolarSite = OneMinSolarSite
     } deriving (Show, Eq, Ord)
 
 instance FromNamedRecord OneMinSolarSite where
-    parseNamedRecord r = OneMinSolarSite <$> r .: "Bureau of Meteorology station number"
-                                         <*> r .: "Rainfall district code"
-                                         <*> r .: "Station name"
-                                         <*> r .: "Month/Year site closed (MM/YYYY)"
-                                         <*> r .: "Latitute"
-                                         <*> r .: "Longitude"
-                                         <*> r .: "Method by which lat/lon derived"
-                                         <*> r .: "State"
-                                         <*> r .: "Height of station above mean sea level in metres"
-                                         <*> r .: "Height of barometer above sea level in metres"
-                                         <*> r .: "WMO index number"
+    parseNamedRecord r =
+        OneMinSolarSite <$> r .: "Bureau of Meteorology station number"
+                        <*> r .: "Rainfall district code"
+                        <*> r .: "Station name"
+                        <*> r .: "Month/Year site closed (MM/YYYY)"
+                        <*> r .: "Latitute"
+                        <*> r .: "Longitude"
+                        <*> r .: "Method by which lat/lon derived"
+                        <*> r .: "State"
+                        <*> r .: "Height of station above mean sea level in metres"
+                        <*> r .: "Height of barometer above sea level in metres"
+                        <*> r .: "WMO index number"

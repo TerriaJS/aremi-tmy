@@ -2,10 +2,9 @@
 
 module Main where
 
-import Control.Monad                        (liftM)
-import qualified Data.ByteString.Lazy as BL (ByteString, readFile)
-import Data.Csv                             (Header, decodeByName, (.:))
-import qualified Data.Vector          as V  (Vector, mapM_, concat)
+import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
+import Data.Csv                             (Header)
+import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName)
 import System.Environment                   (getArgs)
 
 import Tmy.Import
@@ -14,14 +13,29 @@ import Tmy.Import
 main :: IO ()
 main = do
     args <- getArgs
-    vs <- liftM V.concat (mapM parseCsv args)
-    V.mapM_ print vs
+    rs <- mapM parseCsv args
+    mapM_ print1minSolarSite rs
 
 
-parseCsv :: String -> IO (V.Vector OneMinSolarSite)
+parseCsv :: String -> IO (Records OneMinSolarSite)
 parseCsv fn = do
     bs <- BL.readFile fn
     case decodeByName bs of
-        Left err -> error err
-        Right (_, v) -> return v
+        Left err -> do
+            putStrLn ("Failed to read file '" ++ fn ++ "': " ++ err)
+            return (Nil Nothing BL.empty)
+        Right (_, rs) -> return rs
 
+
+print1minSolarSite :: Records OneMinSolarSite -> IO ()
+print1minSolarSite (Cons ei rs) = do
+    either printFailure print ei
+    print1minSolarSite rs
+print1minSolarSite (Nil Nothing _) =
+    putStrLn "All done."
+print1minSolarSite (Nil (Just err) _) =
+    printFailure err
+
+
+printFailure :: String -> IO ()
+printFailure err = putStrLn ("Record failed: " ++ err)
