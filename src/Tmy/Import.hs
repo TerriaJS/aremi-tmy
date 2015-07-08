@@ -57,7 +57,7 @@ mapRecords_ _ (Nil err _) = do
     maybe (return ()) (printFailure "Failed to parse: ") err
 
 
-readCsv :: FromNamedRecord a => String -> IO (Records a)
+readCsv :: FromNamedRecord a => FilePath -> IO (Records a)
 readCsv fn = do
     bs <- BL.readFile fn
     case decodeByName bs of
