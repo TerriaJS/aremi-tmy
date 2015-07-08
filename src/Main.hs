@@ -2,6 +2,7 @@
 
 module Main where
 
+import Control.Applicative                  ((<$>), (<*>))
 import Data.Csv                             (Header)
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import System.Environment                   (getArgs)
@@ -12,47 +13,23 @@ import Tmy.Import
 main :: IO ()
 main = do
     args <- getArgs
-    sitesMeta <- mapM readCsv args
-    oneMinDatas <- mapM (sequence . processSites) sitesMeta
+    if null args
+        then putStrLn "No files specified."
+        else do
+            sitesMeta <- mapM readCsv args
+            mapM_ (mapRecords_ processSingleSite) sitesMeta
 
-    -- DEBUG
-    mapM_ print1minSolarSite sitesMeta
-
-
-processSites :: Records OneMinSolarSite -> [IO (OneMinSolarSite, Records OneMinSolarSiteData)]
-processSites (Cons eith rs) = do
-    case eith of
-        Left err -> do
-            -- ehrmagerd what to do here?
-            --printFailure err
-            []
-        Right r -> processSingleSite r : processSites rs
-processSites (Nil err _) = do
-    case err of
-        Just message -> do
-            -- ehrmagerd what to do here?
-            --putStrLn ("Failed to parse: " ++ message)
-            []
-                         -- ehrmagerd what to do here?
-        Nothing -> []    -- normal termination, no more sites
+            -- DEBUG
+            mapM_ (mapRecords_ print) sitesMeta
 
 
-processSingleSite :: OneMinSolarSite -> IO (OneMinSolarSite, Records OneMinSolarSiteData)
+processSingleSite :: OneMinSolarSite -> IO ()
 processSingleSite s = do
+    --Records OneMinSolarSiteAwData <- readCsv
+    --Records OneMinSolarSiteSlData <- readCsv
+
+
     -- for f in {aw,sl}_stationNum_YYYY_MM.txt; do
         -- process date-parallel-by-month {aw,sl} records into averaged conjoined hourly dataset (fn type needs to change?)
-    undefined
-
-
-print1minSolarSite :: Records OneMinSolarSite -> IO ()
-print1minSolarSite (Cons ei rs) = do
-    either printFailure print ei
-    print1minSolarSite rs
-print1minSolarSite (Nil err _) = do
-    case err of
-        Nothing -> return ()
-        Just message -> putStrLn ("Failed to parse: " ++ message)
-
-
-printFailure :: String -> IO ()
-printFailure err = putStrLn ("Record failed: " ++ err)
+        -- write
+    return ()

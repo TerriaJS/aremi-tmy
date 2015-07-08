@@ -5,7 +5,7 @@ module Tmy.Import where
 import Control.Applicative                  ((<$>), (<*>))
 import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
 import Data.Csv                             (FromNamedRecord, parseNamedRecord, (.:))
-import Data.Csv.Streaming                   (Records(Nil), decodeByName)
+import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName)
 import Data.Text                            (Text, strip)
 
 
@@ -49,6 +49,14 @@ instance FromNamedRecord OneMinSolarSiteData where
                             <*> r .: "Bar"
 
 
+mapRecords_ :: (a -> IO ()) -> Records a -> IO ()
+mapRecords_ f (Cons eith rs) = do
+    either (printFailure "Record failed: ") f eith
+    mapRecords_ f rs
+mapRecords_ _ (Nil err _) = do
+    maybe (return ()) (printFailure "Failed to parse: ") err
+
+
 readCsv :: FromNamedRecord a => String -> IO (Records a)
 readCsv fn = do
     bs <- BL.readFile fn
@@ -57,3 +65,7 @@ readCsv fn = do
             putStrLn ("Failed to read file '" ++ fn ++ "': " ++ err)
             return (Nil Nothing BL.empty)
         Right (_, rs) -> return rs
+
+
+printFailure :: String -> String -> IO ()
+printFailure pre err = putStrLn (pre ++ err)
