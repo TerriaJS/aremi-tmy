@@ -189,6 +189,7 @@ data SolarRadiationObs = SolarRadiationObs
     , slDDLocal             :: !Int     -- DD
     , slHH24Local           :: !Int     -- HH24
     , slMILocal             :: !Int     -- MI format in Local time
+                            -- TODO: parse these to Maybe Double
     , slGhiMean             :: !Text    -- Mean global irradiance (over 1 minute) in W/sq m
     , slGhiMin              :: !Text    -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
     , slGhiMax              :: !Text    -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
