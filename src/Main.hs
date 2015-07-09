@@ -37,7 +37,7 @@ main = do
 processSingleSite :: FilePath -> OneMinSolarSite -> IO ()
 processSingleSite fn s = do
     let csvDir = (reverse . dropWhile ('/' /=) . reverse) fn
-        stationNum = unpack (bomStationNum s)
+        stationNum = (unpack . unTrimmed . bomStationNum) s
         awGlob = awPref ++ stationNum ++ globSuff
         slGlob = slPref ++ stationNum ++ globSuff
         newCsv = stationNum ++ "_averaged.csv"
@@ -65,9 +65,10 @@ processCsvPair :: FilePath -> (FilePath, FilePath) -> IO ()
 processCsvPair fn (aw, sl) = do
     -- typed for clarity
     awRecs <- readIndexedCsv aw :: IO (Records AutoWeatherObs)
-    --slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
+    slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
 
-    mapRecords_ print awRecs
+    --mapRecords_ print awRecs
+    mapRecords_ print slRecs
 
 
     return ()
