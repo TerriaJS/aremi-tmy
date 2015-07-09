@@ -4,8 +4,8 @@ module Main where
 
 import Control.Monad                        (forM_)
 import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
-import Data.Csv                             (HasHeader(HasHeader), FromRecord)
-import Data.Csv.Streaming                   (Records(Cons, Nil), decode)
+import Data.Csv                             (FromRecord, ToNamedRecord)
+import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Text                            (unpack)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
@@ -68,16 +68,25 @@ processCsvPair fn (aw, sl) = do
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
 
     --mapRecords_ print awRecs
-    mapRecords_ print slRecs
+    --mapRecords_ print slRecs
 
+    mapRecordsRecords_ {-TODO-} awRecs slRecs
 
     return ()
 
 
-readIndexedCsv :: FromRecord a => FilePath -> IO (Records a)
-readIndexedCsv fn = do
-    bs <- BL.readFile fn
-    return (decode HasHeader bs)
+mapRecordsRecords_ :: (ToNamedRecord a, ToNamedRecord b) => {-(a -> b -> IO ()) ->-} Records a -> Records b -> IO ()
+mapRecordsRecords_ {-f-} (Cons (Right a) rs) (Cons (Right b) rs2) = do
+    --f a b
+    -- DEBUG
+    --print a
+    --print b
+
+    mapRecordsRecords_ {-f-} rs rs2
+mapRecordsRecords_ {-_-} a b = do
+    -- case a of
+    -- case b of
+    putStrLn "TODO"
 
 
 awPref = "aw_"
