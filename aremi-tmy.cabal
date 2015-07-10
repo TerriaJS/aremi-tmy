@@ -21,6 +21,7 @@ executable aremi-tmy
   build-depends:       base
                      , bytestring
                      , cassava
+                     , directory
                      , filemanip
                      , text
                      , vector

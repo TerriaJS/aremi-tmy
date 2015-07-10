@@ -1,12 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
+
 
 module Main where
 
 import Control.Monad                        (forM_)
-import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
-import Data.Csv                             (FromRecord, ToNamedRecord)
+import qualified Data.ByteString.Lazy as BL
+import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Text                            (unpack)
+import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
 
@@ -70,25 +73,21 @@ processCsvPair fn (aw, sl) = do
     --mapRecords_ print awRecs
     --mapRecords_ print slRecs
 
-    combineAwSl awRecs slRecs
+    fnExists <- doesFileExist fn
+    let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
+    BL.appendFile fn (encodeByNameWith encOpts ["awStationNum", "awAirTemp", "slZenith"] (combineAwSl awRecs slRecs))
 
     return ()
 
 
-combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> IO ()
+combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [CombinedAwSlObs]
 combineAwSl (Cons (Right a) rs) (Cons (Right b) rs2) = do
-    -- DEBUG
-    --print a
-    --print b
-
-    let c = CombinedAwSlObs a b
-    print c
-
-    combineAwSl rs rs2
+    CombinedAwSlObs a b : combineAwSl rs rs2
 combineAwSl a b = do
     -- case a of
     -- case b of
-    putStrLn "TODO"
+    -- TODO: what to do when something has failed
+    []
 
 
 awPref = "aw_"
