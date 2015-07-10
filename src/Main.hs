@@ -2,7 +2,6 @@
 
 
 -- TODO:
--- put in all columns needed
 -- filter out only 00 mins
 -- either:
 --   think about quality columns
@@ -16,6 +15,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Text                            (unpack)
+import Data.Time.LocalTime                  (localTimeOfDay, todMin)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
@@ -79,9 +79,14 @@ processCsvPair fn t@(aw, sl) = do
 
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts (combineAwSl awRecs slRecs))
+        combined = (combineAwSl awRecs slRecs)
+        -- TODO: re-enable when we're happier
+        -- filtered = filter zeroMinutes combined
+    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts combined)
 
-    return ()
+
+zeroMinutes :: CombinedAwSlObs -> Bool
+zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
 
 combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [CombinedAwSlObs]
