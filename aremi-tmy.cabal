@@ -24,6 +24,7 @@ executable aremi-tmy
                      , filemanip
                      , text
                      , vector
+                     , unordered-containers
   default-language:    Haskell2010
 
 test-suite aremi-tmy-test

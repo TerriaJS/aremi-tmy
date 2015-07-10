@@ -7,13 +7,13 @@ module Tmy.Import where
 import Control.Applicative                  ((<$>), (<*>))
 import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
 import qualified Data.ByteString.Char8 as B (dropWhile)
-import Data.Csv                             (HasHeader(HasHeader), FromField, FromRecord, FromNamedRecord, ToNamedRecord, ToField,
-                                             parseField, parseRecord, parseNamedRecord, toNamedRecord, (.:), (.!))
+import Data.Csv                      hiding (decodeByName, decode)
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 import Data.Text                            (Text, strip)
 import Data.Char                            (isSpace)
+import Data.HashMap.Strict                  (union)
 
 
 --data Stat a = Stat {val,min,max,stdDev :: a}
@@ -193,6 +193,9 @@ instance FromRecord AutoWeatherObs where
                             -- ignoring col #
         | otherwise = fail ("CSV expected to have 62 columns, actual: " ++ show (V.length v) ++ ", row: " ++ show v)
 
+instance ToNamedRecord AutoWeatherObs
+instance DefaultOrdered AutoWeatherObs
+
 
 data SolarRadiationObs = SolarRadiationObs
     { slStationNum          :: !Trimmed -- Station Number
@@ -233,8 +236,6 @@ data SolarRadiationObs = SolarRadiationObs
     , slZenith              :: !Double  -- Zenith distance in degrees
     } deriving (Show, Eq, Ord, Generic)
 
-instance ToNamedRecord SolarRadiationObs where
-
 instance FromNamedRecord SolarRadiationObs where
     parseNamedRecord r =
         SolarRadiationObs <$> r .: "Station Number"
@@ -273,11 +274,18 @@ instance FromNamedRecord SolarRadiationObs where
                             <*> r .: "Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds"
                             <*> r .: "Zenith distance in degrees"
 
+instance ToNamedRecord SolarRadiationObs
+instance DefaultOrdered SolarRadiationObs
+
 
 data CombinedAwSlObs = CombinedAwSlObs
-    {
+    { awRecord :: AutoWeatherObs
+    , slRecord :: SolarRadiationObs
+    } deriving (Show, Eq, Ord, Generic)
 
-    } deriving (Show, Eq, Ord)
+instance ToNamedRecord CombinedAwSlObs where
+    toNamedRecord (CombinedAwSlObs aw sl) = union (toNamedRecord aw) (toNamedRecord sl)
+instance DefaultOrdered CombinedAwSlObs
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()

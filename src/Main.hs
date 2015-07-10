@@ -68,7 +68,7 @@ processCsvPair fn (aw, sl) = do
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
 
     --mapRecords_ print awRecs
-    mapRecords_ print slRecs
+    --mapRecords_ print slRecs
 
     combineAwSl awRecs slRecs
 
@@ -78,8 +78,11 @@ processCsvPair fn (aw, sl) = do
 combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> IO ()
 combineAwSl (Cons (Right a) rs) (Cons (Right b) rs2) = do
     -- DEBUG
-    print a
-    print b
+    --print a
+    --print b
+
+    let c = CombinedAwSlObs a b
+    print c
 
     combineAwSl rs rs2
 combineAwSl a b = do
