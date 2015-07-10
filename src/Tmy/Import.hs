@@ -1,25 +1,34 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Tmy.Import where
 
 import Control.Applicative                  ((<$>), (<*>))
 import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
-import Data.Csv                             (HasHeader(HasHeader), FromField, FromRecord, FromNamedRecord, 
-                                             parseField, parseRecord, parseNamedRecord, (.:), (.!))
+import qualified Data.ByteString.Char8 as B (dropWhile)
+import Data.Csv                             (HasHeader(HasHeader), FromField, FromRecord, FromNamedRecord, ToNamedRecord, ToField,
+                                             parseField, parseRecord, parseNamedRecord, toNamedRecord, (.:), (.!))
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 import Data.Text                            (Text, strip)
+import Data.Char                            (isSpace)
 
 
 --data Stat a = Stat {val,min,max,stdDev :: a}
 
 
-newtype Trimmed = Trimmed {unTrimmed :: Text} deriving (Show, Eq, Ord)
+newtype Trimmed = Trimmed {unTrimmed :: Text} deriving (Show, Eq, Ord, ToField)
 
 instance FromField Trimmed where
     parseField bs = Trimmed . strip <$> parseField bs
+
+
+newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
+
+instance FromField a => FromField (Spaced a) where
+    parseField bs = Spaced <$> parseField (B.dropWhile isSpace bs)
 
 
 data OneMinSolarSite = OneMinSolarSite
@@ -113,13 +122,13 @@ data AutoWeatherObs = AutoWeatherObs
     , awStationLvlPressQual :: !Text   -- Quality of station level pressure
     , awQnhPress            :: !Double -- QNH pressure in hPa
     , awQnhPressQual        :: !Text   -- Quality of QNH pressure
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Generic)
 
 instance FromRecord AutoWeatherObs where
     parseRecord v
         | V.length v == 62 =
             AutoWeatherObs  -- ignoring col aw
-                            -- TODO: can we do something better here? 
+                            -- TODO: can we do something better here?
                             --   at least join 5 per line when we know we're keeping all of them
                             <$> v .! 1
                             <*> v .! 2
@@ -193,36 +202,38 @@ data SolarRadiationObs = SolarRadiationObs
     , slHH24Local           :: !Int     -- HH24
     , slMILocal             :: !Int     -- MI format in Local time
                             -- TODO: parse these to Maybe Double
-    , slGhiMean             :: !Trimmed    -- Mean global irradiance (over 1 minute) in W/sq m
-    , slGhiMin              :: !Trimmed    -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
-    , slGhiMax              :: !Trimmed    -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
-    , slGhiStdDev           :: !Trimmed    -- Standard deviation of global irradiance (over 1 minute) in W/sq m
-    , slGhiMeanUncertainty  :: !Trimmed    -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
-    , slDni                 :: !Trimmed    -- Mean direct irradiance (over 1 minute) in W/sq m
-    , slDniMin              :: !Trimmed    -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
-    , slDniMax              :: !Trimmed    -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
-    , slDniStdDev           :: !Trimmed    -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
-    , slDniMeanUncertainty  :: !Trimmed    -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
-    , slDiffMean            :: !Trimmed    -- Mean diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMin             :: !Trimmed    -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMax             :: !Trimmed    -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffStdDev          :: !Trimmed    -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMeanUncertainty :: !Trimmed    -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
-    , slTerrMean            :: !Trimmed    -- Mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMin             :: !Trimmed    -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMax             :: !Trimmed    -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrStdDev          :: !Trimmed    -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMeanUncertainty :: !Trimmed    -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slDhiMean             :: !Trimmed    -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMin              :: !Trimmed    -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMax              :: !Trimmed    -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiStdDev           :: !Trimmed    -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMeanUncertainy   :: !Trimmed    -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slGhiMean             :: !(Spaced (Maybe Double))    -- Mean global irradiance (over 1 minute) in W/sq m
+    , slGhiMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
+    , slGhiMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
+    , slGhiStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of global irradiance (over 1 minute) in W/sq m
+    , slGhiMeanUncertainty  :: !(Spaced (Maybe Double))    -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
+    , slDni                 :: !(Spaced (Maybe Double))    -- Mean direct irradiance (over 1 minute) in W/sq m
+    , slDniMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
+    , slDniMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
+    , slDniStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
+    , slDniMeanUncertainty  :: !(Spaced (Maybe Double))    -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
+    , slDiffMean            :: !(Spaced (Maybe Double))    -- Mean diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMin             :: !(Spaced (Maybe Double))    -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMax             :: !(Spaced (Maybe Double))    -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffStdDev          :: !(Spaced (Maybe Double))    -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMeanUncertainty :: !(Spaced (Maybe Double))    -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
+    , slTerrMean            :: !(Spaced (Maybe Double))    -- Mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMin             :: !(Spaced (Maybe Double))    -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMax             :: !(Spaced (Maybe Double))    -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrStdDev          :: !(Spaced (Maybe Double))    -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMeanUncertainty :: !(Spaced (Maybe Double))    -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slDhiMean             :: !(Spaced (Maybe Double))    -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMeanUncertainy   :: !(Spaced (Maybe Double))    -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
     , slSunshineSecs96      :: !Int     -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
     , slSunshineSecs120     :: !Int     -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
     , slSunshineSecs144     :: !Int     -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
     , slZenith              :: !Double  -- Zenith distance in degrees
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Generic)
+
+instance ToNamedRecord SolarRadiationObs where
 
 instance FromNamedRecord SolarRadiationObs where
     parseNamedRecord r =
@@ -262,6 +273,11 @@ instance FromNamedRecord SolarRadiationObs where
                             <*> r .: "Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds"
                             <*> r .: "Zenith distance in degrees"
 
+
+data CombinedAwSlObs = CombinedAwSlObs
+    {
+
+    } deriving (Show, Eq, Ord)
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()

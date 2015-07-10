@@ -68,22 +68,21 @@ processCsvPair fn (aw, sl) = do
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
 
     --mapRecords_ print awRecs
-    --mapRecords_ print slRecs
+    mapRecords_ print slRecs
 
-    mapRecordsRecords_ {-TODO-} awRecs slRecs
+    combineAwSl awRecs slRecs
 
     return ()
 
 
-mapRecordsRecords_ :: (ToNamedRecord a, ToNamedRecord b) => {-(a -> b -> IO ()) ->-} Records a -> Records b -> IO ()
-mapRecordsRecords_ {-f-} (Cons (Right a) rs) (Cons (Right b) rs2) = do
-    --f a b
+combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> IO ()
+combineAwSl (Cons (Right a) rs) (Cons (Right b) rs2) = do
     -- DEBUG
-    --print a
-    --print b
+    print a
+    print b
 
-    mapRecordsRecords_ {-f-} rs rs2
-mapRecordsRecords_ {-_-} a b = do
+    combineAwSl rs rs2
+combineAwSl a b = do
     -- case a of
     -- case b of
     putStrLn "TODO"
