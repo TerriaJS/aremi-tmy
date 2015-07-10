@@ -23,7 +23,9 @@ executable aremi-tmy
                      , cassava
                      , directory
                      , filemanip
+                     , old-locale
                      , text
+                     , time
                      , vector
                      , unordered-containers
   default-language:    Haskell2010

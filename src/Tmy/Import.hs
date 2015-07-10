@@ -15,6 +15,11 @@ import GHC.Generics                         (Generic)
 import Data.Text                            (Text, strip)
 import Data.Char                            (isSpace)
 import Data.HashMap.Strict                  (union)
+import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
+import Data.Time.Calendar                   (fromGregorianValid)
+import Data.Time.Format                     (formatTime)
+import System.Locale                        (iso8601DateFormat, defaultTimeLocale)
+import Control.Monad                        (mplus)
 
 
 --data Stat a = Stat {val,min,max,stdDev :: a}
@@ -30,6 +35,10 @@ newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
     parseField bs = Spaced <$> parseField (B.dropWhile isSpace bs)
+
+
+instance ToField LocalTime where
+    toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
 data OneMinSolarSite = OneMinSolarSite
@@ -64,21 +73,24 @@ instance FromNamedRecord OneMinSolarSite where
 data AutoWeatherObs = AutoWeatherObs
     { -- ignoring col aw
       awStationNum          :: !Trimmed  -- Station Number
-    , awYearLocal           :: !Int    -- Year Month Day Hours Minutes in YYYY
-    , awMMLocal             :: !Int    -- MM
-    , awDDLocal             :: !Int    -- DD
-    , awHH24Local           :: !Int    -- HH24
-    , awMILocal             :: !Int    -- MI format in Local time
-    , awYearLocalStd        :: !Int    -- Year Month Day Hours Minutes in YYYY
-    , awMMLocalStd          :: !Int    -- MM
-    , awDDLocalStd          :: !Int    -- DD
-    , awHH24LocalStd        :: !Int    -- HH24
-    , awMILocalStd          :: !Int    -- MI format in Local standard time
-    , awYearUtc             :: !Int    -- Year Month Day Hours Minutes in YYYY
-    , awMMUtc               :: !Int    -- MM
-    , awDDUtc               :: !Int    -- DD
-    , awHH24Utc             :: !Int    -- HH24
-    , awMIUtc               :: !Int    -- MI format in Universal coordinated time
+    --, awYearLocal           :: !Int    -- Year Month Day Hours Minutes in YYYY
+    --, awMMLocal             :: !Int    -- MM
+    --, awDDLocal             :: !Int    -- DD
+    --, awHH24Local           :: !Int    -- HH24
+    --, awMILocal             :: !Int    -- MI format in Local time
+    , awLocalTime           :: !LocalTime
+    --, awYearLocalStd        :: !Int    -- Year Month Day Hours Minutes in YYYY
+    --, awMMLocalStd          :: !Int    -- MM
+    --, awDDLocalStd          :: !Int    -- DD
+    --, awHH24LocalStd        :: !Int    -- HH24
+    --, awMILocalStd          :: !Int    -- MI format in Local standard time
+    , awLocalStdTime           :: !LocalTime
+    --, awYearUtc             :: !Int    -- Year Month Day Hours Minutes in YYYY
+    --, awMMUtc               :: !Int    -- MM
+    --, awDDUtc               :: !Int    -- DD
+    --, awHH24Utc             :: !Int    -- HH24
+    --, awMIUtc               :: !Int    -- MI format in Universal coordinated time
+    , awUtcTime           :: !LocalTime
     , awPrecipSinceLast     :: !Double -- Precipitation since last (AWS) observation in mm
     , awPrecipQual          :: !Text   -- Quality of precipitation since last (AWS) observation value
     , awAirTemp             :: !Double -- Air Temperature in degrees Celsius
@@ -128,25 +140,16 @@ data AutoWeatherObs = AutoWeatherObs
 instance FromRecord AutoWeatherObs where
     parseRecord v
         | V.length v == 62 =
-            AutoWeatherObs  -- ignoring col aw
+            AutoWeatherObs  -- ignoring col 0: aw
                             -- TODO: can we do something better here?
                             --   at least join 5 per line when we know we're keeping all of them
                             <$> v .! 1         -- awStationNum
-                            <*> v .! 2         -- awYearLocal
-                            <*> v .! 3         -- awMMLocal
-                            <*> v .! 4         -- awDDLocal
-                            <*> v .! 5         -- awHH24Local
-                            <*> v .! 6         -- awMILocal
-                            <*> v .! 7         -- awYearLocalStd
-                            <*> v .! 8         -- awMMLocalStd
-                            <*> v .! 9         -- awDDLocalStd
-                            <*> v .! 10        -- awHH24LocalStd
-                            <*> v .! 11        -- awMILocalStd
-                            <*> v .! 12        -- awYearUtc
-                            <*> v .! 13        -- awMMUtc
-                            <*> v .! 14        -- awDDUtc
-                            <*> v .! 15        -- awHH24Utc
-                            <*> v .! 16        -- awMIUtc
+                            -- 2: awYearLocal, 3: awMMLocal, 4: awDDLocal, 5: awHH24Local, 6: awMILocal
+                            <*> fieldsToLocalTime 2 v
+                            -- 7: awYearLocalStd, 8: awMMLocalStd, 9: awDDLocalStd, 10: awHH24LocalStd, 11: awMILocalStd
+                            <*> fieldsToLocalTime 7 v
+                            -- 12: awYearUtc, 13: awMMUtc, 14: awDDUtc, 15: awHH24Utc, 16: awMIUtc
+                            <*> fieldsToLocalTime 12 v
                             <*> v .! 17        -- awPrecipSinceLast
                             <*> v .! 18        -- awPrecipQual
                             <*> v .! 19        -- awAirTemp
@@ -191,7 +194,7 @@ instance FromRecord AutoWeatherObs where
                             <*> v .! 58        -- awStationLvlPressQual
                             <*> v .! 59        -- awQnhPress
                             <*> v .! 60        -- awQnhPressQual
-                            -- ignoring col #
+                            -- ignoring col 61: #
         | otherwise = fail ("CSV expected to have 62 columns, actual: " ++ show (V.length v) ++ ", row: " ++ show v)
 
 instance ToNamedRecord AutoWeatherObs
@@ -200,11 +203,12 @@ instance DefaultOrdered AutoWeatherObs
 
 data SolarRadiationObs = SolarRadiationObs
     { slStationNum          :: !Trimmed                 -- Station Number
-    , slYearLocal           :: !Int                     -- Year Month Day Hours Minutes in YYYY
-    , slMMLocal             :: !Int                     -- MM
-    , slDDLocal             :: !Int                     -- DD
-    , slHH24Local           :: !Int                     -- HH24
-    , slMILocal             :: !Int                     -- MI format in Local time
+    --, slYearLocal           :: !Int                     -- Year Month Day Hours Minutes in YYYY
+    --, slMMLocal             :: !Int                     -- MM
+    --, slDDLocal             :: !Int                     -- DD
+    --, slHH24Local           :: !Int                     -- HH24
+    --, slMILocal             :: !Int                     -- MI format in Local time
+    , slLocalTime           :: !LocalTime
     , slGhiMean             :: !(Spaced (Maybe Double)) -- Mean global irradiance (over 1 minute) in W/sq m
     , slGhiMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
     , slGhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
@@ -239,11 +243,11 @@ data SolarRadiationObs = SolarRadiationObs
 instance FromNamedRecord SolarRadiationObs where
     parseNamedRecord r =
         SolarRadiationObs <$> r .: "Station Number"
-                            <*> r .: "Year Month Day Hours Minutes in YYYY"
-                            <*> r .: "MM"
-                            <*> r .: "DD"
-                            <*> r .: "HH24"
-                            <*> r .: "MI format in Local time"
+                            <*> colsToLocalTime (r .: "Year Month Day Hours Minutes in YYYY")
+                                                (r .: "MM")
+                                                (r .: "DD")
+                                                (r .: "HH24")
+                                                (r .: "MI format in Local time")
                             <*> r .: "Mean global irradiance (over 1 minute) in W/sq m"
                             <*> r .: "Minimum 1 second global irradiance (over 1 minute) in W/sq m"
                             <*> r .: "Maximum 1 second global irradiance (over 1 minute) in W/sq m"
@@ -288,21 +292,24 @@ instance ToNamedRecord CombinedAwSlObs where
 instance DefaultOrdered CombinedAwSlObs where
     headerOrder _ =
         [ "awStationNum"
-        , "awYearLocal"
-        , "awMMLocal"
-        , "awDDLocal"
-        , "awHH24Local"
-        , "awMILocal"
-        , "awYearLocalStd"
-        , "awMMLocalStd"
-        , "awDDLocalStd"
-        , "awHH24LocalStd"
-        , "awMILocalStd"
-        , "awYearUtc"
-        , "awMMUtc"
-        , "awDDUtc"
-        , "awHH24Utc"
-        , "awMIUtc"
+        --, "awYearLocal"
+        --, "awMMLocal"
+        --, "awDDLocal"
+        --, "awHH24Local"
+        --, "awMILocal"
+        , "awLocalTime"
+        --, "awYearLocalStd"
+        --, "awMMLocalStd"
+        --, "awDDLocalStd"
+        --, "awHH24LocalStd"
+        --, "awMILocalStd"
+        , "awLocalStdTime"
+        --, "awYearUtc"
+        --, "awMMUtc"
+        --, "awDDUtc"
+        --, "awHH24Utc"
+        --, "awMIUtc"
+        , "awUtcTime"
         , "awPrecipSinceLast"
         --, "awPrecipQual"
         , "awAirTemp"
@@ -383,6 +390,23 @@ instance DefaultOrdered CombinedAwSlObs where
         , "slSunshineSecs144"
         , "slZenith"
         ]
+
+
+fieldsToLocalTime :: Int -> Record -> Parser LocalTime
+fieldsToLocalTime i v = do
+    mplus (colsToLocalTime (v .! i) (v .! (i+1)) (v .! (i+2)) (v .! (i+3)) (v .! (i+4)))
+          (fail $ "Could not parse date starting at col " ++ show i)
+
+
+colsToLocalTime :: Parser Integer -> Parser Int -> Parser Int -> Parser Int -> Parser Int -> Parser LocalTime
+colsToLocalTime y m d h mn = do
+    mlt <- maybeLocalTime <$> y <*> m <*> d <*> h <*> mn
+    maybe (fail $ "Could not parse date") return mlt
+
+
+maybeLocalTime :: Integer -> Int -> Int -> Int -> Int -> Maybe LocalTime
+maybeLocalTime y m d h mn = LocalTime <$> (fromGregorianValid y m d)
+                                      <*> (makeTimeOfDayValid h mn 0)
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()
