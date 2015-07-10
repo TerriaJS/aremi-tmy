@@ -6,20 +6,20 @@
 module Tmy.Import where
 
 import Control.Applicative                  ((<$>), (<*>))
+import Control.Monad                        (mplus)
+import qualified Data.ByteString      as B  (dropWhile)
 import qualified Data.ByteString.Lazy as BL (ByteString, readFile, empty)
-import qualified Data.ByteString.Char8 as B (dropWhile)
+import Data.Char                            (isSpace)
 import Data.Csv                      hiding (decodeByName, decode)
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
-import qualified Data.Vector as V           (length)
-import GHC.Generics                         (Generic)
-import Data.Text                            (Text, strip)
-import Data.Char                            (isSpace)
 import Data.HashMap.Strict                  (union)
-import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
+import qualified Data.Vector as V           (length)
+import Data.Text                            (Text, strip)
 import Data.Time.Calendar                   (fromGregorianValid)
 import Data.Time.Format                     (formatTime)
+import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
+import GHC.Generics                         (Generic)
 import System.Locale                        (iso8601DateFormat, defaultTimeLocale)
-import Control.Monad                        (mplus)
 
 
 --data Stat a = Stat {val,min,max,stdDev :: a}
@@ -34,7 +34,7 @@ instance FromField Trimmed where
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
-    parseField bs = Spaced <$> parseField (B.dropWhile isSpace bs)
+    parseField bs = Spaced <$> parseField (B.dropWhile (== 32) bs)
 
 
 instance ToField LocalTime where
@@ -91,49 +91,49 @@ data AutoWeatherObs = AutoWeatherObs
     --, awHH24Utc             :: !Int    -- HH24
     --, awMIUtc               :: !Int    -- MI format in Universal coordinated time
     , awUtcTime           :: !LocalTime
-    , awPrecipSinceLast     :: !Double -- Precipitation since last (AWS) observation in mm
+    , awPrecipSinceLast     :: !(Spaced (Maybe Double)) -- Precipitation since last (AWS) observation in mm
     , awPrecipQual          :: !Text   -- Quality of precipitation since last (AWS) observation value
-    , awAirTemp             :: !Double -- Air Temperature in degrees Celsius
+    , awAirTemp             :: !(Spaced (Maybe Double)) -- Air Temperature in degrees Celsius
     , awAirTempQual         :: !Text   -- Quality of air temperature
-    , awAirTempMax          :: !Double -- Air temperature (1-minute maximum) in degrees Celsius
+    , awAirTempMax          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute maximum) in degrees Celsius
     , awAirTempMaxQual      :: !Text   -- Quality of air temperature (1-minute maximum)
-    , awAirTempMin          :: !Double -- Air temperature (1-minute minimum) in degrees Celsius
+    , awAirTempMin          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute minimum) in degrees Celsius
     , awAirTempMinQual      :: !Text   -- Quality of air temperature (1-minute minimum)
-    , awWetBulbTemp         :: !Double -- Wet bulb temperature in degrees Celsius
+    , awWetBulbTemp         :: !(Spaced (Maybe Double)) -- Wet bulb temperature in degrees Celsius
     , awWetBulbTempQual     :: !Text   -- Quality of Wet bulb temperature
-    , awWetBulbTempMax      :: !Double -- Wet bulb temperature (1 minute maximum) in degrees Celsius
+    , awWetBulbTempMax      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute maximum) in degrees Celsius
     , awWetBulbTempMaxQual  :: !Text   -- Quality of wet bulb temperature (1 minute maximum)
-    , awWetBulbTempMin      :: !Double -- Wet bulb temperature (1 minute minimum) in degrees Celsius
+    , awWetBulbTempMin      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute minimum) in degrees Celsius
     , awWetBulbTempMinQual  :: !Text   -- Quality of wet bulb temperature (1 minute minimum)
-    , awDewPointTemp        :: !Double -- Dew point temperature in degrees Celsius
+    , awDewPointTemp        :: !(Spaced (Maybe Double)) -- Dew point temperature in degrees Celsius
     , awDewPointTempQual    :: !Text   -- Quality of dew point temperature
-    , awDewPointTempMax     :: !Double -- Dew point temperature (1-minute maximum) in degrees Celsius
+    , awDewPointTempMax     :: !(Spaced (Maybe Double)) -- Dew point temperature (1-minute maximum) in degrees Celsius
     , awDewPointTempMaxQual :: !Text   -- Quality of Dew point Temperature (1-minute maximum)
-    , awDewPointTempMin     :: !Double -- Dew point temperature (1 minute minimum) in degrees Celsius
+    , awDewPointTempMin     :: !(Spaced (Maybe Double)) -- Dew point temperature (1 minute minimum) in degrees Celsius
     , awDewPointTempMinQual :: !Text   -- Quality of Dew point Temperature (1 minute minimum)
-    , awRelHumid            :: !Int    -- Relative humidity in percentage %
+    , awRelHumid            :: !(Spaced (Maybe Int))    -- Relative humidity in percentage %
     , awRelHumidQual        :: !Text   -- Quality of relative humidity
-    , awRelHumidMax         :: !Int    -- Relative humidity (1 minute maximum) in percentage %
+    , awRelHumidMax         :: !(Spaced (Maybe Int))    -- Relative humidity (1 minute maximum) in percentage %
     , awRelHumidMaxQual     :: !Text   -- Quality of relative humidity (1 minute maximum)
-    , awRelHumidMin         :: !Int    -- Relative humidity (1 minute minimum) in percentage %
+    , awRelHumidMin         :: !(Spaced (Maybe Int))    -- Relative humidity (1 minute minimum) in percentage %
     , awRelHumidMinQual     :: !Text   -- Quality of Relative humidity (1 minute minimum)
-    , awWindSpeed           :: !Int    -- Wind (1 minute) speed in km/h
+    , awWindSpeed           :: !(Spaced (Maybe Int))    -- Wind (1 minute) speed in km/h
     , awWindSpeedQual       :: !Text   -- Wind (1 minute) speed quality
-    , awWindSpeedMin        :: !Int    -- Minimum wind speed (over 1 minute) in km/h
+    , awWindSpeedMin        :: !(Spaced (Maybe Int))    -- Minimum wind speed (over 1 minute) in km/h
     , awWindSpeedMinQual    :: !Text   -- Minimum wind speed (over 1 minute) quality
-    , awWindDir             :: !Int    -- Wind (1 minute) direction in degrees true
+    , awWindDir             :: !(Spaced (Maybe Int))    -- Wind (1 minute) direction in degrees true
     , awWindDirQual         :: !Text   -- Wind (1 minute) direction quality
-    , awWindStdDev          :: !Int    -- Standard deviation of wind (1 minute)
+    , awWindStdDev          :: !(Spaced (Maybe Int))    -- Standard deviation of wind (1 minute)
     , awWindStdDevQual      :: !Text   -- Standard deviation of wind (1 minute) direction quality
-    , awWindGustMax         :: !Int    -- Maximum wind gust (over 1 minute) in km/h
+    , awWindGustMax         :: !(Spaced (Maybe Int))    -- Maximum wind gust (over 1 minute) in km/h
     , awWindGustMaxQual     :: !Text   -- Maximum wind gust (over 1 minute) quality
-    , awVisibility          :: !Double -- Visibility (automatic - one minute data) in km
+    , awVisibility          :: !(Spaced (Maybe Double)) -- Visibility (automatic - one minute data) in km
     , awVisibilityQual      :: !Text   -- Quality of visibility (automatic - one minute data)
-    , awMslPress            :: !Double -- Mean sea level pressure in hPa
+    , awMslPress            :: !(Spaced (Maybe Double)) -- Mean sea level pressure in hPa
     , awMslPressQual        :: !Text   -- Quality of mean sea level pressure
-    , awStationLvlPress     :: !Double -- Station level pressure in hPa
+    , awStationLvlPress     :: !(Spaced (Maybe Double)) -- Station level pressure in hPa
     , awStationLvlPressQual :: !Text   -- Quality of station level pressure
-    , awQnhPress            :: !Double -- QNH pressure in hPa
+    , awQnhPress            :: !(Spaced (Maybe Double)) -- QNH pressure in hPa
     , awQnhPressQual        :: !Text   -- Quality of QNH pressure
     } deriving (Show, Eq, Ord, Generic)
 
@@ -234,10 +234,10 @@ data SolarRadiationObs = SolarRadiationObs
     , slDhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
     , slDhiStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
     , slDhiMeanUncertainy   :: !(Spaced (Maybe Double)) -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
-    , slSunshineSecs96      :: !Int                     -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
-    , slSunshineSecs120     :: !Int                     -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
-    , slSunshineSecs144     :: !Int                     -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
-    , slZenith              :: !Double                  -- Zenith distance in degrees
+    , slSunshineSecs96      :: !(Spaced (Maybe Int))                     -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
+    , slSunshineSecs120     :: !(Spaced (Maybe Int))                     -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
+    , slSunshineSecs144     :: !(Spaced (Maybe Int))                     -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
+    , slZenith              :: !(Spaced (Maybe Double))                  -- Zenith distance in degrees
     } deriving (Show, Eq, Ord, Generic)
 
 instance FromNamedRecord SolarRadiationObs where

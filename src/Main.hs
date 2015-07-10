@@ -2,7 +2,7 @@
 
 
 -- TODO:
--- filter out only 00 mins
+-- compare Local time in aw and sl records and ensure we have correct ones lined up
 -- either:
 --   think about quality columns
 --   start averaging values
@@ -14,6 +14,7 @@ import Control.Monad                        (forM_)
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
+import Data.Either                          (partitionEithers)
 import Data.Text                            (unpack)
 import Data.Time.LocalTime                  (localTimeOfDay, todMin)
 import System.Directory                     (doesFileExist)
@@ -80,23 +81,32 @@ processCsvPair fn t@(aw, sl) = do
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
         combined = (combineAwSl awRecs slRecs)
+        (lefts, rights) = partitionEithers combined
         -- TODO: re-enable when we're happier
-        -- filtered = filter zeroMinutes combined
-    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts combined)
+        filtered = filter zeroMinutes rights
+    mapM_ putStrLn lefts
+    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)
 
 
 zeroMinutes :: CombinedAwSlObs -> Bool
 zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
 
-combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [CombinedAwSlObs]
-combineAwSl (Cons (Right a) rs) (Cons (Right b) rs2) = do
-    CombinedAwSlObs a b : combineAwSl rs rs2
+combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [Either String CombinedAwSlObs]
+combineAwSl (Cons a rs) (Cons b rs2) = do
+    comb CombinedAwSlObs a b : combineAwSl rs rs2
 combineAwSl a b = do
     -- case a of
     -- case b of
     -- TODO: what to do when something has failed
     []
+
+
+comb :: (a -> b -> c) -> Either String a -> Either String b -> Either String c
+comb f (Right a) (Right b) = Right (f a b)
+comb _ (Left a) (Left b) = Left ("Two errors: '" ++ a ++ "' and '" ++ b ++ "'")
+comb _ (Left a) _ = Left ("aw side: " ++ a)
+comb _ _ (Left b) = Left ("sl side: " ++ b)
 
 
 awPref = "aw_"
