@@ -1,6 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 
+-- TODO:
+-- put in all columns needed
+-- filter out only 00 mins
+-- either:
+--   think about quality columns
+--   start averaging values
+
+
 module Main where
 
 import Control.Monad                        (forM_)
@@ -56,11 +64,6 @@ processSingleSite fn s = do
     --mapM_ putStrLn slFiles
 
     mapM_ (processCsvPair newCsv) (zip awFiles slFiles)
-
-    -- for f in {aw,sl}_stationNum_YYYY_MM.txt; do
-        -- process date-parallel-by-month {aw,sl} records into averaged conjoined hourly dataset (fn type needs to change?)
-        -- write
-    return ()
 
 
 processCsvPair :: FilePath -> (FilePath, FilePath) -> IO ()

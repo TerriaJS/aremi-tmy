@@ -131,66 +131,66 @@ instance FromRecord AutoWeatherObs where
             AutoWeatherObs  -- ignoring col aw
                             -- TODO: can we do something better here?
                             --   at least join 5 per line when we know we're keeping all of them
-                            <$> v .! 1
-                            <*> v .! 2
-                            <*> v .! 3
-                            <*> v .! 4
-                            <*> v .! 5
-                            <*> v .! 6
-                            <*> v .! 7
-                            <*> v .! 8
-                            <*> v .! 9
-                            <*> v .! 10
-                            <*> v .! 11
-                            <*> v .! 12
-                            <*> v .! 13
-                            <*> v .! 14
-                            <*> v .! 15
-                            <*> v .! 16
-                            <*> v .! 17
-                            <*> v .! 18
-                            <*> v .! 19
-                            <*> v .! 20
-                            <*> v .! 21
-                            <*> v .! 22
-                            <*> v .! 23
-                            <*> v .! 24
-                            <*> v .! 25
-                            <*> v .! 26
-                            <*> v .! 27
-                            <*> v .! 28
-                            <*> v .! 29
-                            <*> v .! 30
-                            <*> v .! 31
-                            <*> v .! 32
-                            <*> v .! 33
-                            <*> v .! 34
-                            <*> v .! 35
-                            <*> v .! 36
-                            <*> v .! 37
-                            <*> v .! 38
-                            <*> v .! 39
-                            <*> v .! 40
-                            <*> v .! 41
-                            <*> v .! 42
-                            <*> v .! 43
-                            <*> v .! 44
-                            <*> v .! 45
-                            <*> v .! 46
-                            <*> v .! 47
-                            <*> v .! 48
-                            <*> v .! 49
-                            <*> v .! 50
-                            <*> v .! 51
-                            <*> v .! 52
-                            <*> v .! 53
-                            <*> v .! 54
-                            <*> v .! 55
-                            <*> v .! 56
-                            <*> v .! 57
-                            <*> v .! 58
-                            <*> v .! 59
-                            <*> v .! 60
+                            <$> v .! 1         -- awStationNum
+                            <*> v .! 2         -- awYearLocal
+                            <*> v .! 3         -- awMMLocal
+                            <*> v .! 4         -- awDDLocal
+                            <*> v .! 5         -- awHH24Local
+                            <*> v .! 6         -- awMILocal
+                            <*> v .! 7         -- awYearLocalStd
+                            <*> v .! 8         -- awMMLocalStd
+                            <*> v .! 9         -- awDDLocalStd
+                            <*> v .! 10        -- awHH24LocalStd
+                            <*> v .! 11        -- awMILocalStd
+                            <*> v .! 12        -- awYearUtc
+                            <*> v .! 13        -- awMMUtc
+                            <*> v .! 14        -- awDDUtc
+                            <*> v .! 15        -- awHH24Utc
+                            <*> v .! 16        -- awMIUtc
+                            <*> v .! 17        -- awPrecipSinceLast
+                            <*> v .! 18        -- awPrecipQual
+                            <*> v .! 19        -- awAirTemp
+                            <*> v .! 20        -- awAirTempQual
+                            <*> v .! 21        -- awAirTempMax
+                            <*> v .! 22        -- awAirTempMaxQual
+                            <*> v .! 23        -- awAirTempMin
+                            <*> v .! 24        -- awAirTempMinQual
+                            <*> v .! 25        -- awWetBulbTemp
+                            <*> v .! 26        -- awWetBulbTempQual
+                            <*> v .! 27        -- awWetBulbTempMax
+                            <*> v .! 28        -- awWetBulbTempMaxQual
+                            <*> v .! 29        -- awWetBulbTempMin
+                            <*> v .! 30        -- awWetBulbTempMinQual
+                            <*> v .! 31        -- awDewPointTemp
+                            <*> v .! 32        -- awDewPointTempQual
+                            <*> v .! 33        -- awDewPointTempMax
+                            <*> v .! 34        -- awDewPointTempMaxQual
+                            <*> v .! 35        -- awDewPointTempMin
+                            <*> v .! 36        -- awDewPointTempMinQual
+                            <*> v .! 37        -- awRelHumid
+                            <*> v .! 38        -- awRelHumidQual
+                            <*> v .! 39        -- awRelHumidMax
+                            <*> v .! 40        -- awRelHumidMaxQual
+                            <*> v .! 41        -- awRelHumidMin
+                            <*> v .! 42        -- awRelHumidMinQual
+                            <*> v .! 43        -- awWindSpeed
+                            <*> v .! 44        -- awWindSpeedQual
+                            <*> v .! 45        -- awWindSpeedMin
+                            <*> v .! 46        -- awWindSpeedMinQual
+                            <*> v .! 47        -- awWindDir
+                            <*> v .! 48        -- awWindDirQual
+                            <*> v .! 49        -- awWindStdDev
+                            <*> v .! 50        -- awWindStdDevQual
+                            <*> v .! 51        -- awWindGustMax
+                            <*> v .! 52        -- awWindGustMaxQual
+                            <*> v .! 53        -- awVisibility
+                            <*> v .! 54        -- awVisibilityQual
+                            <*> v .! 55        -- awMslPress
+                            <*> v .! 56        -- awMslPressQual
+                            <*> v .! 57        -- awStationLvlPress
+                            <*> v .! 58        -- awStationLvlPressQual
+                            <*> v .! 59        -- awQnhPress
+                            <*> v .! 60        -- awQnhPressQual
                             -- ignoring col #
         | otherwise = fail ("CSV expected to have 62 columns, actual: " ++ show (V.length v) ++ ", row: " ++ show v)
 
@@ -199,42 +199,41 @@ instance DefaultOrdered AutoWeatherObs
 
 
 data SolarRadiationObs = SolarRadiationObs
-    { slStationNum          :: !Trimmed -- Station Number
-    , slYearLocal           :: !Int     -- Year Month Day Hours Minutes in YYYY
-    , slMMLocal             :: !Int     -- MM
-    , slDDLocal             :: !Int     -- DD
-    , slHH24Local           :: !Int     -- HH24
-    , slMILocal             :: !Int     -- MI format in Local time
-                            -- TODO: parse these to Maybe Double
-    , slGhiMean             :: !(Spaced (Maybe Double))    -- Mean global irradiance (over 1 minute) in W/sq m
-    , slGhiMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
-    , slGhiMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
-    , slGhiStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of global irradiance (over 1 minute) in W/sq m
-    , slGhiMeanUncertainty  :: !(Spaced (Maybe Double))    -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
-    , slDni                 :: !(Spaced (Maybe Double))    -- Mean direct irradiance (over 1 minute) in W/sq m
-    , slDniMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
-    , slDniMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
-    , slDniStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
-    , slDniMeanUncertainty  :: !(Spaced (Maybe Double))    -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
-    , slDiffMean            :: !(Spaced (Maybe Double))    -- Mean diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMin             :: !(Spaced (Maybe Double))    -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMax             :: !(Spaced (Maybe Double))    -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffStdDev          :: !(Spaced (Maybe Double))    -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMeanUncertainty :: !(Spaced (Maybe Double))    -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
-    , slTerrMean            :: !(Spaced (Maybe Double))    -- Mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMin             :: !(Spaced (Maybe Double))    -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMax             :: !(Spaced (Maybe Double))    -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrStdDev          :: !(Spaced (Maybe Double))    -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMeanUncertainty :: !(Spaced (Maybe Double))    -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slDhiMean             :: !(Spaced (Maybe Double))    -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMin              :: !(Spaced (Maybe Double))    -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMax              :: !(Spaced (Maybe Double))    -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiStdDev           :: !(Spaced (Maybe Double))    -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMeanUncertainy   :: !(Spaced (Maybe Double))    -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
-    , slSunshineSecs96      :: !Int     -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
-    , slSunshineSecs120     :: !Int     -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
-    , slSunshineSecs144     :: !Int     -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
-    , slZenith              :: !Double  -- Zenith distance in degrees
+    { slStationNum          :: !Trimmed                 -- Station Number
+    , slYearLocal           :: !Int                     -- Year Month Day Hours Minutes in YYYY
+    , slMMLocal             :: !Int                     -- MM
+    , slDDLocal             :: !Int                     -- DD
+    , slHH24Local           :: !Int                     -- HH24
+    , slMILocal             :: !Int                     -- MI format in Local time
+    , slGhiMean             :: !(Spaced (Maybe Double)) -- Mean global irradiance (over 1 minute) in W/sq m
+    , slGhiMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
+    , slGhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
+    , slGhiStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of global irradiance (over 1 minute) in W/sq m
+    , slGhiMeanUncertainty  :: !(Spaced (Maybe Double)) -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
+    , slDni                 :: !(Spaced (Maybe Double)) -- Mean direct irradiance (over 1 minute) in W/sq m
+    , slDniMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
+    , slDniMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
+    , slDniStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
+    , slDniMeanUncertainty  :: !(Spaced (Maybe Double)) -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
+    , slDiffMean            :: !(Spaced (Maybe Double)) -- Mean diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMin             :: !(Spaced (Maybe Double)) -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMax             :: !(Spaced (Maybe Double)) -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffStdDev          :: !(Spaced (Maybe Double)) -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMeanUncertainty :: !(Spaced (Maybe Double)) -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
+    , slTerrMean            :: !(Spaced (Maybe Double)) -- Mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMin             :: !(Spaced (Maybe Double)) -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMax             :: !(Spaced (Maybe Double)) -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrStdDev          :: !(Spaced (Maybe Double)) -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMeanUncertainty :: !(Spaced (Maybe Double)) -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slDhiMean             :: !(Spaced (Maybe Double)) -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMeanUncertainy   :: !(Spaced (Maybe Double)) -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slSunshineSecs96      :: !Int                     -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
+    , slSunshineSecs120     :: !Int                     -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
+    , slSunshineSecs144     :: !Int                     -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
+    , slZenith              :: !Double                  -- Zenith distance in degrees
     } deriving (Show, Eq, Ord, Generic)
 
 instance FromNamedRecord SolarRadiationObs where
@@ -287,7 +286,103 @@ data CombinedAwSlObs = CombinedAwSlObs
 instance ToNamedRecord CombinedAwSlObs where
     toNamedRecord (CombinedAwSlObs aw sl) = union (toNamedRecord aw) (toNamedRecord sl)
 instance DefaultOrdered CombinedAwSlObs where
-    headerOrder _ = ["awStationNum", "awAirTemp", "slZenith"]
+    headerOrder _ =
+        [ "awStationNum"
+        , "awYearLocal"
+        , "awMMLocal"
+        , "awDDLocal"
+        , "awHH24Local"
+        , "awMILocal"
+        , "awYearLocalStd"
+        , "awMMLocalStd"
+        , "awDDLocalStd"
+        , "awHH24LocalStd"
+        , "awMILocalStd"
+        , "awYearUtc"
+        , "awMMUtc"
+        , "awDDUtc"
+        , "awHH24Utc"
+        , "awMIUtc"
+        , "awPrecipSinceLast"
+        --, "awPrecipQual"
+        , "awAirTemp"
+        --, "awAirTempQual"
+        , "awAirTempMax"
+        --, "awAirTempMaxQual"
+        , "awAirTempMin"
+        --, "awAirTempMinQual"
+        , "awWetBulbTemp"
+        --, "awWetBulbTempQual"
+        , "awWetBulbTempMax"
+        --, "awWetBulbTempMaxQual"
+        , "awWetBulbTempMin"
+        --, "awWetBulbTempMinQual"
+        , "awDewPointTemp"
+        --, "awDewPointTempQual"
+        , "awDewPointTempMax"
+        --, "awDewPointTempMaxQual"
+        , "awDewPointTempMin"
+        --, "awDewPointTempMinQual"
+        , "awRelHumid"
+        --, "awRelHumidQual"
+        , "awRelHumidMax"
+        --, "awRelHumidMaxQual"
+        , "awRelHumidMin"
+        --, "awRelHumidMinQual"
+        , "awWindSpeed"
+        --, "awWindSpeedQual"
+        , "awWindSpeedMin"
+        --, "awWindSpeedMinQual"
+        , "awWindDir"
+        --, "awWindDirQual"
+        , "awWindStdDev"
+        --, "awWindStdDevQual"
+        , "awWindGustMax"
+        --, "awWindGustMaxQual"
+        , "awVisibility"
+        --, "awVisibilityQual"
+        , "awMslPress"
+        --, "awMslPressQual"
+        , "awStationLvlPress"
+        , "awStationLvlPressQual"
+        , "awQnhPress"
+        , "awQnhPressQual"
+        --, "slStationNum"
+        --, "slYearLocal"
+        --, "slMMLocal"
+        --, "slDDLocal"
+        --, "slHH24Local"
+        --, "slMILocal"
+        , "slGhiMean"
+        , "slGhiMin"
+        , "slGhiMax"
+        , "slGhiStdDev"
+        , "slGhiMeanUncertainty"
+        , "slDni"
+        , "slDniMin"
+        , "slDniMax"
+        , "slDniStdDev"
+        , "slDniMeanUncertainty"
+        , "slDiffMean"
+        , "slDiffMin"
+        , "slDiffMax"
+        , "slDiffStdDev"
+        , "slDiffMeanUncertainty"
+        , "slTerrMean"
+        , "slTerrMin"
+        , "slTerrMax"
+        , "slTerrStdDev"
+        , "slTerrMeanUncertainty"
+        , "slDhiMean"
+        , "slDhiMin"
+        , "slDhiMax"
+        , "slDhiStdDev"
+        , "slDhiMeanUncertainy"
+        , "slSunshineSecs96"
+        , "slSunshineSecs120"
+        , "slSunshineSecs144"
+        , "slZenith"
+        ]
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()
