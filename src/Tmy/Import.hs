@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -285,7 +286,8 @@ data CombinedAwSlObs = CombinedAwSlObs
 
 instance ToNamedRecord CombinedAwSlObs where
     toNamedRecord (CombinedAwSlObs aw sl) = union (toNamedRecord aw) (toNamedRecord sl)
-instance DefaultOrdered CombinedAwSlObs
+instance DefaultOrdered CombinedAwSlObs where
+    headerOrder _ = ["awStationNum", "awAirTemp", "slZenith"]
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()

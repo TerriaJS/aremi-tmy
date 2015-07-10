@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedLists #-}
 
 
 module Main where
@@ -53,7 +52,7 @@ processSingleSite fn s = do
     slFiles <- find always (fileName ~~? slGlob) csvDir
 
     -- DEBUG
-    mapM_ putStrLn awFiles
+    --mapM_ putStrLn awFiles
     --mapM_ putStrLn slFiles
 
     mapM_ (processCsvPair newCsv) (zip awFiles slFiles)
@@ -65,7 +64,9 @@ processSingleSite fn s = do
 
 
 processCsvPair :: FilePath -> (FilePath, FilePath) -> IO ()
-processCsvPair fn (aw, sl) = do
+processCsvPair fn t@(aw, sl) = do
+    putStrLn ("Processing " ++ show t)
+
     -- typed for clarity
     awRecs <- readIndexedCsv aw :: IO (Records AutoWeatherObs)
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
@@ -75,7 +76,7 @@ processCsvPair fn (aw, sl) = do
 
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-    BL.appendFile fn (encodeByNameWith encOpts ["awStationNum", "awAirTemp", "slZenith"] (combineAwSl awRecs slRecs))
+    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts (combineAwSl awRecs slRecs))
 
     return ()
 
