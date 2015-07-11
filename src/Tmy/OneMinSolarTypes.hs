@@ -8,16 +8,18 @@ module Tmy.OneMinSolarTypes where
 import Control.Applicative                  ((<$>), (<*>))
 import Data.HashMap.Strict                  (union)
 import Data.Csv
-import Data.Text                            (Text, strip)
-import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
+import Data.Text                            (Text)
+import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 
 import Tmy.Csv
 
-
+awPref :: String
 awPref = "aw_"
+slPref :: String
 slPref = "sl_"
+globSuff :: String
 globSuff = "*.txt"
 
 

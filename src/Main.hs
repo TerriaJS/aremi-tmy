@@ -10,7 +10,6 @@
 
 module Main where
 
-import Control.Monad                        (forM_)
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
@@ -94,10 +93,12 @@ zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
 
 combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [Either String CombinedAwSlObs]
-combineAwSl (Cons a rs)     (Cons b rs2)    = do comb CombinedAwSlObs a b : combineAwSl rs rs2
-combineAwSl (Nil Nothing _) (Cons _ _)      = [Left ("Unprocessed solar obs")]
-combineAwSl (Cons _ _)      (Nil Nothing _) = [Left ("Unprocessed weather obs")]
-combineAwSl (Nil Nothing _) (Nil Nothing _) = [] -- success! both ended at the same time
+combineAwSl (Cons a rs)     (Cons b rs2)     = do comb CombinedAwSlObs a b : combineAwSl rs rs2
+combineAwSl (Nil Nothing _) (Cons _ _)       = [Left ("Unprocessed solar obs")]
+combineAwSl (Cons _ _)      (Nil Nothing _)  = [Left ("Unprocessed weather obs")]
+combineAwSl (Nil (Just e) _) _               = [Left ("Failed processing weather CSV file: " ++ e)]
+combineAwSl _               (Nil (Just e) _) = [Left ("Failed processing solar CSV file: " ++ e)]
+combineAwSl (Nil Nothing _) (Nil Nothing _)  = [] -- success! both ended at the same time
 
 
 comb :: (a -> b -> c) -> Either String a -> Either String b -> Either String c
