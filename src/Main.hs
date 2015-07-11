@@ -21,7 +21,8 @@ import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
 
-import Tmy.Import
+import Tmy.OneMinSolarTypes
+import Tmy.Csv
 
 
 main :: IO ()
@@ -105,7 +106,3 @@ comb _ (Left a) (Left b) = Left ("Two errors: '" ++ a ++ "' and '" ++ b ++ "'")
 comb _ (Left a) _ = Left ("aw side: " ++ a)
 comb _ _ (Left b) = Left ("sl side: " ++ b)
 
-
-awPref = "aw_"
-slPref = "sl_"
-globSuff = "*.txt"
