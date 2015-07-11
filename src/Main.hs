@@ -80,7 +80,7 @@ processCsvPair fn t@(aw, sl) = do
 
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-        combined = (combineAwSl awRecs slRecs)
+        combined = combineAwSl awRecs slRecs
         (lefts, rights) = partitionEithers combined
         -- TODO: re-enable when we're happier
         filtered = filter zeroMinutes rights
@@ -93,13 +93,10 @@ zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
 
 combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [Either String CombinedAwSlObs]
-combineAwSl (Cons a rs) (Cons b rs2) = do
-    comb CombinedAwSlObs a b : combineAwSl rs rs2
-combineAwSl a b = do
-    -- case a of
-    -- case b of
-    -- TODO: what to do when something has failed
-    []
+combineAwSl (Cons a rs)     (Cons b rs2)    = do comb CombinedAwSlObs a b : combineAwSl rs rs2
+combineAwSl (Nil Nothing _) (Cons _ _)      = [Left ("Unprocessed solar obs")]
+combineAwSl (Cons _ _)      (Nil Nothing _) = [Left ("Unprocessed weather obs")]
+combineAwSl (Nil Nothing _) (Nil Nothing _) = [] -- success! both ended at the same time
 
 
 comb :: (a -> b -> c) -> Either String a -> Either String b -> Either String c
