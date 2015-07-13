@@ -2,7 +2,6 @@
 
 
 -- TODO:
--- compare Local time in aw and sl records and ensure we have correct ones lined up
 -- either:
 --   think about quality columns
 --   start averaging values
