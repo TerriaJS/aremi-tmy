@@ -26,13 +26,16 @@ instance FromField Trimmed where
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
-    parseField bs = Spaced <$> parseField (B.dropWhile (== 32) bs)
+    parseField bs = Spaced <$> parseField (B.dropWhile (== 32) bs) -- a space character, or use isSpace to include all whitespace
 
 
+-- TODO: orphan instance, maybe some form of newtype would be better?
 instance ToField LocalTime where
     toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
+-- | For parsing LocalTime from a CSV with columns like:
+--   'Year Month Day Hours Minutes in YYYY, MM, DD, HH24, MI format in Local time'
 fieldsToLocalTime :: Int -> Record -> Parser LocalTime
 fieldsToLocalTime i v = do
     mplus (colsToLocalTime (v .! i) (v .! (i+1)) (v .! (i+2)) (v .! (i+3)) (v .! (i+4)))
