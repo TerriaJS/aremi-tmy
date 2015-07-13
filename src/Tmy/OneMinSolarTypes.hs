@@ -15,6 +15,7 @@ import GHC.Generics                         (Generic)
 
 import Tmy.Csv
 
+-- Data file prefix and suffix
 awPref :: String
 awPref = "aw_"
 slPref :: String

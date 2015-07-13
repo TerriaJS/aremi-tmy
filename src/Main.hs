@@ -77,7 +77,19 @@ zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
 
 combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [Either String CombinedAwSlObs]
-combineAwSl (Cons a rs)     (Cons b rs2)     = do comb CombinedAwSlObs a b : combineAwSl rs rs2
+combineAwSl (Cons a rs)     (Cons b rs2)     = do
+    case comb CombinedAwSlObs a b of
+        l@(Left _) -> l : combineAwSl rs rs2
+        r@(Right (CombinedAwSlObs aw sl)) ->
+            if (awLocalTime aw) == (slLocalTime sl)
+                -- if we have matching localTimes then add this CombinedAwSlObs to the list
+                then r : combineAwSl rs rs2
+                else if (awLocalTime aw) < (slLocalTime sl)
+                        -- if we have missing parallel times then log and discard the partial record
+                        then Left ("Discarded lonely weather obs at awLocalTime: " ++ (show . awLocalTime) aw)
+                                : combineAwSl rs (Cons (Right sl) rs2)
+                        else Left ("Discarded lonely solar obs at slLocalTime: " ++ (show . slLocalTime) sl)
+                                : combineAwSl (Cons (Right aw) rs) rs2
 combineAwSl (Nil Nothing _) (Cons _ _)       = [Left ("Unprocessed solar obs")]
 combineAwSl (Cons _ _)      (Nil Nothing _)  = [Left ("Unprocessed weather obs")]
 combineAwSl (Nil (Just e) _) _               = [Left ("Failed processing weather CSV file: " ++ e)]
