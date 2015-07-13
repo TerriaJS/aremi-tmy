@@ -48,41 +48,25 @@ main = do
 processSingleSite :: FilePath -> OneMinSolarSite -> IO ()
 processSingleSite fn s = do
     let csvDir = (reverse . dropWhile ('/' /=) . reverse) fn
-        stationNum = (unpack . unTrimmed . bomStationNum) s
+        stationNum = (unpack . unSpaced . bomStationNum) s
         awGlob = awPref ++ stationNum ++ globSuff
         slGlob = slPref ++ stationNum ++ globSuff
         newCsv = stationNum ++ "_averaged.csv"
-
-    -- DEBUG
-    --putStrLn ("fn:     " ++ fn)
-    --putStrLn ("csvDir: " ++ csvDir)
-
     awFiles <- find always (fileName ~~? awGlob) csvDir
     slFiles <- find always (fileName ~~? slGlob) csvDir
-
-    -- DEBUG
-    --mapM_ putStrLn awFiles
-    --mapM_ putStrLn slFiles
-
     mapM_ (processCsvPair newCsv) (zip awFiles slFiles)
 
 
 processCsvPair :: FilePath -> (FilePath, FilePath) -> IO ()
 processCsvPair fn t@(aw, sl) = do
     putStrLn ("Processing " ++ show t)
-
     -- typed for clarity
     awRecs <- readIndexedCsv aw :: IO (Records AutoWeatherObs)
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
-
-    --mapRecords_ print awRecs
-    --mapRecords_ print slRecs
-
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
         combined = combineAwSl awRecs slRecs
         (lefts, rights) = partitionEithers combined
-        -- TODO: re-enable when we're happier
         filtered = filter zeroMinutes rights
     mapM_ putStrLn lefts
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)

@@ -27,17 +27,17 @@ globSuff = "*.txt"
 
 
 data OneMinSolarSite = OneMinSolarSite
-    { bomStationNum    :: !Trimmed -- Bureau of Meteorology station number
-    , rainDistrictCode :: !Trimmed -- Rainfall district code
-    , name             :: !Trimmed -- Station name
-    , closed           :: !Trimmed -- Month/Year site closed (MM/YYYY)
-    , lat              :: !Double  -- Latitute
-    , lon              :: !Double  -- Longitude
-    , latLotDerMethod  :: !Trimmed -- Method by which lat/lon derived
-    , state            :: !Trimmed -- State
-    , stationMsl       :: !Double  -- Height of station above mean sea level in metres
-    , barometerMsl     :: !Double  -- Height of barometer above sea level in metres
-    , wmoNum           :: !Trimmed -- WMO index number
+    { bomStationNum    :: !(Spaced Text) -- Bureau of Meteorology station number
+    , rainDistrictCode :: !(Spaced Text) -- Rainfall district code
+    , name             :: !(Spaced Text) -- Station name
+    , closed           :: !(Spaced Text) -- Month/Year site closed (MM/YYYY)
+    , lat              :: !Double        -- Latitute
+    , lon              :: !Double        -- Longitude
+    , latLotDerMethod  :: !(Spaced Text) -- Method by which lat/lon derived
+    , state            :: !(Spaced Text) -- State
+    , stationMsl       :: !Double        -- Height of station above mean sea level in metres
+    , barometerMsl     :: !Double        -- Height of barometer above sea level in metres
+    , wmoNum           :: !(Spaced Text) -- WMO index number
     } deriving (Show, Eq, Ord)
 
 instance FromNamedRecord OneMinSolarSite where
@@ -57,7 +57,7 @@ instance FromNamedRecord OneMinSolarSite where
 
 data AutoWeatherObs = AutoWeatherObs
     { -- ignoring col aw
-    awStationNum            :: !Trimmed                 -- Station Number
+    awStationNum            :: !(Spaced Text)           -- Station Number
     -- , awYearLocal        :: !Int                     -- Year Month Day Hours Minutes in YYYY
     -- , awMMLocal          :: !Int                     -- MM
     -- , awDDLocal          :: !Int                     -- DD
@@ -185,7 +185,7 @@ instance DefaultOrdered AutoWeatherObs
 
 
 data SolarRadiationObs = SolarRadiationObs
-    { slStationNum          :: !Trimmed                 -- Station Number
+    { slStationNum          :: !(Spaced Text)           -- Station Number
     --, slYearLocal           :: !Int                   -- Year Month Day Hours Minutes in YYYY
     --, slMMLocal             :: !Int                   -- MM
     --, slDDLocal             :: !Int                   -- DD

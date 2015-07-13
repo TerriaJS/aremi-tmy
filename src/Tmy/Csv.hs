@@ -10,17 +10,10 @@ import qualified Data.ByteString      as B  (dropWhile)
 import qualified Data.ByteString.Lazy as BL (readFile, empty)
 import Data.Csv                      hiding (decodeByName, decode)
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
-import Data.Text                            (Text, strip)
 import Data.Time.Calendar                   (fromGregorianValid)
 import Data.Time.Format                     (formatTime)
 import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
 import System.Locale                        (iso8601DateFormat, defaultTimeLocale)
-
-
-newtype Trimmed = Trimmed {unTrimmed :: Text} deriving (Show, Eq, Ord, ToField)
-
-instance FromField Trimmed where
-    parseField bs = Trimmed . strip <$> parseField bs
 
 
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
