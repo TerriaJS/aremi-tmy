@@ -27,6 +27,13 @@ instance ToField LocalTime where
     toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
+recsAsList :: Records a -> [Either String a]
+recsAsList (Cons (Right a) rs) = Right a : recsAsList rs      -- value found
+recsAsList (Cons (Left e) rs) = Left e : recsAsList rs  -- error but we can continue
+recsAsList (Nil (Just e) _) = [Left e]                  -- failed to parse to the end
+recsAsList (Nil Nothing _) = []                         -- success
+
+
 -- | For parsing LocalTime from a CSV with columns like:
 --   'Year Month Day Hours Minutes in YYYY, MM, DD, HH24, MI format in Local time'
 fieldsToLocalTime :: Int -> Record -> Parser LocalTime
