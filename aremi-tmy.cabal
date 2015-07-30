@@ -24,6 +24,7 @@ executable aremi-tmy
                      , directory
                      , filemanip
                      , old-locale
+                     , semigroups
                      , text
                      , time
                      , vector

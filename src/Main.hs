@@ -13,8 +13,10 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Either                          (partitionEithers)
+import Data.Maybe                           (fromJust)
 import Data.List                            (groupBy)
-import Data.Text                            (unpack)
+import Data.Semigroup                       (Min(..), Max(..))
+import Data.Text                            (Text, unpack, isInfixOf)
 import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, todMin, localDay, todHour)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
@@ -74,8 +76,10 @@ processCsvPair fn t@(aw, sl) = do
         -- group and compute stats for aw and sl separately
         awGroups = groupBy (hourGrouper awLocalTime) awList
         lwGroups = groupBy (hourGrouper slLocalTime) slList
-        !_ = traceShowId (map (map awLocalTime) (take 3 awGroups))
-        -- awFolded = map (foldl1' combine) awGroups
+        -- AutoWeatherObs to StatAutoWeatherObs, filter out shit quality
+        awStatGroups = map (map awoToStat) awGroups
+        !_ = traceShowId (map (map awAirTempSt) (take 3 awStatGroups))
+        -- awFolded = map (foldl1' awAggrToHour) awGroups
         -- same for sl
         -- combine 1-hour aw and sl records
             -- [awFolded] -> [slFolded] -> [awSlCombined]
@@ -90,15 +94,75 @@ processCsvPair fn t@(aw, sl) = do
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)
 
 
+{-
+awAggrToHour :: AutoWeatherObs -> AutoWeatherObs -> AutoWeatherObs
+awAggrToHour a b =
+    AutoWeatherObs
+        { awStationNum=awStationNum a
+        , localTime a
+        , awPrecipSinceLast+awPrecipSinceLast
+        , temp, min, max, count
+        , ...
+    }
+-}
+-- func Spaced (Maybe a) -> Option (Maybe a)
+
+
+awoToStat :: AutoWeatherObs -> AwoStats
+awoToStat a =
+    AwoStats
+        { awStationNumSt      = unSpaced (awStationNum a)
+        , awLocalTimeSt       = awLocalTime a
+        , awLocalStdTimeSt    = awLocalStdTime a
+        , awUtcTimeSt         = awUtcTime a
+        , awAirTempSt         = maybeStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
+        , awWetBulbTempSt     = maybeStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
+        , awDewPointTempSt    = maybeStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a
+        , awRelHumidSt        = maybeStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
+        , awPrecipSinceLastSt = qFilter awPrecipQual          awPrecipSinceLast a
+        , awWindSpeedSt       = qFilter awWindSpeedQual       awWindSpeed a
+        , awWindSpeedMinSt    = qFilter awWindSpeedMinQual    awWindSpeedMin a
+        , awWindDirSt         = qFilter awWindDirQual         awWindDir a
+        , awWindGustMaxSt     = qFilter awWindGustMaxQual     awWindGustMax a
+        , awVisibilitySt      = qFilter awVisibilityQual      awVisibility a
+        , awMslPressSt        = qFilter awMslPressQual        awMslPress a
+        , awStationLvlPressSt = qFilter awStationLvlPressQual awStationLvlPress a
+        , awQnhPressSt        = qFilter awQnhPressQual        awQnhPress a
+        }
+
+
+maybeStat :: (a -> Text)
+          -> (a -> (Spaced (Maybe b)))
+          -> (a -> (Spaced (Maybe b)))
+          -> (a -> (Spaced (Maybe b)))
+          -> a
+          -> Maybe (Stat b)
+maybeStat valQf valF maxF minF a =
+    case qFilter valQf valF a of
+        Just v  -> Just (mkStat v (fromJust (unSpaced (maxF a))) (fromJust (unSpaced (minF a))))
+        Nothing -> Nothing
+
+
+qFilter :: (a -> Text)
+        -> (a -> (Spaced (Maybe b)))
+        -> a
+        -> Maybe b
+qFilter qf vf a =
+    if (qf a) `isInfixOf` "YNSF"
+        then unSpaced (vf a)
+        else Nothing
+
+
+mkStat :: a -> a -> a -> Stat a
+mkStat smean smax smin = Stat smean (Max smax) (Min smin) 1
+
+
 hourGrouper :: (a -> LocalTime) -> a -> a -> Bool
-hourGrouper f a b = zeroedAt == zeroedBt
-    where
-        at = f a
-        bt = f b
-        atHour = (todHour . localTimeOfDay) at
-        btHour = (todHour . localTimeOfDay) bt
-        zeroedAt = LocalTime (localDay at) (TimeOfDay atHour 0 0)
-        zeroedBt = LocalTime (localDay bt) (TimeOfDay btHour 0 0)
+hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
+
+
+floorMinute :: LocalTime -> LocalTime
+floorMinute a = LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0)
 
 
 {-
@@ -108,37 +172,6 @@ mergeWith :: Ord c => (a -> c)
                    -> [a] -> [b] -> [r]
 -}
 
-
-
-{-
-data Stat a = Stat {mean :: a, min :: Min a, max :: Max a, stdDev :: a, count :: Int}
-
-class Semigroup a where
-    (<>) :: a -> a -> a
-
-instance Fractional a => Semigroup (Stat a) where
-    (Stat amean amin amax adev acnt) <> (Stat bmean bmin bmax bdev bcnt) =
-        Stat ((amean * acnt' + bmean * bcnt')/(acnt'+bcnt'))
-             (amin <> bmin)
-             (amax <> bmax)
-             (joinStdDevs adev bdev acnt bcnt)
-             (acnt+bcnt)
-        where acnt' = fromIntegral acnt
-              bcnt' = fromIntegral bcnt
-
-mkStat mean min max stddev = Stat mean (Min min) (Max max) stddev 1
-
-instance Monoid (Stat a) where
-    mempty = Stat 0 mempty mempty
-    mappend
-
-    List: [] and (++)
-    Bool: True and (&&)
-    Int: 0 and (+)
-
-
-    Min a: mappend :: (Ord a, Bounded a) => Min a -> Min a -> Min a
--}
 
 zeroMinutes :: CombinedAwSlObs -> Bool
 zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00

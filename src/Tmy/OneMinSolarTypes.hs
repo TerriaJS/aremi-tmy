@@ -8,6 +8,7 @@ module Tmy.OneMinSolarTypes where
 import Control.Applicative                  ((<$>), (<*>))
 import Data.HashMap.Strict                  (union)
 import Data.Csv
+import Data.Semigroup                       (Semigroup, (<>), Min(..), Max(..))
 import Data.Text                            (Text)
 import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
@@ -22,9 +23,6 @@ slPref :: String
 slPref = "sl_"
 globSuff :: String
 globSuff = "*.txt"
-
-
---data Stat a = Stat {val,min,max,stdDev :: a}
 
 
 data OneMinSolarSite = OneMinSolarSite
@@ -54,6 +52,45 @@ instance FromNamedRecord OneMinSolarSite where
                         <*> r .: "Height of station above mean sea level in metres"
                         <*> r .: "Height of barometer above sea level in metres"
                         <*> r .: "WMO index number"
+
+
+data Stat a = Stat
+    { mean  :: !a
+    , max   :: !(Max a)
+    , min   :: !(Min a)
+    , count :: !Int
+    } deriving (Show, Eq, Ord)
+
+
+instance (Fractional a, Ord a) => Semigroup (Stat a) where
+    (Stat amean amax amin acnt) <> (Stat bmean bmax bmin bcnt) =
+        Stat ((amean * acnt' + bmean * bcnt') / (acnt' + bcnt'))
+             (amax <> bmax)
+             (amin <> bmin)
+             (acnt + bcnt)
+        where acnt' = fromIntegral acnt
+              bcnt' = fromIntegral bcnt
+
+
+data AwoStats = AwoStats
+    { awStationNumSt      :: !Text
+    , awLocalTimeSt       :: !LocalTime
+    , awLocalStdTimeSt    :: !LocalTime
+    , awUtcTimeSt         :: !LocalTime
+    , awPrecipSinceLastSt :: !(Maybe Double)
+    , awAirTempSt         :: !(Maybe (Stat Double))
+    , awWetBulbTempSt     :: !(Maybe (Stat Double))
+    , awDewPointTempSt    :: !(Maybe (Stat Double))
+    , awRelHumidSt        :: !(Maybe (Stat Int))
+    , awWindSpeedSt       :: !(Maybe Int)
+    , awWindSpeedMinSt    :: !(Maybe Int)
+    , awWindDirSt         :: !(Maybe Int)
+    , awWindGustMaxSt     :: !(Maybe Int)
+    , awVisibilitySt      :: !(Maybe Double)
+    , awMslPressSt        :: !(Maybe Double)
+    , awStationLvlPressSt :: !(Maybe Double)
+    , awQnhPressSt        :: !(Maybe Double)
+    } deriving (Show, Eq, Ord)
 
 
 data AutoWeatherObs = AutoWeatherObs
