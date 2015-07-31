@@ -2,20 +2,19 @@
 {-# LANGUAGE BangPatterns #-}
 
 -- TODO:
--- either:
---   think about quality columns
---   start averaging values
 
 
 module Main where
 
 import qualified Data.ByteString.Lazy as BL
+import Control.Applicative                  ((<$>))
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Either                          (partitionEithers)
 import Data.Maybe                           (fromMaybe)
-import Data.List                            (groupBy)
-import Data.Semigroup                       (Min(..), Max(..))
+import Data.List                            (groupBy, foldl1')
+import Data.Semigroup                       (Semigroup, Sum(..)
+    , Min(..), Max(..), (<>))
 import Data.Text                            (Text, unpack, isInfixOf)
 import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, todMin, localDay, todHour)
 import System.Directory                     (doesFileExist)
@@ -76,11 +75,12 @@ processCsvPair fn t@(aw, sl) = do
         -- group and compute stats for aw and sl separately
         awGroups = groupBy (hourGrouper awLocalTime) awList
         slGroups = groupBy (hourGrouper slLocalTime) slList
-        -- AutoWeatherObs to StatAutoWeatherObs, filter out shit quality
+        -- AutoWeatherObs to StatAutoWeatherObs, filter out poor quality
         awStatGroups = map (map awToStat) awGroups
         slStatGroups = map (map slToStat) slGroups
-        -- !_ = traceShowId (map (map slGhiSt) ((take 24 . drop 48) slStatGroups))
-        -- awFolded = map (foldl1' awAggrToHour) awGroups
+        -- aggregate 1-minute records to hours
+        awFolded = map (foldl1' awAggrToHour) awStatGroups
+        !_ = traceShowId (take 10 awFolded)
         -- same for sl
         -- combine 1-hour aw and sl records
             -- [awFolded] -> [slFolded] -> [awSlCombined]
@@ -95,39 +95,53 @@ processCsvPair fn t@(aw, sl) = do
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)
 
 
-{-
-awAggrToHour :: AutoWeatherObs -> AutoWeatherObs -> AutoWeatherObs
+combine :: Semigroup b => (a -> b) -> a -> a -> b
+combine f a b = f a <> f b
+
+
+awAggrToHour :: AwStats -> AwStats -> AwStats
 awAggrToHour a b =
-    AutoWeatherObs
-        { awStationNum=awStationNum a
-        , localTime a
-        , awPrecipSinceLast+awPrecipSinceLast
-        , temp, min, max, count
-        , ...
-    }
--}
+    AwStats
+        { awStationNumSt      = awStationNumSt   a
+        , awLocalTimeSt       = floorMinute (awLocalTimeSt a)
+        , awLocalStdTimeSt    = awLocalStdTimeSt a
+        , awUtcTimeSt         = awUtcTimeSt      a
+        , awAirTempSt         = combine awAirTempSt         a b
+        , awWetBulbTempSt     = combine awWetBulbTempSt     a b
+        , awDewPointTempSt    = combine awDewPointTempSt    a b
+        , awRelHumidSt        = combine awRelHumidSt        a b
+        , awWindSpeedSt       = combine awWindSpeedSt       a b
+        , awPrecipSinceLastSt = combine awPrecipSinceLastSt a b
+        , awWindDirSt         = Just 0 -- TODO: vector math
+        , awVisibilitySt      = combine awVisibilitySt      a b
+        , awMslPressSt        = combine awMslPressSt        a b
+        , awStationLvlPressSt = combine awStationLvlPressSt a b
+        , awQnhPressSt        = combine awQnhPressSt        a b
+        }
 
 
 awToStat :: AutoWeatherObs -> AwStats
 awToStat a =
     AwStats
         { awStationNumSt      = unSpaced (awStationNum a)
-        , awLocalTimeSt       = awLocalTime a
+        , awLocalTimeSt       = awLocalTime    a
         , awLocalStdTimeSt    = awLocalStdTime a
-        , awUtcTimeSt         = awUtcTime a
+        , awUtcTimeSt         = awUtcTime      a
         , awAirTempSt         = maybeQualStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
         , awWetBulbTempSt     = maybeQualStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
         , awDewPointTempSt    = maybeQualStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a
         , awRelHumidSt        = maybeQualStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
         , awWindSpeedSt       = maybeQualStat awWindSpeedQual    awWindSpeed    awWindGustMax     awWindSpeedMin    a
-        , awPrecipSinceLastSt = qFilter awPrecipQual          awPrecipSinceLast a
-        , awWindDirSt         = qFilter awWindDirQual         awWindDir         a
-        , awVisibilitySt      = qFilter awVisibilityQual      awVisibility      a
-        , awMslPressSt        = qFilter awMslPressQual        awMslPress        a
-        , awStationLvlPressSt = qFilter awStationLvlPressQual awStationLvlPress a
-        , awQnhPressSt        = qFilter awQnhPressQual        awQnhPress        a
+        , awPrecipSinceLastSt = Sum <$> qFilter awPrecipQual  awPrecipSinceLast a
+        , awWindDirSt         = Just 0 -- TODO: vector math
+        , awVisibilitySt      = mkSumCount <$> qFilter awVisibilityQual      awVisibility      a
+        , awMslPressSt        = mkSumCount <$> qFilter awMslPressQual        awMslPress        a
+        , awStationLvlPressSt = mkSumCount <$> qFilter awStationLvlPressQual awStationLvlPress a
+        , awQnhPressSt        = mkSumCount <$> qFilter awQnhPressQual        awQnhPress        a
         }
 
+
+data Mean a = Mean {}
 
 slToStat :: SolarRadiationObs -> SlStats
 slToStat a =
@@ -185,6 +199,9 @@ qFilter qf vf a =
 
 mkStat :: a -> a -> a -> Stat a
 mkStat smean smax smin = Stat smean (Max smax) (Min smin) 1
+
+mkSumCount :: a -> SumCount a
+mkSumCount a = SumCount a 1
 
 
 hourGrouper :: (a -> LocalTime) -> a -> a -> Bool

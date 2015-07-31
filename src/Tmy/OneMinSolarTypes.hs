@@ -8,7 +8,7 @@ module Tmy.OneMinSolarTypes where
 import Control.Applicative                  ((<$>), (<*>))
 import Data.HashMap.Strict                  (union)
 import Data.Csv
-import Data.Semigroup                       (Semigroup, (<>), Min(..), Max(..))
+import Data.Semigroup                       (Semigroup, (<>), Sum(..), Min(..), Max(..))
 import Data.Text                            (Text)
 import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
@@ -56,21 +56,30 @@ instance FromNamedRecord OneMinSolarSite where
 
 
 data Stat a = Stat
-    { stMean  :: !a
+    { stSum   :: !a
     , stMax   :: !(Max a)
     , stMin   :: !(Min a)
     , stCount :: !Int
     } deriving (Show, Eq, Ord)
 
 
-instance (Fractional a, Ord a) => Semigroup (Stat a) where
+data SumCount a = SumCount
+    { sSum :: !a
+    , sCount :: !Int
+    } deriving (Show, Eq, Ord)
+
+
+instance (Num a, Ord a) => Semigroup (Stat a) where
     (Stat amean amax amin acnt) <> (Stat bmean bmax bmin bcnt) =
-        Stat ((amean * acnt' + bmean * bcnt') / (acnt' + bcnt'))
+        Stat (amean + bmean)
              (amax <> bmax)
              (amin <> bmin)
              (acnt + bcnt)
-        where acnt' = fromIntegral acnt
-              bcnt' = fromIntegral bcnt
+
+
+instance (Num a, Ord a) => Semigroup (SumCount a) where
+    (SumCount asum acount) <> (SumCount bsum bcount) =
+        SumCount (asum + bsum) (acount + bcount)
 
 
 data AwStats = AwStats
@@ -78,17 +87,17 @@ data AwStats = AwStats
     , awLocalTimeSt       :: !LocalTime
     , awLocalStdTimeSt    :: !LocalTime
     , awUtcTimeSt         :: !LocalTime
-    , awPrecipSinceLastSt :: !(Maybe Double)
+    , awPrecipSinceLastSt :: !(Maybe (Sum Double))
     , awAirTempSt         :: !(Maybe (Stat Double))
     , awWetBulbTempSt     :: !(Maybe (Stat Double))
     , awDewPointTempSt    :: !(Maybe (Stat Double))
     , awRelHumidSt        :: !(Maybe (Stat Int))
     , awWindSpeedSt       :: !(Maybe (Stat Double))
-    , awWindDirSt         :: !(Maybe Int)
-    , awVisibilitySt      :: !(Maybe Double)
-    , awMslPressSt        :: !(Maybe Double)
-    , awStationLvlPressSt :: !(Maybe Double)
-    , awQnhPressSt        :: !(Maybe Double)
+    , awWindDirSt         :: !(Maybe Int)   -- TODO: this one needs special vector math
+    , awVisibilitySt      :: !(Maybe (SumCount Double))
+    , awMslPressSt        :: !(Maybe (SumCount Double))
+    , awStationLvlPressSt :: !(Maybe (SumCount Double))
+    , awQnhPressSt        :: !(Maybe (SumCount Double))
     } deriving (Show, Eq, Ord)
 
 
