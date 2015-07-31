@@ -83,10 +83,8 @@ data AwStats = AwStats
     , awWetBulbTempSt     :: !(Maybe (Stat Double))
     , awDewPointTempSt    :: !(Maybe (Stat Double))
     , awRelHumidSt        :: !(Maybe (Stat Int))
-    , awWindSpeedSt       :: !(Maybe Int)
-    , awWindSpeedMinSt    :: !(Maybe Int)
+    , awWindSpeedSt       :: !(Maybe (Stat Double))
     , awWindDirSt         :: !(Maybe Int)
-    , awWindGustMaxSt     :: !(Maybe Int)
     , awVisibilitySt      :: !(Maybe Double)
     , awMslPressSt        :: !(Maybe Double)
     , awStationLvlPressSt :: !(Maybe Double)
@@ -141,15 +139,15 @@ data AutoWeatherObs = AutoWeatherObs
     , awRelHumidMaxQual     :: !Text                    -- Quality of relative humidity (1 minute maximum)
     , awRelHumidMin         :: !(Spaced (Maybe Int))    -- Relative humidity (1 minute minimum) in percentage %
     , awRelHumidMinQual     :: !Text                    -- Quality of Relative humidity (1 minute minimum)
-    , awWindSpeed           :: !(Spaced (Maybe Int))    -- Wind (1 minute) speed in km/h
+    , awWindSpeed           :: !(Spaced (Maybe Double)) -- Wind (1 minute) speed in km/h
     , awWindSpeedQual       :: !Text                    -- Wind (1 minute) speed quality
-    , awWindSpeedMin        :: !(Spaced (Maybe Int))    -- Minimum wind speed (over 1 minute) in km/h
+    , awWindSpeedMin        :: !(Spaced (Maybe Double)) -- Minimum wind speed (over 1 minute) in km/h
     , awWindSpeedMinQual    :: !Text                    -- Minimum wind speed (over 1 minute) quality
     , awWindDir             :: !(Spaced (Maybe Int))    -- Wind (1 minute) direction in degrees true
     , awWindDirQual         :: !Text                    -- Wind (1 minute) direction quality
     -- , awWindStdDev          :: !(Spaced (Maybe Int))    -- Standard deviation of wind (1 minute)
     -- , awWindStdDevQual      :: !Text                    -- Standard deviation of wind (1 minute) direction quality
-    , awWindGustMax         :: !(Spaced (Maybe Int))    -- Maximum wind gust (over 1 minute) in km/h
+    , awWindGustMax         :: !(Spaced (Maybe Double)) -- Maximum wind gust (over 1 minute) in km/h
     , awWindGustMaxQual     :: !Text                    -- Maximum wind gust (over 1 minute) quality
     , awVisibility          :: !(Spaced (Maybe Double)) -- Visibility (automatic - one minute data) in km
     , awVisibilityQual      :: !Text                    -- Quality of visibility (automatic - one minute data)
@@ -402,7 +400,7 @@ instance DefaultOrdered CombinedAwSlObs where
         , "slGhiMax"
         -- , "slGhiStdDev"
         -- , "slGhiMeanUncertainty"
-        , "slDni"
+        , "slDniMean"
         , "slDniMin"
         , "slDniMax"
         -- , "slDniStdDev"

@@ -79,7 +79,7 @@ processCsvPair fn t@(aw, sl) = do
         -- AutoWeatherObs to StatAutoWeatherObs, filter out shit quality
         awStatGroups = map (map awToStat) awGroups
         slStatGroups = map (map slToStat) slGroups
-        !_ = traceShowId (map (map slGhiSt) ((take 24 . drop 48) slStatGroups))
+        -- !_ = traceShowId (map (map slGhiSt) ((take 24 . drop 48) slStatGroups))
         -- awFolded = map (foldl1' awAggrToHour) awGroups
         -- same for sl
         -- combine 1-hour aw and sl records
@@ -106,7 +106,6 @@ awAggrToHour a b =
         , ...
     }
 -}
--- func Spaced (Maybe a) -> Option (Maybe a)
 
 
 awToStat :: AutoWeatherObs -> AwStats
@@ -120,15 +119,13 @@ awToStat a =
         , awWetBulbTempSt     = maybeQualStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
         , awDewPointTempSt    = maybeQualStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a
         , awRelHumidSt        = maybeQualStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
+        , awWindSpeedSt       = maybeQualStat awWindSpeedQual    awWindSpeed    awWindGustMax     awWindSpeedMin    a
         , awPrecipSinceLastSt = qFilter awPrecipQual          awPrecipSinceLast a
-        , awWindSpeedSt       = qFilter awWindSpeedQual       awWindSpeed a
-        , awWindSpeedMinSt    = qFilter awWindSpeedMinQual    awWindSpeedMin a
-        , awWindDirSt         = qFilter awWindDirQual         awWindDir a
-        , awWindGustMaxSt     = qFilter awWindGustMaxQual     awWindGustMax a
-        , awVisibilitySt      = qFilter awVisibilityQual      awVisibility a
-        , awMslPressSt        = qFilter awMslPressQual        awMslPress a
+        , awWindDirSt         = qFilter awWindDirQual         awWindDir         a
+        , awVisibilitySt      = qFilter awVisibilityQual      awVisibility      a
+        , awMslPressSt        = qFilter awMslPressQual        awMslPress        a
         , awStationLvlPressSt = qFilter awStationLvlPressQual awStationLvlPress a
-        , awQnhPressSt        = qFilter awQnhPressQual        awQnhPress a
+        , awQnhPressSt        = qFilter awQnhPressQual        awQnhPress        a
         }
 
 
