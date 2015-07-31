@@ -13,7 +13,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Either                          (partitionEithers)
-import Data.Maybe                           (fromJust)
+import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy)
 import Data.Semigroup                       (Min(..), Max(..))
 import Data.Text                            (Text, unpack, isInfixOf)
@@ -75,10 +75,11 @@ processCsvPair fn t@(aw, sl) = do
         (slErrs, slList) = partitionEithers (recsAsList slRecs)
         -- group and compute stats for aw and sl separately
         awGroups = groupBy (hourGrouper awLocalTime) awList
-        lwGroups = groupBy (hourGrouper slLocalTime) slList
+        slGroups = groupBy (hourGrouper slLocalTime) slList
         -- AutoWeatherObs to StatAutoWeatherObs, filter out shit quality
-        awStatGroups = map (map awoToStat) awGroups
-        !_ = traceShowId (map (map awAirTempSt) (take 3 awStatGroups))
+        awStatGroups = map (map awToStat) awGroups
+        slStatGroups = map (map slToStat) slGroups
+        !_ = traceShowId (map (map slGhiSt) ((take 24 . drop 48) slStatGroups))
         -- awFolded = map (foldl1' awAggrToHour) awGroups
         -- same for sl
         -- combine 1-hour aw and sl records
@@ -108,17 +109,17 @@ awAggrToHour a b =
 -- func Spaced (Maybe a) -> Option (Maybe a)
 
 
-awoToStat :: AutoWeatherObs -> AwoStats
-awoToStat a =
-    AwoStats
+awToStat :: AutoWeatherObs -> AwStats
+awToStat a =
+    AwStats
         { awStationNumSt      = unSpaced (awStationNum a)
         , awLocalTimeSt       = awLocalTime a
         , awLocalStdTimeSt    = awLocalStdTime a
         , awUtcTimeSt         = awUtcTime a
-        , awAirTempSt         = maybeStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
-        , awWetBulbTempSt     = maybeStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
-        , awDewPointTempSt    = maybeStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a
-        , awRelHumidSt        = maybeStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
+        , awAirTempSt         = maybeQualStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
+        , awWetBulbTempSt     = maybeQualStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
+        , awDewPointTempSt    = maybeQualStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a
+        , awRelHumidSt        = maybeQualStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
         , awPrecipSinceLastSt = qFilter awPrecipQual          awPrecipSinceLast a
         , awWindSpeedSt       = qFilter awWindSpeedQual       awWindSpeed a
         , awWindSpeedMinSt    = qFilter awWindSpeedMinQual    awWindSpeedMin a
@@ -131,15 +132,47 @@ awoToStat a =
         }
 
 
-maybeStat :: (a -> Text)
-          -> (a -> (Spaced (Maybe b)))
+slToStat :: SolarRadiationObs -> SlStats
+slToStat a =
+    SlStats
+        { slStationNumSt      = unSpaced (slStationNum a)
+        , slLocalTimeSt       = slLocalTime a
+        , slGhiSt             = maybeStat slGhiMean  slGhiMax  slGhiMin  a
+        , slDniSt             = maybeStat slDniMean  slDniMax  slDniMin  a
+        , slDiffSt            = maybeStat slDiffMean slDiffMax slDiffMin a
+        , slTerrSt            = maybeStat slTerrMean slTerrMax slTerrMin a
+        , slDhiSt             = maybeStat slDhiMean  slDhiMax  slDhiMin  a
+        , slSunshineSecs96St  = unSpaced (slSunshineSecs96  a)
+        , slSunshineSecs120St = unSpaced (slSunshineSecs120 a)
+        , slSunshineSecs144St = unSpaced (slSunshineSecs144 a)
+        , slZenithSt          = unSpaced (slZenith a)
+        }
+
+
+maybeStat :: (a -> (Spaced (Maybe b)))
           -> (a -> (Spaced (Maybe b)))
           -> (a -> (Spaced (Maybe b)))
           -> a
           -> Maybe (Stat b)
-maybeStat valQf valF maxF minF a =
-    case qFilter valQf valF a of
-        Just v  -> Just (mkStat v (fromJust (unSpaced (maxF a))) (fromJust (unSpaced (minF a))))
+maybeStat meanF maxF minF a =
+    case maybeMean of
+        Just mean -> Just (mkStat mean (fromMaybe mean maybeMax) (fromMaybe mean maybeMin))
+        Nothing   -> Nothing
+    where
+        maybeMean = unSpaced (meanF a)
+        maybeMax  = unSpaced (maxF a)
+        maybeMin  = unSpaced (minF a)
+
+
+maybeQualStat :: (a -> Text)
+              -> (a -> (Spaced (Maybe b)))
+              -> (a -> (Spaced (Maybe b)))
+              -> (a -> (Spaced (Maybe b)))
+              -> a
+              -> Maybe (Stat b)
+maybeQualStat meanQf meanF maxF minF a =
+    case qFilter meanQf meanF a of
+        Just _  -> maybeStat meanF maxF minF a
         Nothing -> Nothing
 
 
