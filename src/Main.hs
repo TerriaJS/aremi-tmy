@@ -69,7 +69,6 @@ processCsvPair fn t@(aw, sl) = do
     slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
     fnExists <- doesFileExist fn
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-        -- Records a -> [Either String a]
         -- partitionEithers: [Either String a] -> ([String], [a])
         (awErrs, awList) = partitionEithers (recsAsList awRecs)
         (slErrs, slList) = partitionEithers (recsAsList slRecs)
@@ -84,15 +83,10 @@ processCsvPair fn t@(aw, sl) = do
         slFolded = map (foldl1' slAggrToHour) slStatGroups
         -- combine 1-hour aw and sl records
         merged = mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
-        !_ = traceShowId ((take 10 . drop 40) merged)
-
-        combined = combineAwSl awRecs slRecs -- DEBUG to remove
-        (lefts, rights) = partitionEithers combined
-        filtered = filter zeroMinutes rights -- DEBUG to remove
-    -- mapM_ putStrLn lefts
+        -- !_ = traceShowId ((take 10 . drop 40) merged)
     mapM_ putStrLn awErrs
     mapM_ putStrLn slErrs
-    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)
+    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts merged)
 
 
 
@@ -245,30 +239,3 @@ mergeWith fa fb comb xs ys = go xs ys where
 zeroMinutes :: CombinedAwSlObs -> Bool
 zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 
-
-combineAwSl :: Records AutoWeatherObs -> Records SolarRadiationObs -> [Either String CombinedAwSlObs]
-combineAwSl (Cons a rs)     (Cons b rs2)     = do
-    case comb CombinedAwSlObs a b of
-        l@(Left _) -> l : combineAwSl rs rs2
-        r@(Right (CombinedAwSlObs aw sl)) ->
-            if (awLocalTime aw) == (slLocalTime sl)
-                -- if we have matching localTimes then add this CombinedAwSlObs to the list
-                then r : combineAwSl rs rs2
-                else if (awLocalTime aw) < (slLocalTime sl)
-                        -- if we have missing parallel times then log and discard the partial record
-                        then Left ("Discarded lonely weather obs at awLocalTime: " ++ (show . awLocalTime) aw)
-                                : combineAwSl rs (Cons (Right sl) rs2)
-                        else Left ("Discarded lonely solar obs at slLocalTime: " ++ (show . slLocalTime) sl)
-                                : combineAwSl (Cons (Right aw) rs) rs2
-combineAwSl (Nil Nothing _) (Cons _ _)       = [Left ("Unprocessed solar obs")]
-combineAwSl (Cons _ _)      (Nil Nothing _)  = [Left ("Unprocessed weather obs")]
-combineAwSl (Nil (Just e) _) _               = [Left ("Failed processing weather CSV file: " ++ e)]
-combineAwSl _               (Nil (Just e) _) = [Left ("Failed processing solar CSV file: " ++ e)]
-combineAwSl (Nil Nothing _) (Nil Nothing _)  = [] -- success! both ended at the same time
-
-
-comb :: (a -> b -> c) -> Either String a -> Either String b -> Either String c
-comb f (Right a) (Right b) = Right (f a b)
-comb _ (Left a) (Left b) = Left ("Two errors: '" ++ a ++ "' and '" ++ b ++ "'")
-comb _ (Left a) _ = Left ("aw side: " ++ a)
-comb _ _ (Left b) = Left ("sl side: " ++ b)

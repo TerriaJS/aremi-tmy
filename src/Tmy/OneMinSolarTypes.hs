@@ -6,10 +6,12 @@
 module Tmy.OneMinSolarTypes where
 
 import Control.Applicative                  ((<$>), (<*>))
-import Data.HashMap.Strict                  (union)
+import Data.ByteString.Char8                (pack, empty)
 import Data.Csv
+import Data.HashMap.Strict                  (unions, union)
 import Data.Semigroup                       (Semigroup, (<>), Sum(..), Min(..), Max(..))
-import Data.Text                            (Text)
+import Data.Text                            (Text, append)
+import Data.Text.Encoding                   (encodeUtf8)
 import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
@@ -55,32 +57,70 @@ instance FromNamedRecord OneMinSolarSite where
                         <*> r .: "WMO index number"
 
 
-data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord)
+data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord, Generic)
 
-{-
-instance ToNamedRecord AwStats where
-    toNamedRecord (AwStats local utc temp ...) = unions [
-        namedRecord
-            [ "station num" .= ...
-            , "localtime" .= localtime
-            ...]
-        , statRecord "temp" temp
-        , statRecord "wind" wind
-        ...
+
+-- TODO: might be able to have a completely generic no implementation here and specify exact order on AwStats and SlStats
+instance DefaultOrdered AwSlCombined where
+    headerOrder _ =
+        [ "station"
+        , "local time"
+        -- TODO: when there is no AW record then looking for headers from it causes an error
+        -- , "precipitation"
+        ]
+
+instance ToNamedRecord AwSlCombined where
+    -- TODO: make sure one LocalTime and Station num are printed either from the Aw or Sl record
+    toNamedRecord (AwSlCombined (Just aw) (Just sl)) = union (toNamedRecord aw) (toNamedRecord sl)
+    toNamedRecord (AwSlCombined (Just aw) Nothing)   = toNamedRecord aw
+    toNamedRecord (AwSlCombined Nothing (Just sl))   = toNamedRecord sl
+    toNamedRecord (AwSlCombined Nothing Nothing)     = error "We should never have a completely empty record."
+
+
+statRecord :: (ToField a, Fractional a, Show a) => Text -> Maybe (Stat a) -> NamedRecord
+statRecord prefix Nothing =
+    let col = encodeUtf8 . (append prefix)
+    in  namedRecord
+        [ col " mean"  .= empty
+        , col " max"   .= empty
+        , col " min"   .= empty
+        , col " count" .= empty
+        ]
+statRecord prefix (Just (Stat ssum smin smax scount)) =
+    let col = encodeUtf8 . (append prefix)
+    in  namedRecord
+        [ col " mean"  .= (ssum / fromIntegral scount)
+        , col " max"   .= smax
+        , col " min"   .= smin
+        , col " count" .= scount
         ]
 
 
-statRecord :: Text -> Stat a -> NamedRecord
-statRecord prefix (Stat mean min max count) =
-    namedRecord
-        [ prefix ++ " mean" .= sum / fromIntegral count
-        , prefix ++ " min" .= min
-        ...
+sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (SumCount a) -> NamedRecord
+sumCountRecord prefix Nothing =
+    let col = encodeUtf8 . (append prefix)
+    in  namedRecord
+        [ col " mean"  .= empty
+        , col " count" .= empty
+        ]
+sumCountRecord prefix (Just (SumCount ssum scount)) =
+    let col = encodeUtf8 . (append prefix)
+    in  namedRecord
+        [ col " mean"  .= (ssum / fromIntegral scount)
+        , col " count" .= scount
         ]
 
-sumCountRecord :: Text -> ....
-sumCountRecord
--}
+
+instance Show a => ToField (Max a) where
+    toField (Max a) = pack (show a)
+
+
+instance Show a => ToField (Min a) where
+    toField (Min a) = pack (show a)
+
+
+instance Show a => ToField (Sum a) where
+    toField (Sum a) = pack (show a)
 
 
 data Stat a = Stat
@@ -119,7 +159,7 @@ data AwStats = AwStats
     , awAirTempSt         :: !(Maybe (Stat Double))
     , awWetBulbTempSt     :: !(Maybe (Stat Double))
     , awDewPointTempSt    :: !(Maybe (Stat Double))
-    , awRelHumidSt        :: !(Maybe (Stat Int))
+    , awRelHumidSt        :: !(Maybe (Stat Double))
     , awWindSpeedSt       :: !(Maybe (Stat Double))
     , awWindDirSt         :: !(Maybe Int)   -- TODO: this one needs special vector math
     , awVisibilitySt      :: !(Maybe (SumCount Double))
@@ -127,6 +167,44 @@ data AwStats = AwStats
     , awStationLvlPressSt :: !(Maybe (SumCount Double))
     , awQnhPressSt        :: !(Maybe (SumCount Double))
     } deriving (Show, Eq, Ord)
+
+
+instance ToNamedRecord AwStats where
+    toNamedRecord
+        (AwStats stationNum
+                 localTime
+                 localStdTime
+                 utcTime
+                 precipSinceLast
+                 airTemp
+                 wetBulbTemp
+                 dewPointTemp
+                 relHumid
+                 windSpeed
+                 _ -- windDir
+                 vis
+                 mslPress
+                 stationLvlPress
+                 qnhPress) =
+        unions
+            [ namedRecord
+                [ "station"        .= stationNum
+                , "local time"     .= localTime
+                , "local std time" .= localStdTime
+                , "utc time"       .= utcTime
+                , "precipitation"  .= precipSinceLast
+                ]
+            , statRecord "air temp" airTemp
+            , statRecord "wet bulb" wetBulbTemp
+            , statRecord "dew point" dewPointTemp
+            , statRecord "relative humidity" relHumid
+            , statRecord "wind speed" windSpeed
+            -- , statRecord "wind direction" windDir
+            , sumCountRecord "visibility" vis
+            , sumCountRecord "msl pressure" mslPress
+            , sumCountRecord "station level pressure" stationLvlPress
+            , sumCountRecord "qnh pressure" qnhPress
+            ]
 
 
 data AutoWeatherObs = AutoWeatherObs
@@ -170,11 +248,11 @@ data AutoWeatherObs = AutoWeatherObs
     , awDewPointTempMaxQual :: !Text                    -- Quality of Dew point Temperature (1-minute maximum)
     , awDewPointTempMin     :: !(Spaced (Maybe Double)) -- Dew point temperature (1 minute minimum) in degrees Celsius
     , awDewPointTempMinQual :: !Text                    -- Quality of Dew point Temperature (1 minute minimum)
-    , awRelHumid            :: !(Spaced (Maybe Int))    -- Relative humidity in percentage %
+    , awRelHumid            :: !(Spaced (Maybe Double))    -- Relative humidity in percentage %
     , awRelHumidQual        :: !Text                    -- Quality of relative humidity
-    , awRelHumidMax         :: !(Spaced (Maybe Int))    -- Relative humidity (1 minute maximum) in percentage %
+    , awRelHumidMax         :: !(Spaced (Maybe Double))    -- Relative humidity (1 minute maximum) in percentage %
     , awRelHumidMaxQual     :: !Text                    -- Quality of relative humidity (1 minute maximum)
-    , awRelHumidMin         :: !(Spaced (Maybe Int))    -- Relative humidity (1 minute minimum) in percentage %
+    , awRelHumidMin         :: !(Spaced (Maybe Double))    -- Relative humidity (1 minute minimum) in percentage %
     , awRelHumidMinQual     :: !Text                    -- Quality of Relative humidity (1 minute minimum)
     , awWindSpeed           :: !(Spaced (Maybe Double)) -- Wind (1 minute) speed in km/h
     , awWindSpeedQual       :: !Text                    -- Wind (1 minute) speed quality
@@ -271,6 +349,38 @@ data SlStats = SlStats
     , slSunshineSecs144St :: !(Maybe (Sum Int))
     , slZenithSt          :: !(Maybe (SumCount Double))  -- TODO: is it correct to just average the zenith angle?
     } deriving (Show, Eq, Ord)
+
+
+instance ToNamedRecord SlStats where
+    toNamedRecord
+        (SlStats stationNum
+                 localTime
+                 ghi
+                 dni
+                 diff
+                 terr
+                 dhi
+                 sunshineSecs96
+                 sunshineSecs120
+                 sunshineSecs144
+                 zenith) =
+        unions
+            [ namedRecord
+                [ "station"  .= stationNum
+                , "local time" .= localTime
+                ]
+            , statRecord "ghi" ghi
+            , statRecord "dni" dni
+            , statRecord "diffuse" diff
+            , statRecord "terrestrial" terr
+            , statRecord "dhi" dhi
+            , namedRecord
+                [ "seconds dni exceeding 96 W/sq m"  .= sunshineSecs96
+                , "seconds dni exceeding 120 W/sq m" .= sunshineSecs120
+                , "seconds dni exceeding 144 W/sq m" .= sunshineSecs144
+                ]
+            , sumCountRecord "zenith" zenith
+            ]
 
 
 data SolarRadiationObs = SolarRadiationObs
