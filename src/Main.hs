@@ -82,12 +82,9 @@ processCsvPair fn t@(aw, sl) = do
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggrToHour) awStatGroups
         slFolded = map (foldl1' slAggrToHour) slStatGroups
-        !_ = traceShowId ((take 10 . drop 40) slFolded)
-        -- same for sl
         -- combine 1-hour aw and sl records
-            -- [awFolded] -> [slFolded] -> [awSlCombined]
-        -- mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
-        -- combined = mergeWith awLocalTime slLocalTime CombinedAwSlObs awFolded slFolded
+        merged = mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
+        !_ = traceShowId ((take 10 . drop 40) merged)
 
         combined = combineAwSl awRecs slRecs -- DEBUG to remove
         (lefts, rights) = partitionEithers combined
@@ -230,9 +227,6 @@ hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
 floorMinute :: LocalTime -> LocalTime
 floorMinute a = LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0)
 
-{-
-data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats)
-
 
 mergeWith :: Ord c => (a -> c)
                    -> (b -> c)
@@ -240,13 +234,13 @@ mergeWith :: Ord c => (a -> c)
                    -> [a] -> [b] -> [r]
 mergeWith fa fb comb xs ys = go xs ys where
     go [] [] = []
-    go [] bs = map (comb Nothing)      bs
-    go as [] = map (flip comb Nothing) as
+    go [] bs = map (comb Nothing)      (map Just bs)
+    go as [] = map (flip comb Nothing) (map Just as)
     go aas@(a:as) bbs@(b:bs) = case compare (fa a) (fb b) of
         LT -> comb (Just a) Nothing  : go as  bbs
         EQ -> comb (Just a) (Just b) : go as  bs
         GT -> comb Nothing  (Just b) : go aas bs
--}
+
 
 zeroMinutes :: CombinedAwSlObs -> Bool
 zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00

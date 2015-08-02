@@ -55,6 +55,8 @@ instance FromNamedRecord OneMinSolarSite where
                         <*> r .: "WMO index number"
 
 
+data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord)
+
 {-
 instance ToNamedRecord AwStats where
     toNamedRecord (AwStats local utc temp ...) = unions [
