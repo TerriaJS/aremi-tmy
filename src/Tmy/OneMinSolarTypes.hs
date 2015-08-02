@@ -6,7 +6,7 @@
 module Tmy.OneMinSolarTypes where
 
 import Control.Applicative                  ((<$>), (<*>))
-import Data.ByteString.Char8                (pack, empty)
+import Data.ByteString                      (ByteString, empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions, union)
 import Data.Semigroup                       (Semigroup, (<>), Sum(..), Min(..), Max(..))
@@ -77,17 +77,17 @@ instance ToNamedRecord AwSlCombined where
     toNamedRecord (AwSlCombined Nothing Nothing)     = error "We should never have a completely empty record."
 
 
-statRecord :: (ToField a, Fractional a, Show a) => Text -> Maybe (Stat a) -> NamedRecord
+statRecord :: (ToField a, Fractional a, Show a) => ByteString -> Maybe (Stat a) -> NamedRecord
 statRecord prefix Nothing =
-    let col = encodeUtf8 . (append prefix)
+    let col = (prefix <>)
     in  namedRecord
         [ col " mean"  .= empty
         , col " max"   .= empty
         , col " min"   .= empty
         , col " count" .= empty
         ]
-statRecord prefix (Just (Stat ssum smin smax scount)) =
-    let col = encodeUtf8 . (append prefix)
+statRecord prefix (Just (Stat ssum (Max smax) (Min smin) scount)) =
+    let col = (prefix <>)
     in  namedRecord
         [ col " mean"  .= (ssum / fromIntegral scount)
         , col " max"   .= smax
@@ -109,18 +109,6 @@ sumCountRecord prefix (Just (SumCount ssum scount)) =
         [ col " mean"  .= (ssum / fromIntegral scount)
         , col " count" .= scount
         ]
-
-
-instance Show a => ToField (Max a) where
-    toField (Max a) = pack (show a)
-
-
-instance Show a => ToField (Min a) where
-    toField (Min a) = pack (show a)
-
-
-instance Show a => ToField (Sum a) where
-    toField (Sum a) = pack (show a)
 
 
 data Stat a = Stat
@@ -192,7 +180,7 @@ instance ToNamedRecord AwStats where
                 , "local time"     .= localTime
                 , "local std time" .= localStdTime
                 , "utc time"       .= utcTime
-                , "precipitation"  .= precipSinceLast
+                , "precipitation"  .= (getSum <$> precipSinceLast)
                 ]
             , statRecord "air temp" airTemp
             , statRecord "wet bulb" wetBulbTemp
@@ -375,9 +363,9 @@ instance ToNamedRecord SlStats where
             , statRecord "terrestrial" terr
             , statRecord "dhi" dhi
             , namedRecord
-                [ "seconds dni exceeding 96 W/sq m"  .= sunshineSecs96
-                , "seconds dni exceeding 120 W/sq m" .= sunshineSecs120
-                , "seconds dni exceeding 144 W/sq m" .= sunshineSecs144
+                [ "seconds dni exceeding 96 W/sq m"  .= (getSum <$> sunshineSecs96)
+                , "seconds dni exceeding 120 W/sq m" .= (getSum <$> sunshineSecs120)
+                , "seconds dni exceeding 144 W/sq m" .= (getSum <$> sunshineSecs144)
                 ]
             , sumCountRecord "zenith" zenith
             ]

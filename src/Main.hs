@@ -12,13 +12,13 @@ module Main where
 import qualified Data.ByteString.Lazy as BL
 import Control.Applicative                  ((<$>))
 import Data.Csv
-import Data.Csv.Streaming                   (Records(Cons, Nil))
+import Data.Csv.Streaming                   (Records)
 import Data.Either                          (partitionEithers)
 import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy, foldl1')
 import Data.Semigroup                       (Semigroup, Sum(..), Min(..), Max(..), (<>))
 import Data.Text                            (Text, unpack, isInfixOf)
-import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, todMin, localDay, todHour)
+import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
