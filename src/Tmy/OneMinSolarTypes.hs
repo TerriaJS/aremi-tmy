@@ -55,6 +55,32 @@ instance FromNamedRecord OneMinSolarSite where
                         <*> r .: "WMO index number"
 
 
+{-
+instance ToNamedRecord AwStats where
+    toNamedRecord (AwStats local utc temp ...) = unions [
+        namedRecord
+            [ "station num" .= ...
+            , "localtime" .= localtime
+            ...]
+        , statRecord "temp" temp
+        , statRecord "wind" wind
+        ...
+        ]
+
+
+statRecord :: Text -> Stat a -> NamedRecord
+statRecord prefix (Stat mean min max count) =
+    namedRecord
+        [ prefix ++ " mean" .= sum / fromIntegral count
+        , prefix ++ " min" .= min
+        ...
+        ]
+
+sumCountRecord :: Text -> ....
+sumCountRecord
+-}
+
+
 data Stat a = Stat
     { stSum   :: !a
     , stMax   :: !(Max a)
@@ -238,10 +264,10 @@ data SlStats = SlStats
     , slDiffSt            :: !(Maybe (Stat Double))
     , slTerrSt            :: !(Maybe (Stat Double))
     , slDhiSt             :: !(Maybe (Stat Double))
-    , slSunshineSecs96St  :: !(Maybe Int)
-    , slSunshineSecs120St :: !(Maybe Int)
-    , slSunshineSecs144St :: !(Maybe Int)
-    , slZenithSt          :: !(Maybe Double)
+    , slSunshineSecs96St  :: !(Maybe (Sum Int))
+    , slSunshineSecs120St :: !(Maybe (Sum Int))
+    , slSunshineSecs144St :: !(Maybe (Sum Int))
+    , slZenithSt          :: !(Maybe (SumCount Double))  -- TODO: is it correct to just average the zenith angle?
     } deriving (Show, Eq, Ord)
 
 

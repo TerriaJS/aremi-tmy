@@ -2,7 +2,9 @@
 {-# LANGUAGE BangPatterns #-}
 
 -- TODO:
-
+--   aggregate wind direction
+--   merge weather and solar into super-record
+--   save super record as CSV
 
 module Main where
 
@@ -13,8 +15,7 @@ import Data.Csv.Streaming                   (Records(Cons, Nil))
 import Data.Either                          (partitionEithers)
 import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy, foldl1')
-import Data.Semigroup                       (Semigroup, Sum(..)
-    , Min(..), Max(..), (<>))
+import Data.Semigroup                       (Semigroup, Sum(..), Min(..), Max(..), (<>))
 import Data.Text                            (Text, unpack, isInfixOf)
 import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, todMin, localDay, todHour)
 import System.Directory                     (doesFileExist)
@@ -80,10 +81,12 @@ processCsvPair fn t@(aw, sl) = do
         slStatGroups = map (map slToStat) slGroups
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggrToHour) awStatGroups
-        !_ = traceShowId (take 10 awFolded)
+        slFolded = map (foldl1' slAggrToHour) slStatGroups
+        !_ = traceShowId ((take 10 . drop 40) slFolded)
         -- same for sl
         -- combine 1-hour aw and sl records
             -- [awFolded] -> [slFolded] -> [awSlCombined]
+        -- mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
         -- combined = mergeWith awLocalTime slLocalTime CombinedAwSlObs awFolded slFolded
 
         combined = combineAwSl awRecs slRecs -- DEBUG to remove
@@ -93,6 +96,7 @@ processCsvPair fn t@(aw, sl) = do
     mapM_ putStrLn awErrs
     mapM_ putStrLn slErrs
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts filtered)
+
 
 
 combine :: Semigroup b => (a -> b) -> a -> a -> b
@@ -120,6 +124,23 @@ awAggrToHour a b =
         }
 
 
+slAggrToHour :: SlStats -> SlStats -> SlStats
+slAggrToHour a b =
+    SlStats
+        { slStationNumSt      = slStationNumSt              a
+        , slLocalTimeSt       = floorMinute (slLocalTimeSt  a )
+        , slGhiSt             = combine slGhiSt             a b
+        , slDniSt             = combine slDniSt             a b
+        , slDiffSt            = combine slDiffSt            a b
+        , slTerrSt            = combine slTerrSt            a b
+        , slDhiSt             = combine slDhiSt             a b
+        , slSunshineSecs96St  = combine slSunshineSecs96St  a b
+        , slSunshineSecs120St = combine slSunshineSecs120St a b
+        , slSunshineSecs144St = combine slSunshineSecs144St a b
+        , slZenithSt          = combine slZenithSt          a b
+        }
+
+
 awToStat :: AutoWeatherObs -> AwStats
 awToStat a =
     AwStats
@@ -141,8 +162,6 @@ awToStat a =
         }
 
 
-data Mean a = Mean {}
-
 slToStat :: SolarRadiationObs -> SlStats
 slToStat a =
     SlStats
@@ -153,10 +172,10 @@ slToStat a =
         , slDiffSt            = maybeStat slDiffMean slDiffMax slDiffMin a
         , slTerrSt            = maybeStat slTerrMean slTerrMax slTerrMin a
         , slDhiSt             = maybeStat slDhiMean  slDhiMax  slDhiMin  a
-        , slSunshineSecs96St  = unSpaced (slSunshineSecs96  a)
-        , slSunshineSecs120St = unSpaced (slSunshineSecs120 a)
-        , slSunshineSecs144St = unSpaced (slSunshineSecs144 a)
-        , slZenithSt          = unSpaced (slZenith a)
+        , slSunshineSecs96St  = Sum <$> unSpaced (slSunshineSecs96  a)
+        , slSunshineSecs120St = Sum <$> unSpaced (slSunshineSecs120 a)
+        , slSunshineSecs144St = Sum <$> unSpaced (slSunshineSecs144 a)
+        , slZenithSt          = mkSumCount <$> unSpaced (slZenith a)
         }
 
 
@@ -211,14 +230,23 @@ hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
 floorMinute :: LocalTime -> LocalTime
 floorMinute a = LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0)
 
-
 {-
+data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats)
+
+
 mergeWith :: Ord c => (a -> c)
                    -> (b -> c)
                    -> (Maybe a -> Maybe b -> r)
                    -> [a] -> [b] -> [r]
+mergeWith fa fb comb xs ys = go xs ys where
+    go [] [] = []
+    go [] bs = map (comb Nothing)      bs
+    go as [] = map (flip comb Nothing) as
+    go aas@(a:as) bbs@(b:bs) = case compare (fa a) (fb b) of
+        LT -> comb (Just a) Nothing  : go as  bbs
+        EQ -> comb (Just a) (Just b) : go as  bs
+        GT -> comb Nothing  (Just b) : go aas bs
 -}
-
 
 zeroMinutes :: CombinedAwSlObs -> Bool
 zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
