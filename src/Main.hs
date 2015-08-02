@@ -3,8 +3,9 @@
 
 -- TODO:
 --   aggregate wind direction
---   merge weather and solar into super-record
 --   save super record as CSV
+--   combine wind direction using vector math
+--     save stats for wind speed and direction to generate wind rose?
 
 module Main where
 
@@ -87,7 +88,6 @@ processCsvPair fn t@(aw, sl) = do
     mapM_ putStrLn awErrs
     mapM_ putStrLn slErrs
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts merged)
-
 
 
 combine :: Semigroup b => (a -> b) -> a -> a -> b
@@ -210,6 +210,7 @@ qFilter qf vf a =
 mkStat :: a -> a -> a -> Stat a
 mkStat smean smax smin = Stat smean (Max smax) (Min smin) 1
 
+
 mkSumCount :: a -> SumCount a
 mkSumCount a = SumCount a 1
 
@@ -234,8 +235,4 @@ mergeWith fa fb comb xs ys = go xs ys where
         LT -> comb (Just a) Nothing  : go as  bbs
         EQ -> comb (Just a) (Just b) : go as  bs
         GT -> comb Nothing  (Just b) : go aas bs
-
-
-zeroMinutes :: CombinedAwSlObs -> Bool
-zeroMinutes c = (todMin . localTimeOfDay . awLocalStdTime . awRecord) c == 00
 

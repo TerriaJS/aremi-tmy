@@ -18,6 +18,7 @@ import System.Locale                        (iso8601DateFormat, defaultTimeLocal
 
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
+
 instance FromField a => FromField (Spaced a) where
     parseField bs = Spaced <$> parseField (B.dropWhile (== 32) bs) -- a space character, or use isSpace to include all whitespace
 
