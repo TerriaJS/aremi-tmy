@@ -4,7 +4,8 @@
 -- TODO:
 --   combine wind direction using vector math
 --     save stats for wind speed and direction to generate wind rose?
---   filling in of missing data?
+--   filling in missing data?
+--   round to 1 decimal
 
 module Main where
 
