@@ -6,7 +6,7 @@ module Tmy.Csv where
 
 import Control.Applicative                  ((<$>), (<*>))
 import Control.Monad                        (mplus)
-import qualified Data.ByteString      as B  (dropWhile)
+import qualified Data.ByteString      as B  (span, spanEnd)
 import qualified Data.ByteString.Lazy as BL (readFile, empty)
 import Data.Csv                      hiding (decodeByName, decode)
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
@@ -20,7 +20,7 @@ newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 
 instance FromField a => FromField (Spaced a) where
-    parseField bs = Spaced <$> parseField (B.dropWhile (== 32) bs) -- a space character, or use isSpace to include all whitespace
+    parseField bs = Spaced <$> parseField (fst . B.spanEnd (== 32) . snd . B.span (== 32) $ bs) -- a space character, or use isSpace to include all whitespace
 
 
 -- TODO: orphan instance, maybe some form of newtype would be better?

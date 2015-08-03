@@ -1,11 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Tmy.OneMinSolarTypes where
 
-import Control.Applicative                  ((<$>), (<*>))
+import Control.Applicative                  ((<$>), (<*>), (<|>))
 import Data.ByteString                      (ByteString, empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions, union)
@@ -66,15 +67,21 @@ instance DefaultOrdered AwSlCombined where
         [ "station"
         , "local time"
         -- TODO: when there is no AW record then looking for headers from it causes an error
-        -- , "precipitation"
+        , "precipitation"
         ]
 
+
 instance ToNamedRecord AwSlCombined where
-    -- TODO: make sure one LocalTime and Station num are printed either from the Aw or Sl record
-    toNamedRecord (AwSlCombined (Just aw) (Just sl)) = union (toNamedRecord aw) (toNamedRecord sl)
-    toNamedRecord (AwSlCombined (Just aw) Nothing)   = toNamedRecord aw
-    toNamedRecord (AwSlCombined Nothing (Just sl))   = toNamedRecord sl
-    toNamedRecord (AwSlCombined Nothing Nothing)     = error "We should never have a completely empty record."
+    toNamedRecord (AwSlCombined Nothing Nothing) = error "We should never have a completely empty record."
+    toNamedRecord (AwSlCombined aw sl) =
+        unions
+            [ namedRecord
+                [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
+                , "local time" .= ((awLocalTimeSt <$> aw) <|> (slLocalTimeSt <$> sl))
+                ]
+            , (toNamedRecord aw)
+            , (toNamedRecord sl)
+            ]
 
 
 statRecord :: (ToField a, Fractional a, Show a) => ByteString -> Maybe (Stat a) -> NamedRecord
@@ -157,41 +164,24 @@ data AwStats = AwStats
     } deriving (Show, Eq, Ord)
 
 
-instance ToNamedRecord AwStats where
-    toNamedRecord
-        (AwStats stationNum
-                 localTime
-                 localStdTime
-                 utcTime
-                 precipSinceLast
-                 airTemp
-                 wetBulbTemp
-                 dewPointTemp
-                 relHumid
-                 windSpeed
-                 _ -- windDir
-                 vis
-                 mslPress
-                 stationLvlPress
-                 qnhPress) =
+instance ToNamedRecord (Maybe AwStats) where
+    toNamedRecord a =
         unions
             [ namedRecord
-                [ "station"        .= stationNum
-                , "local time"     .= localTime
-                , "local std time" .= localStdTime
-                , "utc time"       .= utcTime
-                , "precipitation"  .= (getSum <$> precipSinceLast)
+                [ "local std time" .= maybe empty (toField . awLocalStdTimeSt) a
+                , "utc time"       .= maybe empty (toField . awUtcTimeSt)      a
+                , "precipitation"  .= (fmap getSum . awPrecipSinceLastSt   =<< a)
                 ]
-            , statRecord "air temp" airTemp
-            , statRecord "wet bulb" wetBulbTemp
-            , statRecord "dew point" dewPointTemp
-            , statRecord "relative humidity" relHumid
-            , statRecord "wind speed" windSpeed
-            -- , statRecord "wind direction" windDir
-            , sumCountRecord "visibility" vis
-            , sumCountRecord "msl pressure" mslPress
-            , sumCountRecord "station level pressure" stationLvlPress
-            , sumCountRecord "qnh pressure" qnhPress
+            , statRecord "air temp"                   ( awAirTempSt         =<< a)
+            , statRecord "wet bulb"                   ( awWetBulbTempSt     =<< a)
+            , statRecord "dew point"                  ( awDewPointTempSt    =<< a)
+            , statRecord "relative humidity"          ( awRelHumidSt        =<< a)
+            , statRecord "wind speed"                 ( awWindSpeedSt       =<< a)
+            -- , statRecord "wind direction"          ( awWindDirSt         =<< a)
+            , sumCountRecord "visibility"             ( awVisibilitySt      =<< a)
+            , sumCountRecord "msl pressure"           ( awMslPressSt        =<< a)
+            , sumCountRecord "station level pressure" ( awStationLvlPressSt =<< a)
+            , sumCountRecord "qnh pressure"           ( awQnhPressSt        =<< a)
             ]
 
 
@@ -339,35 +329,20 @@ data SlStats = SlStats
     } deriving (Show, Eq, Ord)
 
 
-instance ToNamedRecord SlStats where
-    toNamedRecord
-        (SlStats stationNum
-                 localTime
-                 ghi
-                 dni
-                 diff
-                 terr
-                 dhi
-                 sunshineSecs96
-                 sunshineSecs120
-                 sunshineSecs144
-                 zenith) =
+instance ToNamedRecord (Maybe SlStats) where
+    toNamedRecord a =
         unions
             [ namedRecord
-                [ "station"  .= stationNum
-                , "local time" .= localTime
+                [ "seconds dni exceeding 96 W/sq m"  .= (fmap getSum . slSunshineSecs96St  =<< a)
+                , "seconds dni exceeding 120 W/sq m" .= (fmap getSum . slSunshineSecs120St =<< a)
+                , "seconds dni exceeding 144 W/sq m" .= (fmap getSum . slSunshineSecs144St =<< a)
                 ]
-            , statRecord "ghi" ghi
-            , statRecord "dni" dni
-            , statRecord "diffuse" diff
-            , statRecord "terrestrial" terr
-            , statRecord "dhi" dhi
-            , namedRecord
-                [ "seconds dni exceeding 96 W/sq m"  .= (getSum <$> sunshineSecs96)
-                , "seconds dni exceeding 120 W/sq m" .= (getSum <$> sunshineSecs120)
-                , "seconds dni exceeding 144 W/sq m" .= (getSum <$> sunshineSecs144)
-                ]
-            , sumCountRecord "zenith" zenith
+            , statRecord     "ghi"         (slGhiSt    =<< a)
+            , statRecord     "dni"         (slDniSt    =<< a)
+            , statRecord     "diffuse"     (slDiffSt   =<< a)
+            , statRecord     "terrestrial" (slTerrSt   =<< a)
+            , statRecord     "dhi"         (slDhiSt    =<< a)
+            , sumCountRecord "zenith"      (slZenithSt =<< a)
             ]
 
 
