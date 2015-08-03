@@ -61,13 +61,88 @@ instance FromNamedRecord OneMinSolarSite where
 data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord, Generic)
 
 
--- TODO: might be able to have a completely generic no implementation here and specify exact order on AwStats and SlStats
 instance DefaultOrdered AwSlCombined where
+    {-
+    To generate the column names using ghci for easier copy and paste:
+    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe SlStats)
+    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe AwStats)
+    -}
     headerOrder _ =
         [ "station"
         , "local time"
-        -- TODO: when there is no AW record then looking for headers from it causes an error
+        , "local std time"
+        , "utc time"
+
+        , "ghi mean"
+        , "ghi count"
+        , "ghi max"
+        , "ghi min"
+
+        , "dni mean"
+        , "dni count"
+        , "dni max"
+        , "dni min"
+
+        , "dhi mean"
+        , "dhi count"
+        , "dhi max"
+        , "dhi min"
+
+        , "diffuse mean"
+        , "diffuse count"
+        , "diffuse max"
+        , "diffuse min"
+
+        , "terrestrial mean"
+        , "terrestrial count"
+        , "terrestrial max"
+        , "terrestrial min"
+
+        , "seconds dni exceeding 120 W/sq m"
+        , "seconds dni exceeding 144 W/sq m"
+        , "seconds dni exceeding 96 W/sq m"
+
+        , "zenith mean"
+        , "zenith count"
+
+        , "air temp mean"
+        , "air temp count"
+        , "air temp max"
+        , "air temp min"
+
+        , "wet bulb mean"
+        , "wet bulb count"
+        , "wet bulb max"
+        , "wet bulb min"
+
+        , "dew point mean"
+        , "dew point count"
+        , "dew point max"
+        , "dew point min"
+
+        , "relative humidity mean"
+        , "relative humidity count"
+        , "relative humidity max"
+        , "relative humidity min"
+
+        , "wind speed mean"
+        , "wind speed count"
+        , "wind speed max"
+        , "wind speed min"
+
         , "precipitation"
+
+        , "msl pressure mean"
+        , "msl pressure count"
+
+        , "qnh pressure mean"
+        , "qnh pressure count"
+
+        , "station level pressure mean"
+        , "station level pressure count"
+
+        , "visibility mean"
+        , "visibility count"
         ]
 
 
@@ -207,49 +282,49 @@ data AutoWeatherObs = AutoWeatherObs
     -- , awMIUtc            :: !Int                     -- MI format in Universal coordinated time
     , awUtcTime             :: !LocalTime
     , awPrecipSinceLast     :: !(Spaced (Maybe Double)) -- Precipitation since last (AWS) observation in mm
-    , awPrecipQual          :: !Text                    -- Quality of precipitation since last (AWS) observation value
+    , awPrecipQual          :: !(Spaced Char)                    -- Quality of precipitation since last (AWS) observation value
     , awAirTemp             :: !(Spaced (Maybe Double)) -- Air Temperature in degrees Celsius
-    , awAirTempQual         :: !Text                    -- Quality of air temperature
+    , awAirTempQual         :: !(Spaced Char)                    -- Quality of air temperature
     , awAirTempMax          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute maximum) in degrees Celsius
-    , awAirTempMaxQual      :: !Text                    -- Quality of air temperature (1-minute maximum)
+    , awAirTempMaxQual      :: !(Spaced Char)                    -- Quality of air temperature (1-minute maximum)
     , awAirTempMin          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute minimum) in degrees Celsius
-    , awAirTempMinQual      :: !Text                    -- Quality of air temperature (1-minute minimum)
+    , awAirTempMinQual      :: !(Spaced Char)                    -- Quality of air temperature (1-minute minimum)
     , awWetBulbTemp         :: !(Spaced (Maybe Double)) -- Wet bulb temperature in degrees Celsius
-    , awWetBulbTempQual     :: !Text                    -- Quality of Wet bulb temperature
+    , awWetBulbTempQual     :: !(Spaced Char)                    -- Quality of Wet bulb temperature
     , awWetBulbTempMax      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute maximum) in degrees Celsius
-    , awWetBulbTempMaxQual  :: !Text                    -- Quality of wet bulb temperature (1 minute maximum)
+    , awWetBulbTempMaxQual  :: !(Spaced Char)                    -- Quality of wet bulb temperature (1 minute maximum)
     , awWetBulbTempMin      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute minimum) in degrees Celsius
-    , awWetBulbTempMinQual  :: !Text                    -- Quality of wet bulb temperature (1 minute minimum)
+    , awWetBulbTempMinQual  :: !(Spaced Char)                    -- Quality of wet bulb temperature (1 minute minimum)
     , awDewPointTemp        :: !(Spaced (Maybe Double)) -- Dew point temperature in degrees Celsius
-    , awDewPointTempQual    :: !Text                    -- Quality of dew point temperature
+    , awDewPointTempQual    :: !(Spaced Char)                    -- Quality of dew point temperature
     , awDewPointTempMax     :: !(Spaced (Maybe Double)) -- Dew point temperature (1-minute maximum) in degrees Celsius
-    , awDewPointTempMaxQual :: !Text                    -- Quality of Dew point Temperature (1-minute maximum)
+    , awDewPointTempMaxQual :: !(Spaced Char)                    -- Quality of Dew point Temperature (1-minute maximum)
     , awDewPointTempMin     :: !(Spaced (Maybe Double)) -- Dew point temperature (1 minute minimum) in degrees Celsius
-    , awDewPointTempMinQual :: !Text                    -- Quality of Dew point Temperature (1 minute minimum)
+    , awDewPointTempMinQual :: !(Spaced Char)                    -- Quality of Dew point Temperature (1 minute minimum)
     , awRelHumid            :: !(Spaced (Maybe Double))    -- Relative humidity in percentage %
-    , awRelHumidQual        :: !Text                    -- Quality of relative humidity
+    , awRelHumidQual        :: !(Spaced Char)                    -- Quality of relative humidity
     , awRelHumidMax         :: !(Spaced (Maybe Double))    -- Relative humidity (1 minute maximum) in percentage %
-    , awRelHumidMaxQual     :: !Text                    -- Quality of relative humidity (1 minute maximum)
+    , awRelHumidMaxQual     :: !(Spaced Char)                    -- Quality of relative humidity (1 minute maximum)
     , awRelHumidMin         :: !(Spaced (Maybe Double))    -- Relative humidity (1 minute minimum) in percentage %
-    , awRelHumidMinQual     :: !Text                    -- Quality of Relative humidity (1 minute minimum)
+    , awRelHumidMinQual     :: !(Spaced Char)                    -- Quality of Relative humidity (1 minute minimum)
     , awWindSpeed           :: !(Spaced (Maybe Double)) -- Wind (1 minute) speed in km/h
-    , awWindSpeedQual       :: !Text                    -- Wind (1 minute) speed quality
+    , awWindSpeedQual       :: !(Spaced Char)                    -- Wind (1 minute) speed quality
     , awWindSpeedMin        :: !(Spaced (Maybe Double)) -- Minimum wind speed (over 1 minute) in km/h
-    , awWindSpeedMinQual    :: !Text                    -- Minimum wind speed (over 1 minute) quality
+    , awWindSpeedMinQual    :: !(Spaced Char)                    -- Minimum wind speed (over 1 minute) quality
     , awWindDir             :: !(Spaced (Maybe Int))    -- Wind (1 minute) direction in degrees true
-    , awWindDirQual         :: !Text                    -- Wind (1 minute) direction quality
+    , awWindDirQual         :: !(Spaced Char)                    -- Wind (1 minute) direction quality
     -- , awWindStdDev          :: !(Spaced (Maybe Int))    -- Standard deviation of wind (1 minute)
-    -- , awWindStdDevQual      :: !Text                    -- Standard deviation of wind (1 minute) direction quality
+    -- , awWindStdDevQual      :: !(Spaced Char)                    -- Standard deviation of wind (1 minute) direction quality
     , awWindGustMax         :: !(Spaced (Maybe Double)) -- Maximum wind gust (over 1 minute) in km/h
-    , awWindGustMaxQual     :: !Text                    -- Maximum wind gust (over 1 minute) quality
+    , awWindGustMaxQual     :: !(Spaced Char)                    -- Maximum wind gust (over 1 minute) quality
     , awVisibility          :: !(Spaced (Maybe Double)) -- Visibility (automatic - one minute data) in km
-    , awVisibilityQual      :: !Text                    -- Quality of visibility (automatic - one minute data)
+    , awVisibilityQual      :: !(Spaced Char)                    -- Quality of visibility (automatic - one minute data)
     , awMslPress            :: !(Spaced (Maybe Double)) -- Mean sea level pressure in hPa
-    , awMslPressQual        :: !Text                    -- Quality of mean sea level pressure
+    , awMslPressQual        :: !(Spaced Char)                    -- Quality of mean sea level pressure
     , awStationLvlPress     :: !(Spaced (Maybe Double)) -- Station level pressure in hPa
-    , awStationLvlPressQual :: !Text                    -- Quality of station level pressure
+    , awStationLvlPressQual :: !(Spaced Char)                    -- Quality of station level pressure
     , awQnhPress            :: !(Spaced (Maybe Double)) -- QNH pressure in hPa
-    , awQnhPressQual        :: !Text                    -- Quality of QNH pressure
+    , awQnhPressQual        :: !(Spaced Char)                    -- Quality of QNH pressure
     } deriving (Show, Eq, Ord, Generic)
 
 instance FromRecord AutoWeatherObs where

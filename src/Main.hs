@@ -2,8 +2,6 @@
 {-# LANGUAGE BangPatterns #-}
 
 -- TODO:
---   aggregate wind direction
---   save super record as CSV
 --   combine wind direction using vector math
 --     save stats for wind speed and direction to generate wind rose?
 
@@ -17,7 +15,7 @@ import Data.Either                          (partitionEithers)
 import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy, foldl1')
 import Data.Semigroup                       (Semigroup, Sum(..), Min(..), Max(..), (<>))
-import Data.Text                            (Text, unpack, isInfixOf)
+import Data.Text                            (unpack)
 import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
@@ -82,9 +80,10 @@ processCsvPair fn t@(aw, sl) = do
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggrToHour) awStatGroups
         slFolded = map (foldl1' slAggrToHour) slStatGroups
+        -- !_ = traceShowId ((take 5) awFolded)
+        -- !_ = traceShowId ((take 5) slFolded)
         -- combine 1-hour aw and sl records
         merged = mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
-        -- !_ = traceShowId ((take 10 . drop 40) merged)
     mapM_ putStrLn awErrs
     mapM_ putStrLn slErrs
     BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts merged)
@@ -185,7 +184,7 @@ maybeStat meanF maxF minF a =
         maybeMin  = unSpaced (minF a)
 
 
-maybeQualStat :: (a -> Text)
+maybeQualStat :: (a -> Spaced Char)
               -> (a -> (Spaced (Maybe b)))
               -> (a -> (Spaced (Maybe b)))
               -> (a -> (Spaced (Maybe b)))
@@ -197,12 +196,12 @@ maybeQualStat meanQf meanF maxF minF a =
         Nothing -> Nothing
 
 
-qFilter :: (a -> Text)
+qFilter :: (a -> Spaced Char)
         -> (a -> (Spaced (Maybe b)))
         -> a
         -> Maybe b
 qFilter qf vf a =
-    if (qf a) `isInfixOf` "YNSF"
+    if (unSpaced (qf a)) `elem` "YNSF"
         then unSpaced (vf a)
         else Nothing
 
