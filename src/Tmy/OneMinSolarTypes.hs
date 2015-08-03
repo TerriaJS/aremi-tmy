@@ -222,17 +222,17 @@ data AwStats = AwStats
     , awLocalTimeSt       :: !LocalTime
     , awLocalStdTimeSt    :: !LocalTime
     , awUtcTimeSt         :: !LocalTime
-    , awPrecipSinceLastSt :: !(Maybe (Sum Double))
-    , awAirTempSt         :: !(Maybe (Stat Double))
-    , awWetBulbTempSt     :: !(Maybe (Stat Double))
-    , awDewPointTempSt    :: !(Maybe (Stat Double))
-    , awRelHumidSt        :: !(Maybe (Stat Double))
-    , awWindSpeedSt       :: !(Maybe (Stat Double))
+    , awPrecipSinceLastSt :: !(Maybe (Sum Double1Dec))
+    , awAirTempSt         :: !(Maybe (Stat Double1Dec))
+    , awWetBulbTempSt     :: !(Maybe (Stat Double1Dec))
+    , awDewPointTempSt    :: !(Maybe (Stat Double1Dec))
+    , awRelHumidSt        :: !(Maybe (Stat Double1Dec))
+    , awWindSpeedSt       :: !(Maybe (Stat Double1Dec))
     , awWindDirSt         :: !(Maybe Int)   -- TODO: this one needs special vector math
-    , awVisibilitySt      :: !(Maybe (SumCount Double))
-    , awMslPressSt        :: !(Maybe (SumCount Double))
-    , awStationLvlPressSt :: !(Maybe (SumCount Double))
-    , awQnhPressSt        :: !(Maybe (SumCount Double))
+    , awVisibilitySt      :: !(Maybe (SumCount Double1Dec))
+    , awMslPressSt        :: !(Maybe (SumCount Double1Dec))
+    , awStationLvlPressSt :: !(Maybe (SumCount Double1Dec))
+    , awQnhPressSt        :: !(Maybe (SumCount Double1Dec))
     } deriving (Show, Eq, Ord)
 
 instance ToNamedRecord (Maybe AwStats) where
@@ -277,50 +277,50 @@ data AutoWeatherObs = AutoWeatherObs
     -- , awHH24Utc       :: !Int  -- HH24
     -- , awMIUtc         :: !Int  -- MI format in Universal coordinated time
     , awUtcTime             :: !LocalTime
-    , awPrecipSinceLast     :: !(Spaced (Maybe Double)) -- Precipitation since last (AWS) observation in mm
-    , awPrecipQual          :: !(Spaced Char)           -- Quality of precipitation since last (AWS) observation value
-    , awAirTemp             :: !(Spaced (Maybe Double)) -- Air Temperature in degrees Celsius
-    , awAirTempQual         :: !(Spaced Char)           -- Quality of air temperature
-    , awAirTempMax          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute maximum) in degrees Celsius
-    , awAirTempMaxQual      :: !(Spaced Char)           -- Quality of air temperature (1-minute maximum)
-    , awAirTempMin          :: !(Spaced (Maybe Double)) -- Air temperature (1-minute minimum) in degrees Celsius
-    , awAirTempMinQual      :: !(Spaced Char)           -- Quality of air temperature (1-minute minimum)
-    , awWetBulbTemp         :: !(Spaced (Maybe Double)) -- Wet bulb temperature in degrees Celsius
-    , awWetBulbTempQual     :: !(Spaced Char)           -- Quality of Wet bulb temperature
-    , awWetBulbTempMax      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute maximum) in degrees Celsius
-    , awWetBulbTempMaxQual  :: !(Spaced Char)           -- Quality of wet bulb temperature (1 minute maximum)
-    , awWetBulbTempMin      :: !(Spaced (Maybe Double)) -- Wet bulb temperature (1 minute minimum) in degrees Celsius
-    , awWetBulbTempMinQual  :: !(Spaced Char)           -- Quality of wet bulb temperature (1 minute minimum)
-    , awDewPointTemp        :: !(Spaced (Maybe Double)) -- Dew point temperature in degrees Celsius
-    , awDewPointTempQual    :: !(Spaced Char)           -- Quality of dew point temperature
-    , awDewPointTempMax     :: !(Spaced (Maybe Double)) -- Dew point temperature (1-minute maximum) in degrees Celsius
-    , awDewPointTempMaxQual :: !(Spaced Char)           -- Quality of Dew point Temperature (1-minute maximum)
-    , awDewPointTempMin     :: !(Spaced (Maybe Double)) -- Dew point temperature (1 minute minimum) in degrees Celsius
-    , awDewPointTempMinQual :: !(Spaced Char)           -- Quality of Dew point Temperature (1 minute minimum)
-    , awRelHumid            :: !(Spaced (Maybe Double)) -- Relative humidity in percentage %
-    , awRelHumidQual        :: !(Spaced Char)           -- Quality of relative humidity
-    , awRelHumidMax         :: !(Spaced (Maybe Double)) -- Relative humidity (1 minute maximum) in percentage %
-    , awRelHumidMaxQual     :: !(Spaced Char)           -- Quality of relative humidity (1 minute maximum)
-    , awRelHumidMin         :: !(Spaced (Maybe Double)) -- Relative humidity (1 minute minimum) in percentage %
-    , awRelHumidMinQual     :: !(Spaced Char)           -- Quality of Relative humidity (1 minute minimum)
-    , awWindSpeed           :: !(Spaced (Maybe Double)) -- Wind (1 minute) speed in km/h
-    , awWindSpeedQual       :: !(Spaced Char)           -- Wind (1 minute) speed quality
-    , awWindSpeedMin        :: !(Spaced (Maybe Double)) -- Minimum wind speed (over 1 minute) in km/h
-    , awWindSpeedMinQual    :: !(Spaced Char)           -- Minimum wind speed (over 1 minute) quality
-    , awWindDir             :: !(Spaced (Maybe Int))    -- Wind (1 minute) direction in degrees true
-    , awWindDirQual         :: !(Spaced Char)           -- Wind (1 minute) direction quality
-    -- , awWindStdDev          :: !(Spaced (Maybe Int))    -- Standard deviation of wind (1 minute)
-    -- , awWindStdDevQual      :: !(Spaced Char)           -- Standard deviation of wind (1 minute) direction quality
-    , awWindGustMax         :: !(Spaced (Maybe Double)) -- Maximum wind gust (over 1 minute) in km/h
-    , awWindGustMaxQual     :: !(Spaced Char)           -- Maximum wind gust (over 1 minute) quality
-    , awVisibility          :: !(Spaced (Maybe Double)) -- Visibility (automatic - one minute data) in km
-    , awVisibilityQual      :: !(Spaced Char)           -- Quality of visibility (automatic - one minute data)
-    , awMslPress            :: !(Spaced (Maybe Double)) -- Mean sea level pressure in hPa
-    , awMslPressQual        :: !(Spaced Char)           -- Quality of mean sea level pressure
-    , awStationLvlPress     :: !(Spaced (Maybe Double)) -- Station level pressure in hPa
-    , awStationLvlPressQual :: !(Spaced Char)           -- Quality of station level pressure
-    , awQnhPress            :: !(Spaced (Maybe Double)) -- QNH pressure in hPa
-    , awQnhPressQual        :: !(Spaced Char)           -- Quality of QNH pressure
+    , awPrecipSinceLast     :: !(Spaced (Maybe Double1Dec)) -- Precipitation since last (AWS) observation in mm
+    , awPrecipQual          :: !(Spaced Char)               -- Quality of precipitation since last (AWS) observation value
+    , awAirTemp             :: !(Spaced (Maybe Double1Dec)) -- Air Temperature in degrees Celsius
+    , awAirTempQual         :: !(Spaced Char)               -- Quality of air temperature
+    , awAirTempMax          :: !(Spaced (Maybe Double1Dec)) -- Air temperature (1-minute maximum) in degrees Celsius
+    , awAirTempMaxQual      :: !(Spaced Char)               -- Quality of air temperature (1-minute maximum)
+    , awAirTempMin          :: !(Spaced (Maybe Double1Dec)) -- Air temperature (1-minute minimum) in degrees Celsius
+    , awAirTempMinQual      :: !(Spaced Char)               -- Quality of air temperature (1-minute minimum)
+    , awWetBulbTemp         :: !(Spaced (Maybe Double1Dec)) -- Wet bulb temperature in degrees Celsius
+    , awWetBulbTempQual     :: !(Spaced Char)               -- Quality of Wet bulb temperature
+    , awWetBulbTempMax      :: !(Spaced (Maybe Double1Dec)) -- Wet bulb temperature (1 minute maximum) in degrees Celsius
+    , awWetBulbTempMaxQual  :: !(Spaced Char)               -- Quality of wet bulb temperature (1 minute maximum)
+    , awWetBulbTempMin      :: !(Spaced (Maybe Double1Dec)) -- Wet bulb temperature (1 minute minimum) in degrees Celsius
+    , awWetBulbTempMinQual  :: !(Spaced Char)               -- Quality of wet bulb temperature (1 minute minimum)
+    , awDewPointTemp        :: !(Spaced (Maybe Double1Dec)) -- Dew point temperature in degrees Celsius
+    , awDewPointTempQual    :: !(Spaced Char)               -- Quality of dew point temperature
+    , awDewPointTempMax     :: !(Spaced (Maybe Double1Dec)) -- Dew point temperature (1-minute maximum) in degrees Celsius
+    , awDewPointTempMaxQual :: !(Spaced Char)               -- Quality of Dew point Temperature (1-minute maximum)
+    , awDewPointTempMin     :: !(Spaced (Maybe Double1Dec)) -- Dew point temperature (1 minute minimum) in degrees Celsius
+    , awDewPointTempMinQual :: !(Spaced Char)               -- Quality of Dew point Temperature (1 minute minimum)
+    , awRelHumid            :: !(Spaced (Maybe Double1Dec)) -- Relative humidity in percentage %
+    , awRelHumidQual        :: !(Spaced Char)               -- Quality of relative humidity
+    , awRelHumidMax         :: !(Spaced (Maybe Double1Dec)) -- Relative humidity (1 minute maximum) in percentage %
+    , awRelHumidMaxQual     :: !(Spaced Char)               -- Quality of relative humidity (1 minute maximum)
+    , awRelHumidMin         :: !(Spaced (Maybe Double1Dec)) -- Relative humidity (1 minute minimum) in percentage %
+    , awRelHumidMinQual     :: !(Spaced Char)               -- Quality of Relative humidity (1 minute minimum)
+    , awWindSpeed           :: !(Spaced (Maybe Double1Dec)) -- Wind (1 minute) speed in km/h
+    , awWindSpeedQual       :: !(Spaced Char)               -- Wind (1 minute) speed quality
+    , awWindSpeedMin        :: !(Spaced (Maybe Double1Dec)) -- Minimum wind speed (over 1 minute) in km/h
+    , awWindSpeedMinQual    :: !(Spaced Char)               -- Minimum wind speed (over 1 minute) quality
+    , awWindDir             :: !(Spaced (Maybe Int))        -- Wind (1 minute) direction in degrees true
+    , awWindDirQual         :: !(Spaced Char)               -- Wind (1 minute) direction quality
+    -- , awWindStdDev          :: !(Spaced (Maybe Int))        -- Standard deviation of wind (1 minute)
+    -- , awWindStdDevQual      :: !(Spaced Char)               -- Standard deviation of wind (1 minute) direction quality
+    , awWindGustMax         :: !(Spaced (Maybe Double1Dec)) -- Maximum wind gust (over 1 minute) in km/h
+    , awWindGustMaxQual     :: !(Spaced Char)               -- Maximum wind gust (over 1 minute) quality
+    , awVisibility          :: !(Spaced (Maybe Double1Dec)) -- Visibility (automatic - one minute data) in km
+    , awVisibilityQual      :: !(Spaced Char)               -- Quality of visibility (automatic - one minute data)
+    , awMslPress            :: !(Spaced (Maybe Double1Dec)) -- Mean sea level pressure in hPa
+    , awMslPressQual        :: !(Spaced Char)               -- Quality of mean sea level pressure
+    , awStationLvlPress     :: !(Spaced (Maybe Double1Dec)) -- Station level pressure in hPa
+    , awStationLvlPressQual :: !(Spaced Char)               -- Quality of station level pressure
+    , awQnhPress            :: !(Spaced (Maybe Double1Dec)) -- QNH pressure in hPa
+    , awQnhPressQual        :: !(Spaced Char)               -- Quality of QNH pressure
     } deriving (Show, Eq, Ord, Generic)
 
 instance FromRecord AutoWeatherObs where
@@ -386,15 +386,15 @@ instance FromRecord AutoWeatherObs where
 data SlStats = SlStats
     { slStationNumSt      :: !Text
     , slLocalTimeSt       :: !LocalTime
-    , slGhiSt             :: !(Maybe (Stat Double))
-    , slDniSt             :: !(Maybe (Stat Double))
-    , slDiffSt            :: !(Maybe (Stat Double))
-    , slTerrSt            :: !(Maybe (Stat Double))
-    , slDhiSt             :: !(Maybe (Stat Double))
+    , slGhiSt             :: !(Maybe (Stat Double1Dec))
+    , slDniSt             :: !(Maybe (Stat Double1Dec))
+    , slDiffSt            :: !(Maybe (Stat Double1Dec))
+    , slTerrSt            :: !(Maybe (Stat Double1Dec))
+    , slDhiSt             :: !(Maybe (Stat Double1Dec))
     , slSunshineSecs96St  :: !(Maybe (Sum Int))
     , slSunshineSecs120St :: !(Maybe (Sum Int))
     , slSunshineSecs144St :: !(Maybe (Sum Int))
-    , slZenithSt          :: !(Maybe (SumCount Double))  -- TODO: is it correct to just average the zenith angle?
+    , slZenithSt          :: !(Maybe (SumCount Double1Dec))  -- TODO: is it correct to just average the zenith angle?
     } deriving (Show, Eq, Ord)
 
 instance ToNamedRecord (Maybe SlStats) where
@@ -422,35 +422,35 @@ data SolarRadiationObs = SolarRadiationObs
     --, slHH24Local           :: !Int                   -- HH24
     --, slMILocal             :: !Int                   -- MI format in Local time
     , slLocalTime           :: !LocalTime
-    , slGhiMean             :: !(Spaced (Maybe Double)) -- Mean global irradiance (over 1 minute) in W/sq m
-    , slGhiMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
-    , slGhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
-    -- , slGhiStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of global irradiance (over 1 minute) in W/sq m
-    -- , slGhiMeanUncertainty  :: !(Spaced (Maybe Double)) -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
-    , slDniMean             :: !(Spaced (Maybe Double)) -- Mean direct irradiance (over 1 minute) in W/sq m
-    , slDniMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
-    , slDniMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
-    -- , slDniStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
-    -- , slDniMeanUncertainty  :: !(Spaced (Maybe Double)) -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
-    , slDiffMean            :: !(Spaced (Maybe Double)) -- Mean diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMin             :: !(Spaced (Maybe Double)) -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    , slDiffMax             :: !(Spaced (Maybe Double)) -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
-    -- , slDiffStdDev          :: !(Spaced (Maybe Double)) -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
-    -- , slDiffMeanUncertainty :: !(Spaced (Maybe Double)) -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
-    , slTerrMean            :: !(Spaced (Maybe Double)) -- Mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMin             :: !(Spaced (Maybe Double)) -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    , slTerrMax             :: !(Spaced (Maybe Double)) -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
-    -- , slTerrStdDev          :: !(Spaced (Maybe Double)) -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
-    -- , slTerrMeanUncertainty :: !(Spaced (Maybe Double)) -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
-    , slDhiMean             :: !(Spaced (Maybe Double)) -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMin              :: !(Spaced (Maybe Double)) -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    , slDhiMax              :: !(Spaced (Maybe Double)) -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
-    -- , slDhiStdDev           :: !(Spaced (Maybe Double)) -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
-    -- , slDhiMeanUncertainy   :: !(Spaced (Maybe Double)) -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slGhiMean             :: !(Spaced (Maybe Double1Dec)) -- Mean global irradiance (over 1 minute) in W/sq m
+    , slGhiMin              :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
+    , slGhiMax              :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
+    -- , slGhiStdDev           :: !(Spaced (Maybe Double1Dec)) -- Standard deviation of global irradiance (over 1 minute) in W/sq m
+    -- , slGhiMeanUncertainty  :: !(Spaced (Maybe Double1Dec)) -- Uncertainty in mean global irradiance (over 1 minute) in W/sq m
+    , slDniMean             :: !(Spaced (Maybe Double1Dec)) -- Mean direct irradiance (over 1 minute) in W/sq m
+    , slDniMin              :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second direct irradiance (over 1 minute) in W/sq m
+    , slDniMax              :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second direct irradiance (over 1 minute) in W/sq m
+    -- , slDniStdDev           :: !(Spaced (Maybe Double1Dec)) -- Standard deviation of direct irradiance (over 1 minute) in W/sq m
+    -- , slDniMeanUncertainty  :: !(Spaced (Maybe Double1Dec)) -- Uncertainty in mean direct irradiance (over 1 minute) in W/sq m
+    , slDiffMean            :: !(Spaced (Maybe Double1Dec)) -- Mean diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMin             :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    , slDiffMax             :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second diffuse irradiance (over 1 minute) in W/sq m
+    -- , slDiffStdDev          :: !(Spaced (Maybe Double1Dec)) -- Standard deviation of diffuse irradiance (over 1 minute) in W/sq m
+    -- , slDiffMeanUncertainty :: !(Spaced (Maybe Double1Dec)) -- Uncertainty in mean diffuse irradiance (over 1 minute) in W/sq m
+    , slTerrMean            :: !(Spaced (Maybe Double1Dec)) -- Mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMin             :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    , slTerrMax             :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second terrestrial irradiance (over 1 minute) in W/sq m
+    -- , slTerrStdDev          :: !(Spaced (Maybe Double1Dec)) -- Standard deviation of terrestrial irradiance (over 1 minute) in W/sq m
+    -- , slTerrMeanUncertainty :: !(Spaced (Maybe Double1Dec)) -- Uncertainty in mean terrestrial irradiance (over 1 minute) in W/sq m
+    , slDhiMean             :: !(Spaced (Maybe Double1Dec)) -- Mean direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMin              :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    , slDhiMax              :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second direct horizontal irradiance (over 1 minute) in W/sq m
+    -- , slDhiStdDev           :: !(Spaced (Maybe Double1Dec)) -- Standard deviation of direct horizontal irradiance (over 1 minute) in W/sq m
+    -- , slDhiMeanUncertainy   :: !(Spaced (Maybe Double1Dec)) -- Uncertainty in mean direct horizontal irradiance (over 1 minute) in W/sq m
     , slSunshineSecs96      :: !(Spaced (Maybe Int))    -- Sunshine-seconds-96 (duration of DNI exceeding 96 W/sq m over 1 minute) in seconds
     , slSunshineSecs120     :: !(Spaced (Maybe Int))    -- Sunshine-seconds-120 (duration of DNI exceeding 120 W/sq m over 1 minute) in seconds
     , slSunshineSecs144     :: !(Spaced (Maybe Int))    -- Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds
-    , slZenith              :: !(Spaced (Maybe Double)) -- Zenith distance in degrees
+    , slZenith              :: !(Spaced (Maybe Double1Dec)) -- Zenith distance in degrees
     } deriving (Show, Eq, Ord, Generic)
 
 instance FromNamedRecord SolarRadiationObs where

@@ -14,12 +14,19 @@ import Data.Time.Calendar                   (fromGregorianValid)
 import Data.Time.Format                     (formatTime)
 import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
 import System.Locale                        (iso8601DateFormat, defaultTimeLocale)
+import Text.Printf                          (printf)
 
 
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
     parseField bs = Spaced <$> parseField (fst . B.spanEnd (== 32) . snd . B.span (== 32) $ bs) -- a space character, or use isSpace to include all whitespace
+
+
+newtype Double1Dec = Double1Dec Double deriving (Show, Eq, Ord, FromField, Num, Fractional)
+
+instance ToField Double1Dec where
+    toField (Double1Dec d) = toField (printf "%.1f" d :: String)
 
 
 -- TODO: orphan instance, maybe some form of newtype would be better?
