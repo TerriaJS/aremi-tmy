@@ -34,11 +34,13 @@ instance ToField LocalTime where
     toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
-recsAsList :: Records a -> [Either String a]
-recsAsList (Cons (Right a) rs) = Right a : recsAsList rs      -- value found
-recsAsList (Cons (Left e) rs) = Left e : recsAsList rs  -- error but we can continue
-recsAsList (Nil (Just e) _) = [Left e]                  -- failed to parse to the end
-recsAsList (Nil Nothing _) = []                         -- success
+recsAsList :: [Records a] -> Records a -> [a]
+recsAsList xs     (Cons (Right a) rs) = a : recsAsList xs rs  -- value found
+recsAsList _      (Cons (Left e)  _)  = error e               -- error but we can continue, but we're not going to
+recsAsList _      (Nil  (Just e)  _)  = error e               -- failed to parse to the end
+recsAsList (x:xs) (Nil  Nothing   _)  = recsAsList xs x       -- success, read next list
+-- TODO: non-exhaustive, but it's right here?
+recsAsList []     (Nil  Nothing   _)  = []                    -- success and done!
 
 
 -- | For parsing LocalTime from a CSV with columns like:

@@ -12,8 +12,7 @@ module Main where
 import qualified Data.ByteString.Lazy as BL
 import Control.Applicative                  ((<$>))
 import Data.Csv
-import Data.Csv.Streaming                   (Records)
-import Data.Either                          (partitionEithers)
+import Data.Csv.Streaming                   (Records(Nil))
 import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy, foldl1')
 import Data.Semigroup                       (Semigroup, Sum(..), Min(..), Max(..), (<>))
@@ -59,23 +58,16 @@ processSingleSite fn s = do
         newCsv = stationNum ++ "_averaged.csv"
     awFiles <- find always (fileName ~~? awGlob) csvDir
     slFiles <- find always (fileName ~~? slGlob) csvDir
-    mapM_ (processCsvPair newCsv) (zip awFiles slFiles)
-
-
-processCsvPair :: FilePath -> (FilePath, FilePath) -> IO ()
-processCsvPair fn t@(aw, sl) = do
-    putStrLn ("Processing " ++ show t)
-    -- typed for clarity
-    awRecs <- readIndexedCsv aw :: IO (Records AutoWeatherObs)
-    slRecs <- readCsv sl :: IO (Records SolarRadiationObs)
-    fnExists <- doesFileExist fn
+    -- read all data into two long lists of records to avoid BoM month end/begin mismatch
+    awRecs <- mapM readIndexedCsv awFiles
+    slRecs <- mapM readCsv slFiles
+    fnExists <- doesFileExist newCsv
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-        -- partitionEithers: [Either String a] -> ([String], [a])
-        (awErrs, awList) = partitionEithers (recsAsList awRecs)
-        (slErrs, slList) = partitionEithers (recsAsList slRecs)
+        awRecsList = recsAsList awRecs (Nil Nothing BL.empty)
+        slRecsList = recsAsList slRecs (Nil Nothing BL.empty)
         -- group and compute stats for aw and sl separately
-        awGroups = groupBy (hourGrouper awLocalTime) awList
-        slGroups = groupBy (hourGrouper slLocalTime) slList
+        awGroups = groupBy (hourGrouper awLocalTime) awRecsList
+        slGroups = groupBy (hourGrouper slLocalTime) slRecsList
         -- AutoWeatherObs to StatAutoWeatherObs, filter out poor quality
         awStatGroups = map (map awToStat) awGroups
         slStatGroups = map (map slToStat) slGroups
@@ -86,9 +78,11 @@ processCsvPair fn t@(aw, sl) = do
         -- !_ = traceShowId ((take 5) slFolded)
         -- combine 1-hour aw and sl records
         merged = mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
-    mapM_ putStrLn awErrs
-    mapM_ putStrLn slErrs
-    BL.appendFile fn (encodeDefaultOrderedByNameWith encOpts merged)
+    if null merged
+        then putStrLn ("No records found for station " ++ show stationNum)
+        else do
+            putStrLn ("Processing " ++ show newCsv)
+            BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
 combine :: Semigroup b => (a -> b) -> a -> a -> b
@@ -120,7 +114,7 @@ slAggrToHour :: SlStats -> SlStats -> SlStats
 slAggrToHour a b =
     SlStats
         { slStationNumSt      = slStationNumSt              a
-        , slLocalTimeSt       = floorMinute (slLocalTimeSt  a )
+        , slLocalTimeSt       = floorMinute (slLocalTimeSt  a)
         , slGhiSt             = combine slGhiSt             a b
         , slDniSt             = combine slDniSt             a b
         , slDiffSt            = combine slDiffSt            a b
