@@ -9,7 +9,7 @@ module Tmy.OneMinSolarTypes where
 import Control.Applicative                  ((<$>), (<*>), (<|>))
 import Data.ByteString                      (ByteString, empty)
 import Data.Csv
-import Data.HashMap.Strict                  (unions, union)
+import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Semigroup, (<>), Sum(..), Min(..), Max(..))
 import Data.Text                            (Text, append)
 import Data.Text.Encoding                   (encodeUtf8)
@@ -385,9 +385,6 @@ instance FromRecord AutoWeatherObs where
                             -- ignoring col 61: #
         | otherwise = fail ("CSV expected to have 62 columns, actual: " ++ show (V.length v) ++ ", row: " ++ show v)
 
-instance ToNamedRecord AutoWeatherObs
-instance DefaultOrdered AutoWeatherObs
-
 
 data SlStats = SlStats
     { slStationNumSt      :: !Text
@@ -498,115 +495,3 @@ instance FromNamedRecord SolarRadiationObs where
                             <*> r .: "Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds"
                             <*> r .: "Zenith distance in degrees"
 
-instance ToNamedRecord SolarRadiationObs
-instance DefaultOrdered SolarRadiationObs
-
-
-data CombinedAwSlObs = CombinedAwSlObs
-    { awRecord :: AutoWeatherObs
-    , slRecord :: SolarRadiationObs
-    } deriving (Show, Eq, Ord, Generic)
-
-instance ToNamedRecord CombinedAwSlObs where
-    toNamedRecord (CombinedAwSlObs aw sl) = union (toNamedRecord aw) (toNamedRecord sl)
-instance DefaultOrdered CombinedAwSlObs where
-    headerOrder _ =
-        [ "awStationNum"
-        --, "awYearLocal"
-        --, "awMMLocal"
-        --, "awDDLocal"
-        --, "awHH24Local"
-        --, "awMILocal"
-        , "awLocalTime"
-        --, "awYearLocalStd"
-        --, "awMMLocalStd"
-        --, "awDDLocalStd"
-        --, "awHH24LocalStd"
-        --, "awMILocalStd"
-        , "awLocalStdTime"
-        --, "awYearUtc"
-        --, "awMMUtc"
-        --, "awDDUtc"
-        --, "awHH24Utc"
-        --, "awMIUtc"
-        , "awUtcTime"
-        , "awPrecipSinceLast"
-        --, "awPrecipQual"
-        , "awAirTemp"
-        --, "awAirTempQual"
-        , "awAirTempMax"
-        --, "awAirTempMaxQual"
-        , "awAirTempMin"
-        --, "awAirTempMinQual"
-        , "awWetBulbTemp"
-        --, "awWetBulbTempQual"
-        , "awWetBulbTempMax"
-        --, "awWetBulbTempMaxQual"
-        , "awWetBulbTempMin"
-        --, "awWetBulbTempMinQual"
-        , "awDewPointTemp"
-        --, "awDewPointTempQual"
-        , "awDewPointTempMax"
-        --, "awDewPointTempMaxQual"
-        , "awDewPointTempMin"
-        --, "awDewPointTempMinQual"
-        , "awRelHumid"
-        --, "awRelHumidQual"
-        , "awRelHumidMax"
-        --, "awRelHumidMaxQual"
-        , "awRelHumidMin"
-        --, "awRelHumidMinQual"
-        , "awWindSpeed"
-        --, "awWindSpeedQual"
-        , "awWindSpeedMin"
-        --, "awWindSpeedMinQual"
-        , "awWindDir"
-        --, "awWindDirQual"
-        -- , "awWindStdDev"
-        --, "awWindStdDevQual"
-        , "awWindGustMax"
-        --, "awWindGustMaxQual"
-        , "awVisibility"
-        --, "awVisibilityQual"
-        , "awMslPress"
-        --, "awMslPressQual"
-        , "awStationLvlPress"
-        , "awStationLvlPressQual"
-        , "awQnhPress"
-        , "awQnhPressQual"
-        --, "slStationNum"
-        --, "slYearLocal"
-        --, "slMMLocal"
-        --, "slDDLocal"
-        --, "slHH24Local"
-        --, "slMILocal"
-        , "slGhiMean"
-        , "slGhiMin"
-        , "slGhiMax"
-        -- , "slGhiStdDev"
-        -- , "slGhiMeanUncertainty"
-        , "slDniMean"
-        , "slDniMin"
-        , "slDniMax"
-        -- , "slDniStdDev"
-        -- , "slDniMeanUncertainty"
-        , "slDiffMean"
-        , "slDiffMin"
-        , "slDiffMax"
-        -- , "slDiffStdDev"
-        -- , "slDiffMeanUncertainty"
-        , "slTerrMean"
-        , "slTerrMin"
-        , "slTerrMax"
-        -- , "slTerrStdDev"
-        -- , "slTerrMeanUncertainty"
-        , "slDhiMean"
-        , "slDhiMin"
-        , "slDhiMax"
-        -- , "slDhiStdDev"
-        -- , "slDhiMeanUncertainy"
-        , "slSunshineSecs96"
-        , "slSunshineSecs120"
-        , "slSunshineSecs144"
-        , "slZenith"
-        ]
