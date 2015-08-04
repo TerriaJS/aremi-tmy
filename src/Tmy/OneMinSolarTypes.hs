@@ -12,7 +12,6 @@ import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Semigroup, (<>), Sum(..), Min(..), Max(..))
 import Data.Text                            (Text, append)
 import Data.Text.Encoding                   (encodeUtf8)
-import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 
@@ -150,7 +149,7 @@ instance ToNamedRecord AwSlCombined where
         unions
             [ namedRecord
                 [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
-                , "local time" .= ((awLocalTimeSt <$> aw) <|> (slLocalTimeSt <$> sl))
+                , "local time" .= ((awLTimeSt <$> aw) <|> (slLTimeSt <$> sl))
                 ]
             , toNamedRecord aw
             , toNamedRecord sl
@@ -218,9 +217,9 @@ instance (Num a, Ord a) => Semigroup (SumCount a) where
 
 data AwStats = AwStats
     { awStationNumSt      :: !Text
-    , awLocalTimeSt       :: !LocalTime
-    , awLocalStdTimeSt    :: !LocalTime
-    , awUtcTimeSt         :: !LocalTime
+    , awLTimeSt           :: !LTime
+    , awLocalStdTimeSt    :: !LTime
+    , awUtcTimeSt         :: !LTime
     , awPrecipSinceLastSt :: !(Maybe (Sum Double1Dec))
     , awAirTempSt         :: !(Maybe (Stat Double1Dec))
     , awWetBulbTempSt     :: !(Maybe (Stat Double1Dec))
@@ -263,19 +262,19 @@ data AutoWeatherObs = AutoWeatherObs
     -- , awDDLocal       :: !Int  -- DD
     -- , awHH24Local     :: !Int  -- HH24
     -- , awMILocal       :: !Int  -- MI format in Local time
-    , awLocalTime           :: !LocalTime
+    , awLTime               :: !LTime
     -- , awYearLocalStd  :: !Int  -- Year Month Day Hours Minutes in YYYY
     -- , awMMLocalStd    :: !Int  -- MM
     -- , awDDLocalStd    :: !Int  -- DD
     -- , awHH24LocalStd  :: !Int  -- HH24
     -- , awMILocalStd    :: !Int  -- MI format in Local standard time
-    , awLocalStdTime        :: !LocalTime
+    , awLocalStdTime        :: !LTime
     -- , awYearUtc       :: !Int  -- Year Month Day Hours Minutes in YYYY
     -- , awMMUtc         :: !Int  -- MM
     -- , awDDUtc         :: !Int  -- DD
     -- , awHH24Utc       :: !Int  -- HH24
     -- , awMIUtc         :: !Int  -- MI format in Universal coordinated time
-    , awUtcTime             :: !LocalTime
+    , awUtcTime             :: !LTime
     , awPrecipSinceLast     :: !(Spaced (Maybe Double1Dec)) -- Precipitation since last (AWS) observation in mm
     , awPrecipQual          :: !(Spaced Char)               -- Quality of precipitation since last (AWS) observation value
     , awAirTemp             :: !(Spaced (Maybe Double1Dec)) -- Air Temperature in degrees Celsius
@@ -329,11 +328,11 @@ instance FromRecord AutoWeatherObs where
                 -- ignoring col 0: aw
                 <$> v .! 1         -- awStationNum
                 -- 2: awYearLocal, 3: awMMLocal, 4: awDDLocal, 5: awHH24Local, 6: awMILocal
-                <*> fieldsToLocalTime 2 v
+                <*> fieldsToLTime 2 v
                 -- 7: awYearLocalStd, 8: awMMLocalStd, 9: awDDLocalStd, 10: awHH24LocalStd, 11: awMILocalStd
-                <*> fieldsToLocalTime 7 v
+                <*> fieldsToLTime 7 v
                 -- 12: awYearUtc, 13: awMMUtc, 14: awDDUtc, 15: awHH24Utc, 16: awMIUtc
-                <*> fieldsToLocalTime 12 v
+                <*> fieldsToLTime 12 v
                 <*> v .! 17        -- awPrecipSinceLast
                 <*> v .! 18        -- awPrecipQual
                 <*> v .! 19        -- awAirTemp
@@ -384,7 +383,7 @@ instance FromRecord AutoWeatherObs where
 
 data SlStats = SlStats
     { slStationNumSt      :: !Text
-    , slLocalTimeSt       :: !LocalTime
+    , slLTimeSt           :: !LTime
     , slGhiSt             :: !(Maybe (Stat Double1Dec))
     , slDniSt             :: !(Maybe (Stat Double1Dec))
     , slDiffSt            :: !(Maybe (Stat Double1Dec))
@@ -420,7 +419,7 @@ data SolarRadiationObs = SolarRadiationObs
     --, slDDLocal             :: !Int                   -- DD
     --, slHH24Local           :: !Int                   -- HH24
     --, slMILocal             :: !Int                   -- MI format in Local time
-    , slLocalTime           :: !LocalTime
+    , slLTime               :: !LTime
     , slGhiMean             :: !(Spaced (Maybe Double1Dec)) -- Mean global irradiance (over 1 minute) in W/sq m
     , slGhiMin              :: !(Spaced (Maybe Double1Dec)) -- Minimum 1 second global irradiance (over 1 minute) in W/sq m
     , slGhiMax              :: !(Spaced (Maybe Double1Dec)) -- Maximum 1 second global irradiance (over 1 minute) in W/sq m
@@ -456,7 +455,7 @@ instance FromNamedRecord SolarRadiationObs where
     parseNamedRecord r =
         SolarRadiationObs
             <$> r .: "Station Number"
-            <*> colsToLocalTime
+            <*> colsToLTime
                 (r .: "Year Month Day Hours Minutes in YYYY")
                 (r .: "MM")
                 (r .: "DD")

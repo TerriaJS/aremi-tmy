@@ -29,9 +29,10 @@ instance ToField Double1Dec where
     toField (Double1Dec d) = toField (printf "%.1f" d :: String)
 
 
--- TODO: orphan instance, maybe some form of newtype would be better?
-instance ToField LocalTime where
-    toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
+newtype LTime = LTime { unLTime :: LocalTime } deriving (Eq, Show, Ord)
+
+instance ToField LTime where
+    toField (LTime lt) = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
 concatRecs :: [Records a] -> [a]
@@ -43,23 +44,24 @@ concatRecs (x:xs) = go x where
     go (Cons (Left e)  _)  = error e
 
 
--- | For parsing LocalTime from a CSV with columns like:
+-- | For parsing LTime from a CSV with columns like:
 --   'Year Month Day Hours Minutes in YYYY, MM, DD, HH24, MI format in Local time'
-fieldsToLocalTime :: Int -> Record -> Parser LocalTime
-fieldsToLocalTime i v =
-    mplus (colsToLocalTime (v .! i) (v .! (i+1)) (v .! (i+2)) (v .! (i+3)) (v .! (i+4)))
+fieldsToLTime :: Int -> Record -> Parser LTime
+fieldsToLTime i v =
+    mplus (colsToLTime (v .! i) (v .! (i+1)) (v .! (i+2)) (v .! (i+3)) (v .! (i+4)))
           (fail $ "Could not parse date starting at col " ++ show i)
 
 
-colsToLocalTime :: Parser Integer -> Parser Int -> Parser Int -> Parser Int -> Parser Int -> Parser LocalTime
-colsToLocalTime y m d h mn = do
-    mlt <- maybeLocalTime <$> y <*> m <*> d <*> h <*> mn
+colsToLTime :: Parser Integer -> Parser Int -> Parser Int -> Parser Int -> Parser Int -> Parser LTime
+colsToLTime y m d h mn = do
+    mlt <- maybeLTime <$> y <*> m <*> d <*> h <*> mn
     maybe (fail "Could not parse date") return mlt
 
 
-maybeLocalTime :: Integer -> Int -> Int -> Int -> Int -> Maybe LocalTime
-maybeLocalTime y m d h mn = LocalTime <$> fromGregorianValid y m d
-                                      <*> makeTimeOfDayValid h mn 0
+maybeLTime :: Integer -> Int -> Int -> Int -> Int -> Maybe LTime
+maybeLTime y m d h mn = LTime <$> (LocalTime
+                                    <$> fromGregorianValid y m d
+                                    <*> makeTimeOfDayValid h mn 0)
 
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()

@@ -65,8 +65,8 @@ processSingleSite fn s = do
         awRecsList = concatRecs awRecs
         slRecsList = concatRecs slRecs
         -- group and compute stats for aw and sl separately
-        awGroups = groupBy (hourGrouper awLocalTime) awRecsList
-        slGroups = groupBy (hourGrouper slLocalTime) slRecsList
+        awGroups = groupBy (hourGrouper awLTime) awRecsList
+        slGroups = groupBy (hourGrouper slLTime) slRecsList
         -- AutoWeatherObs to StatAutoWeatherObs, filter out poor quality
         awStatGroups = map (map awToStat) awGroups
         slStatGroups = map (map slToStat) slGroups
@@ -76,7 +76,7 @@ processSingleSite fn s = do
         -- !_ = traceShowId ((take 5) awFolded)
         -- !_ = traceShowId ((take 5) slFolded)
         -- combine 1-hour aw and sl records
-        merged = mergeWith awLocalTimeSt slLocalTimeSt AwSlCombined awFolded slFolded
+        merged = mergeWith awLTimeSt slLTimeSt AwSlCombined awFolded slFolded
     if null merged
         then putStrLn ("No records found for station " ++ show stationNum)
         else do
@@ -92,7 +92,7 @@ awAggrToHour :: AwStats -> AwStats -> AwStats
 awAggrToHour a b =
     AwStats
         { awStationNumSt      = awStationNumSt   a
-        , awLocalTimeSt       = floorMinute (awLocalTimeSt a)
+        , awLTimeSt           = floorMinute (awLTimeSt a)
         , awLocalStdTimeSt    = awLocalStdTimeSt a
         , awUtcTimeSt         = awUtcTimeSt      a
         , awAirTempSt         = combine awAirTempSt         a b
@@ -113,7 +113,7 @@ slAggrToHour :: SlStats -> SlStats -> SlStats
 slAggrToHour a b =
     SlStats
         { slStationNumSt      = slStationNumSt              a
-        , slLocalTimeSt       = floorMinute (slLocalTimeSt  a)
+        , slLTimeSt           = floorMinute (slLTimeSt  a)
         , slGhiSt             = combine slGhiSt             a b
         , slDniSt             = combine slDniSt             a b
         , slDiffSt            = combine slDiffSt            a b
@@ -130,7 +130,7 @@ awToStat :: AutoWeatherObs -> AwStats
 awToStat a =
     AwStats
         { awStationNumSt      = unSpaced (awStationNum a)
-        , awLocalTimeSt       = awLocalTime    a
+        , awLTimeSt           = awLTime    a
         , awLocalStdTimeSt    = awLocalStdTime a
         , awUtcTimeSt         = awUtcTime      a
         , awAirTempSt         = maybeQualStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
@@ -151,7 +151,7 @@ slToStat :: SolarRadiationObs -> SlStats
 slToStat a =
     SlStats
         { slStationNumSt      = unSpaced (slStationNum a)
-        , slLocalTimeSt       = slLocalTime a
+        , slLTimeSt           = slLTime a
         , slGhiSt             = maybeStat slGhiMean  slGhiMax  slGhiMin  a
         , slDniSt             = maybeStat slDniMean  slDniMax  slDniMin  a
         , slDiffSt            = maybeStat slDiffMean slDiffMax slDiffMin a
@@ -209,12 +209,12 @@ mkSumCount :: a -> SumCount a
 mkSumCount a = SumCount a 1
 
 
-hourGrouper :: (a -> LocalTime) -> a -> a -> Bool
+hourGrouper :: (a -> LTime) -> a -> a -> Bool
 hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
 
 
-floorMinute :: LocalTime -> LocalTime
-floorMinute a = LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0)
+floorMinute :: LTime -> LTime
+floorMinute (LTime a) = LTime (LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0))
 
 
 mergeWith :: Ord c => (a -> c)
