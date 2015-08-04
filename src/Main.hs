@@ -11,7 +11,7 @@ module Main where
 import qualified Data.ByteString.Lazy as BL
 import Control.Applicative                  ((<$>))
 import Data.Csv
-import Data.Csv.Streaming                   (Records(Nil))
+import Data.Csv.Streaming                   (Records)
 import Data.Maybe                           (fromMaybe)
 import Data.List                            (groupBy, foldl1')
 import Data.Semigroup                       (Semigroup, Sum(..), Min(..), Max(..), (<>))
@@ -62,8 +62,8 @@ processSingleSite fn s = do
     slRecs <- mapM readCsv slFiles
     fnExists <- doesFileExist newCsv
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
-        awRecsList = recsAsList awRecs (Nil Nothing BL.empty)
-        slRecsList = recsAsList slRecs (Nil Nothing BL.empty)
+        awRecsList = concatRecs awRecs
+        slRecsList = concatRecs slRecs
         -- group and compute stats for aw and sl separately
         awGroups = groupBy (hourGrouper awLocalTime) awRecsList
         slGroups = groupBy (hourGrouper slLocalTime) slRecsList

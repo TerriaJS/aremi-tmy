@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -35,13 +34,13 @@ instance ToField LocalTime where
     toField lt = toField (formatTime defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S")) lt)
 
 
-recsAsList :: [Records a] -> Records a -> [a]
-recsAsList xs     (Cons (Right a) rs) = a : recsAsList xs rs  -- value found
-recsAsList _      (Cons (Left e)  _)  = error e               -- error but we can continue, but we're not going to
-recsAsList _      (Nil  (Just e)  _)  = error e               -- failed to parse to the end
-recsAsList (x:xs) (Nil  Nothing   _)  = recsAsList xs x       -- success, read next list
--- TODO: non-exhaustive, but it's right here?
-recsAsList []     (Nil  Nothing   _)  = []                    -- success and done!
+concatRecs :: [Records a] -> [a]
+concatRecs [] = []
+concatRecs (x:xs) = go x where
+    go (Nil  (Just e)  _)  = error e
+    go (Nil  Nothing   _)  = concatRecs xs
+    go (Cons (Right a) rs) = a : go rs
+    go (Cons (Left e)  _)  = error e
 
 
 -- | For parsing LocalTime from a CSV with columns like:
