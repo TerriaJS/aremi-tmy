@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE BangPatterns #-}
 
 -- TODO:
 --   combine wind direction using vector math
@@ -165,9 +164,9 @@ slToStat a =
         }
 
 
-maybeStat :: (a -> (Spaced (Maybe b)))
-          -> (a -> (Spaced (Maybe b)))
-          -> (a -> (Spaced (Maybe b)))
+maybeStat :: (a -> Spaced (Maybe b))
+          -> (a -> Spaced (Maybe b))
+          -> (a -> Spaced (Maybe b))
           -> a
           -> Maybe (Stat b)
 maybeStat meanF maxF minF a =
@@ -181,9 +180,9 @@ maybeStat meanF maxF minF a =
 
 
 maybeQualStat :: (a -> Spaced Char)
-              -> (a -> (Spaced (Maybe b)))
-              -> (a -> (Spaced (Maybe b)))
-              -> (a -> (Spaced (Maybe b)))
+              -> (a -> Spaced (Maybe b))
+              -> (a -> Spaced (Maybe b))
+              -> (a -> Spaced (Maybe b))
               -> a
               -> Maybe (Stat b)
 maybeQualStat meanQf meanF maxF minF a =
@@ -193,11 +192,11 @@ maybeQualStat meanQf meanF maxF minF a =
 
 
 qFilter :: (a -> Spaced Char)
-        -> (a -> (Spaced (Maybe b)))
+        -> (a -> Spaced (Maybe b))
         -> a
         -> Maybe b
 qFilter qf vf a =
-    if (unSpaced (qf a)) `elem` "YNSF"
+    if unSpaced (qf a) `elem` "YNSF"
         then unSpaced (vf a)
         else Nothing
 
@@ -224,8 +223,8 @@ mergeWith :: Ord c => (a -> c)
                    -> [a] -> [b] -> [r]
 mergeWith fa fb comb xs ys = go xs ys where
     go [] [] = []
-    go [] bs = map (comb Nothing)      (map Just bs)
-    go as [] = map (flip comb Nothing) (map Just as)
+    go [] bs = map (comb Nothing . Just)      bs
+    go as [] = map (flip comb Nothing . Just) as
     go aas@(a:as) bbs@(b:bs) = case compare (fa a) (fb b) of
         LT -> comb (Just a) Nothing  : go as  bbs
         EQ -> comb (Just a) (Just b) : go as  bs

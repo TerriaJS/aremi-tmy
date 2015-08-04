@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Tmy.OneMinSolarTypes where
 
@@ -153,8 +152,8 @@ instance ToNamedRecord AwSlCombined where
                 [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
                 , "local time" .= ((awLocalTimeSt <$> aw) <|> (slLocalTimeSt <$> sl))
                 ]
-            , (toNamedRecord aw)
-            , (toNamedRecord sl)
+            , toNamedRecord aw
+            , toNamedRecord sl
             ]
 
 
@@ -179,13 +178,13 @@ statRecord prefix (Just (Stat ssum (Max smax) (Min smin) scount)) =
 
 sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (SumCount a) -> NamedRecord
 sumCountRecord prefix Nothing =
-    let col = encodeUtf8 . (append prefix)
+    let col = encodeUtf8 . append prefix
     in  namedRecord
         [ col " mean"  .= empty
         , col " count" .= empty
         ]
 sumCountRecord prefix (Just (SumCount ssum scount)) =
-    let col = encodeUtf8 . (append prefix)
+    let col = encodeUtf8 . append prefix
     in  namedRecord
         [ col " mean"  .= (ssum / fromIntegral scount)
         , col " count" .= scount
