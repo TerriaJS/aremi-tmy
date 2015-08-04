@@ -93,26 +93,3 @@ slToStat a =
         , slZenithSt          = mkSumCount <$> unSpaced (slZenith a)
         }
 
-
-maybeQualStat :: (a -> Spaced Char)
-              -> (a -> Spaced (Maybe b))
-              -> (a -> Spaced (Maybe b))
-              -> (a -> Spaced (Maybe b))
-              -> a
-              -> Maybe (Stat b)
-maybeQualStat meanQf meanF maxF minF a =
-    case qFilter meanQf meanF a of
-        Just _  -> maybeStat meanF maxF minF a
-        Nothing -> Nothing
-
-
-qFilter :: (a -> Spaced Char)
-        -> (a -> Spaced (Maybe b))
-        -> a
-        -> Maybe b
-qFilter qf vf a =
-    if unSpaced (qf a) `elem` "YNSF"
-        then unSpaced (vf a)
-        else Nothing
-
-
