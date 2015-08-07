@@ -9,7 +9,8 @@ import Data.Maybe                           (fromMaybe)
 import Data.Semigroup                       (Semigroup, Min(..), Max(..), (<>))
 import Data.Text                            (Text, append)
 import Data.Text.Encoding                   (encodeUtf8)
-import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour)
+import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour, todMin
+  )
 
 import Tmy.Csv
 
@@ -124,6 +125,10 @@ hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
 
 floorMinute :: LTime -> LTime
 floorMinute (LTime a) = LTime (LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0))
+
+
+minute :: LTime -> Int
+minute (LTime a) = (todMin . localTimeOfDay) a
 
 
 mergeWith :: Ord c => (a -> c)

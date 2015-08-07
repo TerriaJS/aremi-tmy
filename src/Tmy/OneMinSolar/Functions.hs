@@ -18,8 +18,8 @@ globSuff :: String
 globSuff = "*.txt"
 
 
-awAggrToHour :: AwStats -> AwStats -> AwStats
-awAggrToHour a b =
+awAggr :: AwStats -> AwStats -> AwStats
+awAggr a b =
     AwStats
         { awStationNumSt      = awStationNumSt   a
         , awLTimeSt           = floorMinute (awLTimeSt a)
@@ -31,7 +31,9 @@ awAggrToHour a b =
         , awRelHumidSt        = combine awRelHumidSt        a b
         , awWindSpeedSt       = combine awWindSpeedSt       a b
         , awPrecipSinceLastSt = combine awPrecipSinceLastSt a b
-        , awWindDirSt         = Just 0 -- TODO: vector math
+        -- only keep the wind direction if the minute is 00 - the Sandia method specifies wind
+        --   dir should be at the time indicated
+        , awWindDirSt         = if minute (awLTimeSt a) == 0 then awWindDirSt a else Nothing
         , awVisibilitySt      = combine awVisibilitySt      a b
         , awMslPressSt        = combine awMslPressSt        a b
         , awStationLvlPressSt = combine awStationLvlPressSt a b
@@ -39,8 +41,8 @@ awAggrToHour a b =
         }
 
 
-slAggrToHour :: SlStats -> SlStats -> SlStats
-slAggrToHour a b =
+slAggr :: SlStats -> SlStats -> SlStats
+slAggr a b =
     SlStats
         { slStationNumSt      = slStationNumSt              a
         , slLTimeSt           = floorMinute (slLTimeSt  a)
@@ -69,7 +71,7 @@ awToStat a =
         , awRelHumidSt        = maybeQualStat awRelHumidQual     awRelHumid     awRelHumidMax     awRelHumidMin     a
         , awWindSpeedSt       = maybeQualStat awWindSpeedQual    awWindSpeed    awWindGustMax     awWindSpeedMin    a
         , awPrecipSinceLastSt = Sum <$> qFilter awPrecipQual  awPrecipSinceLast a
-        , awWindDirSt         = Just 0 -- TODO: vector math
+        , awWindDirSt         = qFilter awWindDirQual awWindDir a
         , awVisibilitySt      = mkSumCount <$> qFilter awVisibilityQual      awVisibility      a
         , awMslPressSt        = mkSumCount <$> qFilter awMslPressQual        awMslPress        a
         , awStationLvlPressSt = mkSumCount <$> qFilter awStationLvlPressQual awStationLvlPress a

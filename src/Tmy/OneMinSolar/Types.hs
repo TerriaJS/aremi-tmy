@@ -119,6 +119,8 @@ instance DefaultOrdered AwSlCombined where
         , "wind speed max"
         , "wind speed min"
 
+        , "wind direction"
+
         , "precipitation"
 
         , "msl pressure mean"
@@ -158,7 +160,7 @@ data AwStats = AwStats
     , awDewPointTempSt    :: !(Maybe (Stat Double1Dec))
     , awRelHumidSt        :: !(Maybe (Stat Double1Dec))
     , awWindSpeedSt       :: !(Maybe (Stat Double1Dec))
-    , awWindDirSt         :: !(Maybe Int)   -- TODO: this one needs special vector math
+    , awWindDirSt         :: !(Maybe Int)
     , awVisibilitySt      :: !(Maybe (SumCount Double1Dec))
     , awMslPressSt        :: !(Maybe (SumCount Double1Dec))
     , awStationLvlPressSt :: !(Maybe (SumCount Double1Dec))
@@ -172,13 +174,13 @@ instance ToNamedRecord (Maybe AwStats) where
                 [ "local std time" .= maybe empty (toField . awLocalStdTimeSt) a
                 , "utc time"       .= maybe empty (toField . awUtcTimeSt)      a
                 , "precipitation"  .= (fmap getSum . awPrecipSinceLastSt   =<< a)
+                , "wind direction" .= (awWindDirSt =<< a)
                 ]
             , statRecord "air temp"                   ( awAirTempSt         =<< a)
             , statRecord "wet bulb"                   ( awWetBulbTempSt     =<< a)
             , statRecord "dew point"                  ( awDewPointTempSt    =<< a)
             , statRecord "relative humidity"          ( awRelHumidSt        =<< a)
             , statRecord "wind speed"                 ( awWindSpeedSt       =<< a)
-            -- , statRecord "wind direction"          ( awWindDirSt         =<< a)
             , sumCountRecord "visibility"             ( awVisibilitySt      =<< a)
             , sumCountRecord "msl pressure"           ( awMslPressSt        =<< a)
             , sumCountRecord "station level pressure" ( awStationLvlPressSt =<< a)

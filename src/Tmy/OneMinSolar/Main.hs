@@ -68,8 +68,8 @@ processSingleSite fn s = do
         awStatGroups = map (map awToStat) awGroups
         slStatGroups = map (map slToStat) slGroups
         -- aggregate 1-minute records to hours
-        awFolded = map (foldl1' awAggrToHour) awStatGroups
-        slFolded = map (foldl1' slAggrToHour) slStatGroups
+        awFolded = map (foldl1' awAggr) awStatGroups
+        slFolded = map (foldl1' slAggr) slStatGroups
         -- !_ = traceShowId ((take 5) awFolded)
         -- !_ = traceShowId ((take 5) slFolded)
         -- combine 1-hour aw and sl records
