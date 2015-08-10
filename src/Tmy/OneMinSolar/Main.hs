@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- TODO:
---   combine wind direction using vector math
---     save stats for wind speed and direction to generate wind rose?
+--   save stats for wind speed and direction to generate wind rose?
 --   Filling in missing data? This shold probably be done in the actual TMY algo.
 
 module Main where
@@ -59,14 +58,18 @@ processSingleSite fn s = do
     slRecs <- mapM readCsv slFiles
     fnExists <- doesFileExist newCsv
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
+        -- concatenate all records from all files as aw and sl file timestamps do not line up
         awRecsList = concatRecs awRecs
         slRecsList = concatRecs slRecs
-        -- group and compute stats for aw and sl separately
-        awGroups = groupBy (hourGrouper awLTime) awRecsList
-        slGroups = groupBy (hourGrouper slLTime) slRecsList
-        -- AutoWeatherObs to StatAutoWeatherObs, filter out poor quality
-        awStatGroups = map (map awToStat) awGroups
-        slStatGroups = map (map slToStat) slGroups
+        -- turn the records into Stat recs, this filters out aw values by quality
+        awStats = map awToStat awRecsList
+        slStats = map slToStat slRecsList
+        -- fill in missing data
+        -- awInfilled = infill awStats
+        -- slInfilled = infill slStats
+        -- group into hours
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awStats
+        slStatGroups = groupBy (hourGrouper slLTimeSt) slStats
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
         slFolded = map (foldl1' slAggr) slStatGroups
@@ -81,5 +84,19 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
+infill :: [AwStats] -> [AwStats]
+infill (a:xs) =
+    let (mins, b) = minutesUntil _awAirTempSt xs
+    in  if mins > 0 && mins < 300 -- 5 hour
+        then let xs' = linearStats _awAirTempSt mins a b xs
+             in  a : infill xs'
+        else a : infill xs
+infill _ = []
 
 
+minutesUntil :: (AwStats -> Maybe (Stat a)) -> [AwStats] -> (Int, AwStats)
+minutesUntil xs = undefined
+
+
+linearStats :: (AwStats -> Maybe (Stat a)) -> Int -> AwStats -> AwStats -> [AwStats] -> [AwStats]
+linearStats num a b xs = undefined

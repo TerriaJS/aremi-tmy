@@ -2,10 +2,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Tmy.OneMinSolar.Types where
 
 import Control.Applicative                  ((<$>), (<*>), (<|>))
+import Control.Lens                         (makeLenses)
 import Data.ByteString                      (empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions)
@@ -48,124 +50,25 @@ instance FromNamedRecord OneMinSolarSite where
             <*> r .: "WMO index number"
 
 
-data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord, Generic)
-
-instance DefaultOrdered AwSlCombined where
-    {-
-    To generate the column names using ghci for easier copy and paste:
-    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe SlStats)
-    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe AwStats)
-    -}
-    headerOrder _ =
-        [ "station"
-        , "local time"
-        , "local std time"
-        , "utc time"
-
-        , "ghi mean"
-        , "ghi count"
-        , "ghi max"
-        , "ghi min"
-
-        , "dni mean"
-        , "dni count"
-        , "dni max"
-        , "dni min"
-
-        , "dhi mean"
-        , "dhi count"
-        , "dhi max"
-        , "dhi min"
-
-        , "diffuse mean"
-        , "diffuse count"
-        , "diffuse max"
-        , "diffuse min"
-
-        , "terrestrial mean"
-        , "terrestrial count"
-        , "terrestrial max"
-        , "terrestrial min"
-
-        , "seconds dni exceeding 120 W/sq m"
-        , "seconds dni exceeding 144 W/sq m"
-        , "seconds dni exceeding 96 W/sq m"
-
-        , "zenith mean"
-        , "zenith count"
-
-        , "air temp mean"
-        , "air temp count"
-        , "air temp max"
-        , "air temp min"
-
-        , "wet bulb mean"
-        , "wet bulb count"
-        , "wet bulb max"
-        , "wet bulb min"
-
-        , "dew point mean"
-        , "dew point count"
-        , "dew point max"
-        , "dew point min"
-
-        , "relative humidity mean"
-        , "relative humidity count"
-        , "relative humidity max"
-        , "relative humidity min"
-
-        , "wind speed mean"
-        , "wind speed count"
-        , "wind speed max"
-        , "wind speed min"
-
-        , "wind direction"
-
-        , "precipitation"
-
-        , "msl pressure mean"
-        , "msl pressure count"
-
-        , "qnh pressure mean"
-        , "qnh pressure count"
-
-        , "station level pressure mean"
-        , "station level pressure count"
-
-        , "visibility mean"
-        , "visibility count"
-        ]
-
-instance ToNamedRecord AwSlCombined where
-    toNamedRecord (AwSlCombined Nothing Nothing) = error "We should never have a completely empty record."
-    toNamedRecord (AwSlCombined aw sl) =
-        unions
-            [ namedRecord
-                [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
-                , "local time" .= ((awLTimeSt <$> aw) <|> (slLTimeSt <$> sl))
-                ]
-            , toNamedRecord aw
-            , toNamedRecord sl
-            ]
-
-
 data AwStats = AwStats
-    { awStationNumSt      :: !Text
-    , awLTimeSt           :: !LTime
-    , awLocalStdTimeSt    :: !LTime
-    , awUtcTimeSt         :: !LTime
-    , awPrecipSinceLastSt :: !(Maybe (Sum Double1Dec))
-    , awAirTempSt         :: !(Maybe (Stat Double1Dec))
-    , awWetBulbTempSt     :: !(Maybe (Stat Double1Dec))
-    , awDewPointTempSt    :: !(Maybe (Stat Double1Dec))
-    , awRelHumidSt        :: !(Maybe (Stat Double1Dec))
-    , awWindSpeedSt       :: !(Maybe (Stat Double1Dec))
-    , awWindDirSt         :: !(Maybe Int)
-    , awVisibilitySt      :: !(Maybe (SumCount Double1Dec))
-    , awMslPressSt        :: !(Maybe (SumCount Double1Dec))
-    , awStationLvlPressSt :: !(Maybe (SumCount Double1Dec))
-    , awQnhPressSt        :: !(Maybe (SumCount Double1Dec))
+    { awStationNumSt       :: !Text
+    , awLTimeSt            :: !LTime
+    , awLocalStdTimeSt     :: !LTime
+    , awUtcTimeSt          :: !LTime
+    , _awPrecipSinceLastSt :: !(Maybe (Sum Double1Dec))
+    , _awAirTempSt         :: !(Maybe (Stat Double1Dec))
+    , _awWetBulbTempSt     :: !(Maybe (Stat Double1Dec))
+    , _awDewPointTempSt    :: !(Maybe (Stat Double1Dec))
+    , _awRelHumidSt        :: !(Maybe (Stat Double1Dec))
+    , _awWindSpeedSt       :: !(Maybe (Stat Double1Dec))
+    , awWindDirSt          :: !(Maybe Int)
+    , _awVisibilitySt      :: !(Maybe (SumCount Double1Dec))
+    , _awMslPressSt        :: !(Maybe (SumCount Double1Dec))
+    , _awStationLvlPressSt :: !(Maybe (SumCount Double1Dec))
+    , _awQnhPressSt        :: !(Maybe (SumCount Double1Dec))
     } deriving (Show, Eq, Ord)
+
+makeLenses ''AwStats
 
 instance ToNamedRecord (Maybe AwStats) where
     toNamedRecord a =
@@ -173,18 +76,18 @@ instance ToNamedRecord (Maybe AwStats) where
             [ namedRecord
                 [ "local std time" .= maybe empty (toField . awLocalStdTimeSt) a
                 , "utc time"       .= maybe empty (toField . awUtcTimeSt)      a
-                , "precipitation"  .= (fmap getSum . awPrecipSinceLastSt   =<< a)
+                , "precipitation"  .= (fmap getSum . _awPrecipSinceLastSt   =<< a)
                 , "wind direction" .= (awWindDirSt =<< a)
                 ]
-            , statRecord "air temp"                   ( awAirTempSt         =<< a)
-            , statRecord "wet bulb"                   ( awWetBulbTempSt     =<< a)
-            , statRecord "dew point"                  ( awDewPointTempSt    =<< a)
-            , statRecord "relative humidity"          ( awRelHumidSt        =<< a)
-            , statRecord "wind speed"                 ( awWindSpeedSt       =<< a)
-            , sumCountRecord "visibility"             ( awVisibilitySt      =<< a)
-            , sumCountRecord "msl pressure"           ( awMslPressSt        =<< a)
-            , sumCountRecord "station level pressure" ( awStationLvlPressSt =<< a)
-            , sumCountRecord "qnh pressure"           ( awQnhPressSt        =<< a)
+            , statRecord "air temp"                   (_awAirTempSt         =<< a)
+            , statRecord "wet bulb"                   (_awWetBulbTempSt     =<< a)
+            , statRecord "dew point"                  (_awDewPointTempSt    =<< a)
+            , statRecord "relative humidity"          (_awRelHumidSt        =<< a)
+            , statRecord "wind speed"                 (_awWindSpeedSt       =<< a)
+            , sumCountRecord "visibility"             (_awVisibilitySt      =<< a)
+            , sumCountRecord "msl pressure"           (_awMslPressSt        =<< a)
+            , sumCountRecord "station level pressure" (_awStationLvlPressSt =<< a)
+            , sumCountRecord "qnh pressure"           (_awQnhPressSt        =<< a)
             ]
 
 
@@ -316,33 +219,35 @@ instance FromRecord AutoWeatherObs where
 
 
 data SlStats = SlStats
-    { slStationNumSt      :: !Text
-    , slLTimeSt           :: !LTime
-    , slGhiSt             :: !(Maybe (Stat Double1Dec))
-    , slDniSt             :: !(Maybe (Stat Double1Dec))
-    , slDiffSt            :: !(Maybe (Stat Double1Dec))
-    , slTerrSt            :: !(Maybe (Stat Double1Dec))
-    , slDhiSt             :: !(Maybe (Stat Double1Dec))
-    , slSunshineSecs96St  :: !(Maybe (Sum Int))
-    , slSunshineSecs120St :: !(Maybe (Sum Int))
-    , slSunshineSecs144St :: !(Maybe (Sum Int))
-    , slZenithSt          :: !(Maybe (SumCount Double1Dec))  -- TODO: is it correct to just average the zenith angle?
+    { slStationNumSt       :: !Text
+    , slLTimeSt            :: !LTime
+    , _slGhiSt             :: !(Maybe (Stat Double1Dec))
+    , _slDniSt             :: !(Maybe (Stat Double1Dec))
+    , _slDiffSt            :: !(Maybe (Stat Double1Dec))
+    , _slTerrSt            :: !(Maybe (Stat Double1Dec))
+    , _slDhiSt             :: !(Maybe (Stat Double1Dec))
+    , _slSunshineSecs96St  :: !(Maybe (Sum Int))
+    , _slSunshineSecs120St :: !(Maybe (Sum Int))
+    , _slSunshineSecs144St :: !(Maybe (Sum Int))
+    , _slZenithSt          :: !(Maybe (SumCount Double1Dec))  -- TODO: is it correct to just average the zenith angle?
     } deriving (Show, Eq, Ord)
+
+makeLenses ''SlStats
 
 instance ToNamedRecord (Maybe SlStats) where
     toNamedRecord a =
         unions
             [ namedRecord
-                [ "seconds dni exceeding 96 W/sq m"  .= (fmap getSum . slSunshineSecs96St  =<< a)
-                , "seconds dni exceeding 120 W/sq m" .= (fmap getSum . slSunshineSecs120St =<< a)
-                , "seconds dni exceeding 144 W/sq m" .= (fmap getSum . slSunshineSecs144St =<< a)
+                [ "seconds dni exceeding 96 W/sq m"  .= (fmap getSum . _slSunshineSecs96St  =<< a)
+                , "seconds dni exceeding 120 W/sq m" .= (fmap getSum . _slSunshineSecs120St =<< a)
+                , "seconds dni exceeding 144 W/sq m" .= (fmap getSum . _slSunshineSecs144St =<< a)
                 ]
-            , statRecord     "ghi"         (slGhiSt    =<< a)
-            , statRecord     "dni"         (slDniSt    =<< a)
-            , statRecord     "diffuse"     (slDiffSt   =<< a)
-            , statRecord     "terrestrial" (slTerrSt   =<< a)
-            , statRecord     "dhi"         (slDhiSt    =<< a)
-            , sumCountRecord "zenith"      (slZenithSt =<< a)
+            , statRecord     "ghi"         (_slGhiSt    =<< a)
+            , statRecord     "dni"         (_slDniSt    =<< a)
+            , statRecord     "diffuse"     (_slDiffSt   =<< a)
+            , statRecord     "terrestrial" (_slTerrSt   =<< a)
+            , statRecord     "dhi"         (_slDhiSt    =<< a)
+            , sumCountRecord "zenith"      (_slZenithSt =<< a)
             ]
 
 
@@ -425,3 +330,103 @@ instance FromNamedRecord SolarRadiationObs where
             <*> r .: "Sunshine-seconds-144 (duration of DNI exceeding 144 W/sq m over 1 minute) in seconds"
             <*> r .: "Zenith distance in degrees"
 
+
+data AwSlCombined = AwSlCombined (Maybe AwStats) (Maybe SlStats) deriving (Show, Eq, Ord, Generic)
+
+instance DefaultOrdered AwSlCombined where
+    {-
+    To generate the column names using ghci for easier copy and paste:
+    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe SlStats)
+    > mapM_ print . sort . keys $  toNamedRecord (Nothing :: Maybe AwStats)
+    -}
+    headerOrder _ =
+        [ "station"
+        , "local time"
+        , "local std time"
+        , "utc time"
+
+        , "ghi mean"
+        , "ghi count"
+        , "ghi max"
+        , "ghi min"
+
+        , "dni mean"
+        , "dni count"
+        , "dni max"
+        , "dni min"
+
+        , "dhi mean"
+        , "dhi count"
+        , "dhi max"
+        , "dhi min"
+
+        , "diffuse mean"
+        , "diffuse count"
+        , "diffuse max"
+        , "diffuse min"
+
+        , "terrestrial mean"
+        , "terrestrial count"
+        , "terrestrial max"
+        , "terrestrial min"
+
+        , "seconds dni exceeding 120 W/sq m"
+        , "seconds dni exceeding 144 W/sq m"
+        , "seconds dni exceeding 96 W/sq m"
+
+        , "zenith mean"
+        , "zenith count"
+
+        , "air temp mean"
+        , "air temp count"
+        , "air temp max"
+        , "air temp min"
+
+        , "wet bulb mean"
+        , "wet bulb count"
+        , "wet bulb max"
+        , "wet bulb min"
+
+        , "dew point mean"
+        , "dew point count"
+        , "dew point max"
+        , "dew point min"
+
+        , "relative humidity mean"
+        , "relative humidity count"
+        , "relative humidity max"
+        , "relative humidity min"
+
+        , "wind speed mean"
+        , "wind speed count"
+        , "wind speed max"
+        , "wind speed min"
+
+        , "wind direction"
+
+        , "precipitation"
+
+        , "msl pressure mean"
+        , "msl pressure count"
+
+        , "qnh pressure mean"
+        , "qnh pressure count"
+
+        , "station level pressure mean"
+        , "station level pressure count"
+
+        , "visibility mean"
+        , "visibility count"
+        ]
+
+instance ToNamedRecord AwSlCombined where
+    toNamedRecord (AwSlCombined Nothing Nothing) = error "We should never have a completely empty record."
+    toNamedRecord (AwSlCombined aw sl) =
+        unions
+            [ namedRecord
+                [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
+                , "local time" .= ((awLTimeSt <$> aw) <|> (slLTimeSt <$> sl))
+                ]
+            , toNamedRecord aw
+            , toNamedRecord sl
+            ]
