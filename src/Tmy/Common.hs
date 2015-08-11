@@ -9,8 +9,7 @@ import Data.Maybe                           (fromMaybe)
 import Data.Semigroup                       (Semigroup, Min(..), Max(..), (<>))
 import Data.Text                            (Text, append)
 import Data.Text.Encoding                   (encodeUtf8)
-import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour, todMin
-  )
+import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour, todMin)
 
 import Tmy.Csv
 
@@ -49,14 +48,18 @@ statRecord prefix Nothing =
         , col " min"   .= empty
         , col " count" .= empty
         ]
-statRecord prefix (Just (Stat ssum (Max smax) (Min smin) scount)) =
+statRecord prefix (Just s@(Stat _ (Max smax) (Min smin) scount)) =
     let col = (prefix <>)
     in  namedRecord
-        [ col " mean"  .= (ssum / fromIntegral scount)
+        [ col " mean"  .= statMean s
         , col " max"   .= smax
         , col " min"   .= smin
         , col " count" .= scount
         ]
+
+
+statMean :: Fractional a => Stat a -> a
+statMean (Stat ssum _ _ scount) = (ssum / fromIntegral scount)
 
 
 sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (SumCount a) -> NamedRecord

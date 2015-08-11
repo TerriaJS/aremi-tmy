@@ -1,5 +1,6 @@
 flags: {}
 packages:
 - '.'
-extra-deps: []
+extra-deps:
+- lens-datetime-0.2.1
 resolver: lts-2.16

@@ -23,6 +23,7 @@ executable aremi-tmy-oneMinSolar
                      , directory
                      , filemanip
                      , lens
+                     , lens-datetime
                      , old-locale
                      , semigroups
                      , text

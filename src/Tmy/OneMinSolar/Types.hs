@@ -8,7 +8,7 @@ module Tmy.OneMinSolar.Types where
 
 import Control.Applicative                  ((<$>), (<*>), (<|>))
 import Control.Lens                         (makeLenses)
-import Data.ByteString                      (empty)
+-- import Data.ByteString                      (empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Sum(..))
@@ -53,8 +53,8 @@ instance FromNamedRecord OneMinSolarSite where
 data AwStats = AwStats
     { awStationNumSt       :: !Text
     , awLTimeSt            :: !LTime
-    , awLocalStdTimeSt     :: !LTime
-    , awUtcTimeSt          :: !LTime
+    -- , awLocalStdTimeSt     :: !(Maybe LTime)
+    -- , awUtcTimeSt          :: !(Maybe LTime)
     , _awPrecipSinceLastSt :: !(Maybe (Sum Double1Dec))
     , _awAirTempSt         :: !(Maybe (Stat Double1Dec))
     , _awWetBulbTempSt     :: !(Maybe (Stat Double1Dec))
@@ -74,10 +74,10 @@ instance ToNamedRecord (Maybe AwStats) where
     toNamedRecord a =
         unions
             [ namedRecord
-                [ "local std time" .= maybe empty (toField . awLocalStdTimeSt) a
-                , "utc time"       .= maybe empty (toField . awUtcTimeSt)      a
-                , "precipitation"  .= (fmap getSum . _awPrecipSinceLastSt   =<< a)
-                , "wind direction" .= (awWindDirSt =<< a)
+                [ {-"local std time" .= maybe empty (toField . awLocalStdTimeSt)  a
+                , "utc time"       .= maybe empty (toField . awUtcTimeSt)       a
+                ,-} "precipitation"  .= (fmap getSum . _awPrecipSinceLastSt   =<< a)
+                , "wind direction" .= (awWindDirSt                          =<< a)
                 ]
             , statRecord "air temp"                   (_awAirTempSt         =<< a)
             , statRecord "wet bulb"                   (_awWetBulbTempSt     =<< a)
@@ -105,13 +105,13 @@ data AutoWeatherObs = AutoWeatherObs
     -- , awDDLocalStd    :: !Int  -- DD
     -- , awHH24LocalStd  :: !Int  -- HH24
     -- , awMILocalStd    :: !Int  -- MI format in Local standard time
-    , awLocalStdTime        :: !LTime
+    -- , awLocalStdTime        :: !LTime
     -- , awYearUtc       :: !Int  -- Year Month Day Hours Minutes in YYYY
     -- , awMMUtc         :: !Int  -- MM
     -- , awDDUtc         :: !Int  -- DD
     -- , awHH24Utc       :: !Int  -- HH24
     -- , awMIUtc         :: !Int  -- MI format in Universal coordinated time
-    , awUtcTime             :: !LTime
+    -- , awUtcTime             :: !LTime
     , awPrecipSinceLast     :: !(Spaced (Maybe Double1Dec)) -- Precipitation since last (AWS) observation in mm
     , awPrecipQual          :: !(Spaced Char)               -- Quality of precipitation since last (AWS) observation value
     , awAirTemp             :: !(Spaced (Maybe Double1Dec)) -- Air Temperature in degrees Celsius
@@ -167,9 +167,9 @@ instance FromRecord AutoWeatherObs where
                 -- 2: awYearLocal, 3: awMMLocal, 4: awDDLocal, 5: awHH24Local, 6: awMILocal
                 <*> fieldsToLTime 2 v
                 -- 7: awYearLocalStd, 8: awMMLocalStd, 9: awDDLocalStd, 10: awHH24LocalStd, 11: awMILocalStd
-                <*> fieldsToLTime 7 v
+                -- <*> fieldsToLTime 7 v
                 -- 12: awYearUtc, 13: awMMUtc, 14: awDDUtc, 15: awHH24Utc, 16: awMIUtc
-                <*> fieldsToLTime 12 v
+                -- <*> fieldsToLTime 12 v
                 <*> v .! 17        -- awPrecipSinceLast
                 <*> v .! 18        -- awPrecipQual
                 <*> v .! 19        -- awAirTemp
@@ -342,8 +342,8 @@ instance DefaultOrdered AwSlCombined where
     headerOrder _ =
         [ "station"
         , "local time"
-        , "local std time"
-        , "utc time"
+        -- , "local std time"
+        -- , "utc time"
 
         , "ghi mean"
         , "ghi count"
@@ -424,8 +424,8 @@ instance ToNamedRecord AwSlCombined where
     toNamedRecord (AwSlCombined aw sl) =
         unions
             [ namedRecord
-                [ "station" .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
-                , "local time" .= ((awLTimeSt <$> aw) <|> (slLTimeSt <$> sl))
+                [ "station"    .= ((awStationNumSt <$> aw) <|> (slStationNumSt <$> sl))
+                , "local time" .= ((awLTimeSt      <$> aw) <|> (slLTimeSt      <$> sl))
                 ]
             , toNamedRecord aw
             , toNamedRecord sl

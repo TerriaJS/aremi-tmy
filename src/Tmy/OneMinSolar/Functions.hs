@@ -23,8 +23,8 @@ awAggr a b =
     AwStats
         { awStationNumSt       = awStationNumSt   a
         , awLTimeSt            = floorMinute (awLTimeSt a)
-        , awLocalStdTimeSt     = awLocalStdTimeSt a
-        , awUtcTimeSt          = awUtcTimeSt      a
+        -- , awLocalStdTimeSt     = awLocalStdTimeSt a
+        -- , awUtcTimeSt          = awUtcTimeSt      a
         , _awAirTempSt         = combine _awAirTempSt         a b
         , _awWetBulbTempSt     = combine _awWetBulbTempSt     a b
         , _awDewPointTempSt    = combine _awDewPointTempSt    a b
@@ -63,8 +63,8 @@ awToStat a =
     AwStats
         { awStationNumSt       = unSpaced (awStationNum a)
         , awLTimeSt            = awLTime    a
-        , awLocalStdTimeSt     = awLocalStdTime a
-        , awUtcTimeSt          = awUtcTime      a
+        -- , awLocalStdTimeSt     = awLocalStdTime a
+        -- , awUtcTimeSt          = awUtcTime      a
         , _awAirTempSt         = maybeQualStat awAirTempQual      awAirTemp      awAirTempMax      awAirTempMin      a
         , _awWetBulbTempSt     = maybeQualStat awWetBulbTempQual  awWetBulbTemp  awWetBulbTempMax  awWetBulbTempMin  a
         , _awDewPointTempSt    = maybeQualStat awDewPointTempQual awDewPointTemp awDewPointTempMax awDewPointTempMin a

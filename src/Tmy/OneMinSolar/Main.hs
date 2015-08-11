@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 -- TODO:
 --   save stats for wind speed and direction to generate wind rose?
@@ -6,11 +7,15 @@
 
 module Main where
 
+import Control.Lens                         (Lens', (^.), (.~), (&), (+~))
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records)
 import Data.List                            (groupBy, foldl1')
-import Data.Text                            (unpack)
+import Data.Maybe                           (fromJust)
+import Data.Text                            (Text, unpack)
+import Data.Time.Lens                       (flexDT, minutes)
+import Data.Time.LocalTime                  (LocalTime)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
@@ -65,10 +70,10 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        -- awInfilled = infill awStats
+        awInfilled = infill awAirTempSt awStats
         -- slInfilled = infill slStats
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awStats
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
         slStatGroups = groupBy (hourGrouper slLTimeSt) slStats
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
@@ -84,19 +89,54 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
-infill :: [AwStats] -> [AwStats]
-infill (a:xs) =
-    let (mins, b) = minutesUntil _awAirTempSt xs
-    in  if mins > 0 && mins < 300 -- 5 hour
-        then let xs' = linearStats _awAirTempSt mins a b xs
-             in  a : infill xs'
-        else a : infill xs
-infill _ = []
+infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
+infill f as@(a:xs) =
+    case minutesUntil f xs of
+        Nothing -> as
+        Just ((mins, b)) ->
+            if mins > 0 && mins < 300 -- 5 hours
+                then let xs' = linearlyInterpolate f mins a b xs
+                     in  a : infill f xs'
+                else a : infill f xs
+infill _ [] = []
 
 
-minutesUntil :: (AwStats -> Maybe (Stat a)) -> [AwStats] -> (Int, AwStats)
-minutesUntil xs = undefined
+-- | Find the number of minutes as well as the record that has a Just value for a given field
+minutesUntil :: (Lens' AwStats (Maybe (Stat Double1Dec)))
+             -> [AwStats]
+             -> Maybe (Int, AwStats)
+minutesUntil f xs = go 0 xs where
+    go i (a:as) = case a ^. f of            -- get the field we are interested in
+                    Nothing -> go (i+1) as  -- if it's Nothing, then increment and keep looking
+                    Just _  -> Just (i, a)  -- if the field has a value then return the counter and the record
+    go _ [] = Nothing
 
 
-linearStats :: (AwStats -> Maybe (Stat a)) -> Int -> AwStats -> AwStats -> [AwStats] -> [AwStats]
-linearStats num a b xs = undefined
+linearlyInterpolate :: (Lens' AwStats (Maybe (Stat Double1Dec)))
+                    -> Int
+                    -> AwStats
+                    -> AwStats
+                    -> [AwStats]
+                    -> [AwStats]
+linearlyInterpolate _ 0   _ _ xs = xs
+linearlyInterpolate f num a b xs' = go 1 xs' where
+    lt x       = unLTime (awLTimeSt x)         -- get the LocalTime from an AwStats
+    addMin x m = lt x & flexDT.minutes +~ m    -- add minutes to a LocalTime
+    va         = statMean (fromJust (a ^. f))  -- the mean value of the field for a
+    vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
+    vincr      = (vb - va) / fromIntegral num  -- the linear increment
+    val n      = va + (vincr * fromIntegral n) -- the new mean of the nth linearly interpolated record
+    stat v     = mkStat v v v                  -- the new Stat value for the field
+    go _ []    = []
+    go n ss@(x:xs)
+        | n > num            = ss -- we're done
+        | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs -- the next AwStat has the right time, modify with new stat
+        | otherwise          = (mkAwStats (awStationNumSt a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
+
+
+mkAwStats :: Text -> LocalTime -> AwStats
+mkAwStats stNum lt = AwStats stNum (LTime lt)
+                        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+
+
