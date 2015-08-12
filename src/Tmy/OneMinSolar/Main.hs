@@ -1,9 +1,9 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
 -- TODO:
 --   save stats for wind speed and direction to generate wind rose?
---   Filling in missing data? This shold probably be done in the actual TMY algo.
 
 module Main where
 
@@ -14,8 +14,9 @@ import Data.Csv.Streaming                   (Records)
 import Data.List                            (groupBy, foldl1')
 import Data.Maybe                           (fromJust)
 import Data.Text                            (Text, unpack)
+import Data.Time.Clock                      (diffUTCTime)
 import Data.Time.Lens                       (flexDT, minutes)
-import Data.Time.LocalTime                  (LocalTime)
+import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
@@ -91,7 +92,7 @@ processSingleSite fn s = do
 
 infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill f as@(a:xs) =
-    case minutesUntil f xs of
+    case minutesUntil (unLTime (awLTimeSt a)) f xs of
         Nothing -> as
         Just ((mins, b)) ->
             if mins > 0 && mins < 300 -- 5 hours
@@ -102,14 +103,16 @@ infill _ [] = []
 
 
 -- | Find the number of minutes as well as the record that has a Just value for a given field
-minutesUntil :: (Lens' AwStats (Maybe (Stat Double1Dec)))
+minutesUntil :: LocalTime
+             -> (Lens' AwStats (Maybe (Stat Double1Dec)))
              -> [AwStats]
              -> Maybe (Int, AwStats)
-minutesUntil f xs = go 0 xs where
-    go i (a:as) = case a ^. f of            -- get the field we are interested in
-                    Nothing -> go (i+1) as  -- if it's Nothing, then increment and keep looking
-                    Just _  -> Just (i, a)  -- if the field has a value then return the counter and the record
-    go _ [] = Nothing
+minutesUntil lt f xs = go xs where
+    minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60) - 1
+    go (a:as) = case a ^. f of        -- get the field we are interested in
+                    Nothing -> go as  -- if it's Nothing, then increment and keep looking
+                    Just _  -> Just (minDiff (unLTime (awLTimeSt a)) lt, a)  -- if the field has a value then return the minutes difference and the record
+    go [] = Nothing
 
 
 linearlyInterpolate :: (Lens' AwStats (Maybe (Stat Double1Dec)))
@@ -124,7 +127,7 @@ linearlyInterpolate f num a b xs' = go 1 xs' where
     addMin x m = lt x & flexDT.minutes +~ m    -- add minutes to a LocalTime
     va         = statMean (fromJust (a ^. f))  -- the mean value of the field for a
     vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
-    vincr      = (vb - va) / fromIntegral num  -- the linear increment
+    vincr      = (vb - va) / fromIntegral (num+1)  -- the linear increment
     val n      = va + (vincr * fromIntegral n) -- the new mean of the nth linearly interpolated record
     stat v     = mkStat v v v                  -- the new Stat value for the field
     go _ []    = []
