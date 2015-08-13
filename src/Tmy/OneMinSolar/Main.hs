@@ -4,6 +4,7 @@
 
 -- TODO:
 --   save stats for wind speed and direction to generate wind rose?
+--   count filled in data separately
 
 module Main where
 
@@ -71,7 +72,7 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        awInfilled = infill awAirTempSt awStats
+        awInfilled = check awAirTempSt (infill awAirTempSt awStats)
         -- slInfilled = infill slStats
         -- group into hours
         awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
@@ -90,6 +91,27 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
+-- TODO: test that this errors on 5+ hour gaps
+check :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
+check f ss = go ss where
+    go (a:b:xs) =
+        case a ^. f of
+            Nothing -> go (b:xs) -- skip until we find a value for the field
+            Just _  ->
+                case b ^. f of
+                    Nothing ->
+                        let lta = (unLTime (awLTimeSt a))
+                            ltb = (unLTime (awLTimeSt b))
+                            mins = minDiff ltb lta
+                        in  if mins < 300
+                                then error ("Found a gap of " ++ show mins
+                                            ++ " minutes, shorter than the minimum 300. From "
+                                            ++ show lta ++ " to " ++ show ltb ++ ".")
+                                else go (b:xs)
+                    Just _  -> go (b:xs)
+    go _ = []
+
+
 infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill f as@(a:xs) =
     case minutesUntil (unLTime (awLTimeSt a)) f xs of
@@ -102,13 +124,16 @@ infill f as@(a:xs) =
 infill _ [] = []
 
 
+minDiff :: LocalTime -> LocalTime -> Int
+minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60) - 1
+
+
 -- | Find the number of minutes as well as the record that has a Just value for a given field
 minutesUntil :: LocalTime
              -> (Lens' AwStats (Maybe (Stat Double1Dec)))
              -> [AwStats]
              -> Maybe (Int, AwStats)
 minutesUntil lt f xs = go xs where
-    minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60) - 1
     go (a:as) = case a ^. f of        -- get the field we are interested in
                     Nothing -> go as  -- if it's Nothing, then increment and keep looking
                     Just _  -> Just (minDiff (unLTime (awLTimeSt a)) lt, a)  -- if the field has a value then return the minutes difference and the record
