@@ -96,7 +96,7 @@ check :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 check f ss = go ss where
     go (a:b:xs) =
         case a ^. f of
-            Nothing -> go (b:xs) -- skip until we find a value for the field
+            Nothing -> a : go (b:xs) -- skip until we find a value for the field
             Just _  ->
                 case b ^. f of
                     Nothing ->
@@ -107,9 +107,9 @@ check f ss = go ss where
                                 then error ("Found a gap of " ++ show mins
                                             ++ " minutes, shorter than the minimum 300. From "
                                             ++ show lta ++ " to " ++ show ltb ++ ".")
-                                else go (b:xs)
-                    Just _  -> go (b:xs)
-    go _ = []
+                                else a : go (b:xs)
+                    Just _  -> a : go (b:xs)
+    go xs = xs
 
 
 infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
