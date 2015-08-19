@@ -73,6 +73,7 @@ processSingleSite fn s = do
         slStats = map slToStat slRecsList
         -- fill in missing data
         awInfilled = check awAirTempSt (infill awAirTempSt awStats)
+        -- awInfilled = check awAirTempSt awStats
         -- slInfilled = infill slStats
         -- group into hours
         awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
@@ -103,7 +104,7 @@ check f ss = go ss where
                         let lta = (unLTime (awLTimeSt a))
                             ltb = (unLTime (awLTimeSt b))
                             mins = minDiff ltb lta
-                        in  if mins < 300
+                        in  if lessThan5hours mins
                                 then error ("Found a gap of " ++ show mins
                                             ++ " minutes, shorter than the minimum 300. From "
                                             ++ show lta ++ " to " ++ show ltb ++ ".")
@@ -117,15 +118,19 @@ infill f as@(a:xs) =
     case minutesUntil (unLTime (awLTimeSt a)) f xs of
         Nothing -> as
         Just ((mins, b)) ->
-            if mins > 0 && mins < 300 -- 5 hours
+            if mins > 0 && lessThan5hours mins
                 then let xs' = linearlyInterpolate f mins a b xs
                      in  a : infill f xs'
                 else a : infill f xs
 infill _ [] = []
 
 
+lessThan5hours :: Int -> Bool
+lessThan5hours mins = mins < 300
+
+
 minDiff :: LocalTime -> LocalTime -> Int
-minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60) - 1
+minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60)
 
 
 -- | Find the number of minutes as well as the record that has a Just value for a given field
@@ -152,12 +157,12 @@ linearlyInterpolate f num a b xs' = go 1 xs' where
     addMin x m = lt x & flexDT.minutes +~ m    -- add minutes to a LocalTime
     va         = statMean (fromJust (a ^. f))  -- the mean value of the field for a
     vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
-    vincr      = (vb - va) / fromIntegral (num+1)  -- the linear increment
+    vincr      = (vb - va) / fromIntegral (num)  -- the linear increment
     val n      = va + (vincr * fromIntegral n) -- the new mean of the nth linearly interpolated record
     stat v     = mkStat v v v                  -- the new Stat value for the field
     go _ []    = []
     go n ss@(x:xs)
-        | n > num            = ss -- we're done
+        | n >= num           = ss -- we're done
         | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs -- the next AwStat has the right time, modify with new stat
         | otherwise          = (mkAwStats (awStationNumSt a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
 
