@@ -4,7 +4,11 @@
 
 -- TODO:
 --   save stats for wind speed and direction to generate wind rose?
---   count filled in data separately
+--   create separate executables for the different stages so that we have something like:
+--      * main executable that does everything
+--      * load CSV and turn into AwSlCombined and save to CSV
+--      * fill in missing values for <5 hour gaps (should this reuse previous code, or load from CSV?)
+--      * fill in missing values for X hour gaps etc.
 
 module Main where
 
@@ -158,7 +162,7 @@ linearlyInterpolate f num a b xs' = go 1 xs' where
     vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
     vincr      = (vb - va) / fromIntegral (num)  -- the linear increment
     val n      = va + (vincr * fromIntegral n) -- the new mean of the nth linearly interpolated record
-    stat v     = mkStat v v v                  -- the new Stat value for the field
+    stat v     = mkFillStat v v v              -- the new Stat value for the field
     go _ []    = []
     go n ss@(x:xs)
         | n >= num           = ss -- we're done

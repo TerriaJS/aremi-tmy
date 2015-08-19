@@ -15,65 +15,72 @@ import Tmy.Csv
 
 
 data Stat a = Stat
-    { stSum   :: !a
-    , stMax   :: !(Max a)
-    , stMin   :: !(Min a)
-    , stCount :: !Int
+    { stSum       :: !a
+    , stMax       :: !(Max a)
+    , stMin       :: !(Min a)
+    , stCount     :: !Int
+    , stFillCount :: !Int
     } deriving (Show, Eq, Ord)
 
 instance (Num a, Ord a) => Semigroup (Stat a) where
-    (Stat amean amax amin acnt) <> (Stat bmean bmax bmin bcnt) =
-        Stat (amean + bmean)
-             (amax <> bmax)
-             (amin <> bmin)
-             (acnt + bcnt)
+    (Stat amean amax amin acnt afcnt) <> (Stat bmean bmax bmin bcnt bfcnt) =
+        Stat (amean +  bmean)
+             (amax  <> bmax)
+             (amin  <> bmin)
+             (acnt  +  bcnt)
+             (afcnt +  bfcnt)
 
 
 data SumCount a = SumCount
-    { sSum :: !a
-    , sCount :: !Int
+    { sSum       :: !a
+    , sCount     :: !Int
+    , sFillCount :: !Int
     } deriving (Show, Eq, Ord)
 
 instance (Num a, Ord a) => Semigroup (SumCount a) where
-    (SumCount asum acount) <> (SumCount bsum bcount) =
-        SumCount (asum + bsum) (acount + bcount)
+    (SumCount asum acount afcount) <> (SumCount bsum bcount bfcount) =
+        SumCount (asum + bsum) (acount + bcount) (afcount + bfcount)
 
 
 statRecord :: (ToField a, Fractional a, Show a) => ByteString -> Maybe (Stat a) -> NamedRecord
 statRecord prefix Nothing =
     let col = (prefix <>)
     in  namedRecord
-        [ col " mean"  .= empty
-        , col " max"   .= empty
-        , col " min"   .= empty
-        , col " count" .= empty
+        [ col " mean"       .= empty
+        , col " max"        .= empty
+        , col " min"        .= empty
+        , col " count"      .= empty
+        , col " fill count" .= empty
         ]
-statRecord prefix (Just s@(Stat _ (Max smax) (Min smin) scount)) =
+statRecord prefix (Just s@(Stat _ (Max smax) (Min smin) scount sfcount)) =
     let col = (prefix <>)
     in  namedRecord
-        [ col " mean"  .= statMean s
-        , col " max"   .= smax
-        , col " min"   .= smin
-        , col " count" .= scount
+        [ col " mean"       .= statMean s
+        , col " max"        .= smax
+        , col " min"        .= smin
+        , col " count"      .= scount
+        , col " fill count" .= sfcount
         ]
 
 
 statMean :: Fractional a => Stat a -> a
-statMean (Stat ssum _ _ scount) = (ssum / fromIntegral scount)
+statMean (Stat ssum _ _ scount sfcount) = (ssum / fromIntegral (scount + sfcount))
 
 
 sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (SumCount a) -> NamedRecord
 sumCountRecord prefix Nothing =
     let col = encodeUtf8 . append prefix
     in  namedRecord
-        [ col " mean"  .= empty
-        , col " count" .= empty
+        [ col " mean"       .= empty
+        , col " count"      .= empty
+        , col " fill count" .= empty
         ]
-sumCountRecord prefix (Just (SumCount ssum scount)) =
+sumCountRecord prefix (Just (SumCount ssum scount sfcount)) =
     let col = encodeUtf8 . append prefix
     in  namedRecord
-        [ col " mean"  .= (ssum / fromIntegral scount)
-        , col " count" .= scount
+        [ col " mean"       .= (ssum / fromIntegral scount)
+        , col " count"      .= scount
+        , col " fill count" .= sfcount
         ]
 
 
@@ -115,11 +122,19 @@ qFilter qf vf a =
 
 
 mkStat :: a -> a -> a -> Stat a
-mkStat smean smax smin = Stat smean (Max smax) (Min smin) 1
+mkStat smean smax smin = Stat smean (Max smax) (Min smin) 1 0
+
+
+mkFillStat :: a -> a -> a -> Stat a
+mkFillStat smean smax smin = Stat smean (Max smax) (Min smin) 0 1
 
 
 mkSumCount :: a -> SumCount a
-mkSumCount a = SumCount a 1
+mkSumCount a = SumCount a 1 0
+
+
+mkFillSumCount :: a -> SumCount a
+mkFillSumCount a = SumCount a 0 1
 
 
 hourGrouper :: (a -> LTime) -> a -> a -> Bool

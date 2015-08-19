@@ -347,26 +347,31 @@ instance DefaultOrdered AwSlCombined where
 
         , "ghi mean"
         , "ghi count"
+        , "ghi fill count"
         , "ghi max"
         , "ghi min"
 
         , "dni mean"
         , "dni count"
+        , "dni fill count"
         , "dni max"
         , "dni min"
 
         , "dhi mean"
         , "dhi count"
+        , "dhi fill count"
         , "dhi max"
         , "dhi min"
 
         , "diffuse mean"
         , "diffuse count"
+        , "diffuse fill count"
         , "diffuse max"
         , "diffuse min"
 
         , "terrestrial mean"
         , "terrestrial count"
+        , "terrestrial fill count"
         , "terrestrial max"
         , "terrestrial min"
 
@@ -376,29 +381,35 @@ instance DefaultOrdered AwSlCombined where
 
         , "zenith mean"
         , "zenith count"
+        , "zenith fill count"
 
         , "air temp mean"
         , "air temp count"
+        , "air temp fill count"
         , "air temp max"
         , "air temp min"
 
         , "wet bulb mean"
         , "wet bulb count"
+        , "wet bulb fill count"
         , "wet bulb max"
         , "wet bulb min"
 
         , "dew point mean"
         , "dew point count"
+        , "dew point fill count"
         , "dew point max"
         , "dew point min"
 
         , "relative humidity mean"
         , "relative humidity count"
+        , "relative humidity fill count"
         , "relative humidity max"
         , "relative humidity min"
 
         , "wind speed mean"
         , "wind speed count"
+        , "wind speed fill count"
         , "wind speed max"
         , "wind speed min"
 
@@ -408,15 +419,18 @@ instance DefaultOrdered AwSlCombined where
 
         , "msl pressure mean"
         , "msl pressure count"
+        , "msl pressure fill count"
 
         , "qnh pressure mean"
-        , "qnh pressure count"
+        , "qnh pressure fill count"
 
         , "station level pressure mean"
         , "station level pressure count"
+        , "station level pressure fill count"
 
         , "visibility mean"
         , "visibility count"
+        , "visibility fill count"
         ]
 
 instance ToNamedRecord AwSlCombined where
