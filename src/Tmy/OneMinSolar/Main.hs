@@ -92,7 +92,6 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
--- TODO: test that this errors on 5+ hour gaps
 check :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 check f ss = go ss where
     go (a:b:xs) =
@@ -104,7 +103,7 @@ check f ss = go ss where
                         let lta = (unLTime (awLTimeSt a))
                             ltb = (unLTime (awLTimeSt b))
                             mins = minDiff ltb lta
-                        in  if lessThan5hours mins
+                        in  if isLessThan5Hours mins
                                 then error ("Found a gap of " ++ show mins
                                             ++ " minutes, shorter than the minimum 300. From "
                                             ++ show lta ++ " to " ++ show ltb ++ ".")
@@ -118,15 +117,15 @@ infill f as@(a:xs) =
     case minutesUntil (unLTime (awLTimeSt a)) f xs of
         Nothing -> as
         Just ((mins, b)) ->
-            if mins > 0 && lessThan5hours mins
+            if mins > 0 && isLessThan5Hours mins
                 then let xs' = linearlyInterpolate f mins a b xs
                      in  a : infill f xs'
                 else a : infill f xs
 infill _ [] = []
 
 
-lessThan5hours :: Int -> Bool
-lessThan5hours mins = mins < 300
+isLessThan5Hours :: Int -> Bool
+isLessThan5Hours mins = mins < 300
 
 
 minDiff :: LocalTime -> LocalTime -> Int
