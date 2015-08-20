@@ -97,10 +97,8 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
-lensIsJust :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> AwStats -> Bool
-lensIsJust l a = isJust (a ^. l)
-
-
+-- | Check that the infilling of values has succeeded and there are no more gaps
+--   of data shorter than the infill max gap length.
 check :: (a -> Bool)
       -> (a -> LTime)
       -> [a]
@@ -130,7 +128,7 @@ check p lt ss = go ss where
 
 infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill f as@(a:xs) =
-    case minutesUntil (unLTime (awLTimeSt a)) f xs of
+    case minutesUntil (unLTime (awLTimeSt a)) (lensIsJust f) awLTimeSt xs of
         Nothing -> as
         Just ((mins, b)) ->
             if mins > 0 && isLessThan5Hours mins
@@ -150,13 +148,14 @@ minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) /
 
 -- | Find the number of minutes as well as the record that has a Just value for a given field
 minutesUntil :: LocalTime
-             -> (Lens' AwStats (Maybe (Stat Double1Dec)))
-             -> [AwStats]
-             -> Maybe (Int, AwStats)
-minutesUntil lt f xs = go xs where
-    go (a:as) = case a ^. f of        -- get the field we are interested in
-                    Nothing -> go as  -- if it's Nothing, then increment and keep looking
-                    Just _  -> Just (minDiff (unLTime (awLTimeSt a)) lt, a)  -- if the field has a value then return the minutes difference and the record
+             -> (a -> Bool)
+             -> (a -> LTime)
+             -> [a]
+             -> Maybe (Int, a)
+minutesUntil lt p ltf xs = go xs where
+    go (a:as) = case p a of         -- check if the field we are interested in has a value
+                    False -> go as  -- if it doesn't, then increment and keep looking
+                    True  -> Just (minDiff (unLTime (ltf a)) lt, a)  -- if the field has a value then return the minutes difference and the record
     go [] = Nothing
 
 
@@ -187,4 +186,6 @@ mkAwStats stNum lt = AwStats stNum (LTime lt)
                         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 
+lensIsJust :: Lens' a (Maybe b) -> a -> Bool
+lensIsJust l a = isJust (a ^. l)
 
