@@ -17,7 +17,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records)
 import Data.List                            (groupBy, foldl1')
-import Data.Maybe                           (fromJust)
+import Data.Maybe                           (fromJust, isJust)
 import Data.Text                            (Text, unpack)
 import Data.Time.Clock                      (diffUTCTime)
 import Data.Time.Lens                       (flexDT, minutes)
@@ -76,11 +76,12 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        awInfilled = check awAirTempSt (infill awAirTempSt awStats)
+        awInfilled = infill awAirTempSt awStats
         -- awInfilled = check awAirTempSt awStats
         -- slInfilled = infill slStats
+        awChecked = check (lensIsJust awAirTempSt) awLTimeSt awInfilled
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awChecked
         slStatGroups = groupBy (hourGrouper slLTimeSt) slStats
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
@@ -96,23 +97,34 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
-check :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
-check f ss = go ss where
+lensIsJust :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> AwStats -> Bool
+lensIsJust l a = isJust (a ^. l)
+
+
+check :: (a -> Bool)
+      -> (a -> LTime)
+      -> [a]
+      -> [a]
+check p lt ss = go ss where
     go (a:b:xs) =
-        case a ^. f of
-            Nothing -> a : go (b:xs) -- skip until we find a value for the field
-            Just _  ->
-                case b ^. f of
-                    Nothing ->
-                        let lta = (unLTime (awLTimeSt a))
-                            ltb = (unLTime (awLTimeSt b))
+        -- check if a has a value for this time
+        case p a of
+            False -> a : go (b:xs) -- skip until we find a value for the field
+            True  ->
+                -- check if b has a value for this time
+                case p b of
+                    -- if it does not, then check that the gap is more than we are supposed to have filled in
+                    False ->
+                        let lta = (unLTime (lt a))
+                            ltb = (unLTime (lt b))
                             mins = minDiff ltb lta
                         in  if isLessThan5Hours mins
                                 then error ("Found a gap of " ++ show mins
                                             ++ " minutes, shorter than the minimum 300. From "
                                             ++ show lta ++ " to " ++ show ltb ++ ".")
                                 else a : go (b:xs)
-                    Just _  -> a : go (b:xs)
+                    -- if b does have a value, then there is no gap, put b back and iterate
+                    True  -> a : go (b:xs)
     go xs = xs
 
 
