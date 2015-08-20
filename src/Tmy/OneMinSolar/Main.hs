@@ -80,12 +80,13 @@ processSingleSite fn s = do
         slStats = map slToStat slRecsList
         -- fill in missing data
         awInfilled = awFillGaps awStats
-        -- awInfilled = check awAirTempSt awStats
-        -- slInfilled = infill slStats
-        awChecked = check (unLTime . awLTimeSt) awAirTempSt awInfilled
+        slInfilled = slFillGaps slStats
+        -- check the filled in data
+        awChecked = awCheckGaps awInfilled
+        slChecked = slCheckGaps slInfilled
         -- group into hours
         awStatGroups = groupBy (hourGrouper awLTimeSt) awChecked
-        slStatGroups = groupBy (hourGrouper slLTimeSt) slStats
+        slStatGroups = groupBy (hourGrouper slLTimeSt) slChecked
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
         slFolded = map (foldl1' slAggr) slStatGroups
@@ -101,44 +102,77 @@ processSingleSite fn s = do
 
 
 awFillGaps :: [AwStats] -> [AwStats]
-awFillGaps as =
+awFillGaps xs =
     ( f awAirTempSt
     . f awWetBulbTempSt
     . f awDewPointTempSt
     . f awRelHumidSt
     . f awWindSpeedSt
-    ) as
+    ) xs
     where
         f = infill awStatP
 
 
+awCheckGaps :: [AwStats] -> [AwStats]
+awCheckGaps xs =
+    ( f awAirTempSt
+    . f awWetBulbTempSt
+    . f awDewPointTempSt
+    . f awRelHumidSt
+    . f awWindSpeedSt
+    ) xs
+    where
+        f = check awStatP
+
+
+slFillGaps :: [SlStats] -> [SlStats]
+slFillGaps xs =
+    ( f slGhiSt
+    . f slDniSt
+    . f slDiffSt
+    . f slTerrSt
+    . f slDhiSt
+    ) xs
+    where
+        f = infill slStatP
+
+
+slCheckGaps :: [SlStats] -> [SlStats]
+slCheckGaps xs =
+    ( f slGhiSt
+    . f slDniSt
+    . f slDiffSt
+    . f slTerrSt
+    . f slDhiSt
+    ) xs
+    where
+        f = check slStatP
+
+
 -- | Check that the infilling of values has succeeded and there are no more gaps
 --   of data shorter than the infill max gap length.
-check :: (a -> LocalTime)
+check :: (Show a, Show b)
+      => Processing a
       -> (Lens' a (Maybe b))
       -> [a]
       -> [a]
-check lt f ss = go ss where
-    go (a:b:xs) =
+check pr@(Processing{..}) f ss = go ss where
+    go as@(a:xs) =
         -- check if a has a value for this time
         case a ^. f of
-            Nothing -> a : go (b:xs) -- skip until we find a value for the field
+            Nothing -> a : go xs -- skip until we find a value for the field
             Just _  ->
-                -- check if b has a value for this time
-                case b ^. f of
-                    -- if it does not, then there is a gap, check that the gap is more than we are supposed to have filled in
-                    Nothing ->
-                        let lta = lt a
-                            ltb = lt b
-                            mins = minDiff ltb lta
-                        in  if isLessThan5Hours mins
-                                then error ("Found a gap of " ++ show mins
-                                            ++ " minutes, shorter than the minimum 300. From "
-                                            ++ show lta ++ " to " ++ show ltb ++ ".")
-                                else a : go (b:xs)
-                    -- if b does have a value, then there is no gap, put b back and iterate
-                    Just _  -> a : go (b:xs)
-    go xs = xs
+                case minutesUntil pr f (lTime a) xs of
+                    Nothing -> as
+                    Just ((mins, b)) ->
+                        if mins > 1 && isLessThan5Hours mins
+                            then error ("Found a gap of " ++ show mins
+                                        ++ " minutes, shorter than the minimum 300. From "
+                                        ++ show (lTime a) ++ " to " ++ show (lTime b)
+                                        ++ ".\n\nThe two records are:\n\n"++ show a ++ "\n\n" ++ show b
+                                        ++ "\n\na: " ++ show (a ^. f) ++ "\nb: " ++ show (b ^. f))
+                            else a : go xs
+    go [] = []
 
 
 data Processing recType = Processing
@@ -158,19 +192,34 @@ awStatP = Processing
     }
 
 
+slStatP :: Processing SlStats
+slStatP = Processing
+    { lTime   = unLTime . slLTimeSt
+    , stNum   = slStationNumSt
+    , mkEmpty = mkSlStats
+    }
+
+
 -- infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill :: Processing a
        -> (Lens' a (Maybe (Stat Double1Dec)))
        -> [a]
        -> [a]
 infill pr@(Processing{..}) f as@(a:xs) =
-    case minutesUntil pr f (lTime a) xs of
-        Nothing -> as
-        Just ((mins, b)) ->
-            if mins > 0 && isLessThan5Hours mins
-                then let xs' = linearlyInterpolate pr f mins a b xs
-                     in  a : infill pr f xs'
-                else a : infill pr f xs
+    -- check that we have a record with a value for this field
+    case a ^. f of
+        -- if not then we must be at the start of the list, so iterate until we find one
+        Nothing -> a : infill pr f xs
+        Just _  ->
+            -- if we do then check how long until the next value for this field
+            case minutesUntil pr f (lTime a) xs of
+                -- if not then we must be at the end of the list
+                Nothing -> as
+                Just ((mins, b)) ->
+                    if mins > 1 && isLessThan5Hours mins
+                        then let xs' = linearlyInterpolate pr f mins a b xs
+                             in  a : infill pr f xs'
+                        else a : infill pr f xs
 infill _ _ [] = []
 
 
@@ -189,9 +238,12 @@ minutesUntil :: Processing a
              -> [a]
              -> Maybe (Int, a)
 minutesUntil (Processing{..}) f lt xs = go xs where
-    go (a:as) = case a ^. f of        -- check if the field we are interested in has a value
-                    Nothing -> go as  -- if it doesn't, then increment and keep looking
-                    Just _  -> Just (minDiff (lTime a) lt, a)  -- if the field has a value then return the minutes difference and the record
+    -- check if the field we are interested in has a value
+    go (a:as) = case a ^. f of
+                    -- if it doesn't, then increment and keep looking
+                    Nothing -> go as
+                    -- if the field has a value then return the minutes difference and the record
+                    Just _  -> Just (minDiff (lTime a) lt, a)
     go [] = Nothing
 
 
@@ -224,3 +276,8 @@ linearlyInterpolate (Processing{..}) f num a b xs' = go 1 xs' where
 mkAwStats :: Text -> LocalTime -> AwStats
 mkAwStats stNum lt = AwStats stNum (LTime lt)
                         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+
+mkSlStats :: Text -> LocalTime -> SlStats
+mkSlStats stNum lt = SlStats stNum (LTime lt)
+                        Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
