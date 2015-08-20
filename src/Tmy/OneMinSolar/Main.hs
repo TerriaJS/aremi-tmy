@@ -79,7 +79,7 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        awInfilled = infill awStatP awAirTempSt awStats
+        awInfilled = awFillGaps awStats
         -- awInfilled = check awAirTempSt awStats
         -- slInfilled = infill slStats
         awChecked = check (unLTime . awLTimeSt) awAirTempSt awInfilled
@@ -98,6 +98,18 @@ processSingleSite fn s = do
         else do
             putStrLn ("Processing " ++ show newCsv)
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
+
+
+awFillGaps :: [AwStats] -> [AwStats]
+awFillGaps as =
+    ( f awAirTempSt
+    . f awWetBulbTempSt
+    . f awDewPointTempSt
+    . f awRelHumidSt
+    . f awWindSpeedSt
+    ) as
+    where
+        f = infill awStatP
 
 
 -- | Check that the infilling of values has succeeded and there are no more gaps
