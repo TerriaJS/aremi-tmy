@@ -177,7 +177,7 @@ minutesUntil :: Processing a
              -> [a]
              -> Maybe (Int, a)
 minutesUntil (Processing{..}) f lt xs = go xs where
-    go (a:as) = case a ^. f of         -- check if the field we are interested in has a value
+    go (a:as) = case a ^. f of        -- check if the field we are interested in has a value
                     Nothing -> go as  -- if it doesn't, then increment and keep looking
                     Just _  -> Just (minDiff (lTime a) lt, a)  -- if the field has a value then return the minutes difference and the record
     go [] = Nothing
@@ -192,17 +192,20 @@ linearlyInterpolate :: Processing a
                     -> [a]
 linearlyInterpolate _ _ 0   _ _ xs = xs
 linearlyInterpolate (Processing{..}) f num a b xs' = go 1 xs' where
-    lt x       = lTime x                       -- get the LocalTime from an AwStats
-    addMin x m = lt x & flexDT.minutes +~ m    -- add minutes to a LocalTime
-    va         = statMean (fromJust (a ^. f))  -- the mean value of the field for a
-    vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
-    vincr      = (vb - va) / fromIntegral (num)  -- the linear increment
-    val n      = va + (vincr * fromIntegral n) -- the new mean of the nth linearly interpolated record
-    stat v     = mkFillStat v v v              -- the new Stat value for the field
+    lt x       = lTime x                        -- get the LocalTime from an AwStats
+    addMin x m = lt x & flexDT.minutes +~ m     -- add minutes to a LocalTime
+    va         = statMean (fromJust (a ^. f))   -- the mean value of the field for a
+    vb         = statMean (fromJust (b ^. f))   -- the mean value of the field for b
+    vincr      = (vb - va) / fromIntegral (num) -- the linear increment
+    val n      = va + (vincr * fromIntegral n)  -- the new mean of the nth linearly interpolated record
+    stat v     = mkFillStat v v v               -- the new Stat value for the field
     go _ []    = []
     go n ss@(x:xs)
-        | n >= num           = ss -- we're done
-        | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs -- the next AwStat has the right time, modify with new stat
+        -- we've done as many infills as we needed, all done
+        | n >= num           = ss
+        -- found a record with the right time, modify with new stat
+        | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs
+        -- no record with the right time, make one and set the stat
         | otherwise          = (mkEmpty (stNum a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
 
 
