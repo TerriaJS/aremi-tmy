@@ -1,6 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
+
 
 -- TODO:
 --   save stats for wind speed and direction to generate wind rose?
@@ -9,6 +11,7 @@
 --      * load CSV and turn into AwSlCombined and save to CSV
 --      * fill in missing values for <5 hour gaps (should this reuse previous code, or load from CSV?)
 --      * fill in missing values for X hour gaps etc.
+
 
 module Main where
 
@@ -76,7 +79,7 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        awInfilled = infill awAirTempSt awStats
+        awInfilled = infill awStatP awAirTempSt awStats
         -- awInfilled = check awAirTempSt awStats
         -- slInfilled = infill slStats
         awChecked = check (lensIsJust awAirTempSt) awLTimeSt awInfilled
@@ -126,16 +129,37 @@ check p lt ss = go ss where
     go xs = xs
 
 
-infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
-infill f as@(a:xs) =
-    case minutesUntil (unLTime (awLTimeSt a)) (lensIsJust f) awLTimeSt xs of
+data Processing recType = Processing
+    { lTime   :: recType -> LocalTime
+    , stNum   :: recType -> Text
+    , mkEmpty :: Text -> LocalTime -> recType
+    -- , mkStat   :: Double1Dec -> stat
+    -- , getMean  :: stat -> Double1Dec
+    }
+
+
+awStatP :: Processing AwStats
+awStatP = Processing
+    { lTime   = unLTime . awLTimeSt
+    , stNum   = awStationNumSt
+    , mkEmpty = mkAwStats
+    }
+
+
+-- infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
+infill :: Processing a
+       -> (Lens' a (Maybe (Stat Double1Dec)))
+       -> [a]
+       -> [a]
+infill pr@(Processing{..}) f as@(a:xs) =
+    case minutesUntil pr f (lTime a) xs of
         Nothing -> as
         Just ((mins, b)) ->
             if mins > 0 && isLessThan5Hours mins
-                then let xs' = linearlyInterpolate f mins a b xs
-                     in  a : infill f xs'
-                else a : infill f xs
-infill _ [] = []
+                then let xs' = linearlyInterpolate pr f mins a b xs
+                     in  a : infill pr f xs'
+                else a : infill pr f xs
+infill _ _ [] = []
 
 
 isLessThan5Hours :: Int -> Bool
@@ -147,27 +171,28 @@ minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) /
 
 
 -- | Find the number of minutes as well as the record that has a Just value for a given field
-minutesUntil :: LocalTime
-             -> (a -> Bool)
-             -> (a -> LTime)
+minutesUntil :: Processing a
+             -> (Lens' a (Maybe b))
+             -> LocalTime
              -> [a]
              -> Maybe (Int, a)
-minutesUntil lt p ltf xs = go xs where
-    go (a:as) = case p a of         -- check if the field we are interested in has a value
-                    False -> go as  -- if it doesn't, then increment and keep looking
-                    True  -> Just (minDiff (unLTime (ltf a)) lt, a)  -- if the field has a value then return the minutes difference and the record
+minutesUntil (Processing{..}) f lt xs = go xs where
+    go (a:as) = case a ^. f of         -- check if the field we are interested in has a value
+                    Nothing -> go as  -- if it doesn't, then increment and keep looking
+                    Just _  -> Just (minDiff (lTime a) lt, a)  -- if the field has a value then return the minutes difference and the record
     go [] = Nothing
 
 
-linearlyInterpolate :: (Lens' AwStats (Maybe (Stat Double1Dec)))
+linearlyInterpolate :: Processing a
+                    -> (Lens' a (Maybe (Stat Double1Dec)))
                     -> Int
-                    -> AwStats
-                    -> AwStats
-                    -> [AwStats]
-                    -> [AwStats]
-linearlyInterpolate _ 0   _ _ xs = xs
-linearlyInterpolate f num a b xs' = go 1 xs' where
-    lt x       = unLTime (awLTimeSt x)         -- get the LocalTime from an AwStats
+                    -> a
+                    -> a
+                    -> [a]
+                    -> [a]
+linearlyInterpolate _ _ 0   _ _ xs = xs
+linearlyInterpolate (Processing{..}) f num a b xs' = go 1 xs' where
+    lt x       = lTime x                       -- get the LocalTime from an AwStats
     addMin x m = lt x & flexDT.minutes +~ m    -- add minutes to a LocalTime
     va         = statMean (fromJust (a ^. f))  -- the mean value of the field for a
     vb         = statMean (fromJust (b ^. f))  -- the mean value of the field for b
@@ -178,7 +203,7 @@ linearlyInterpolate f num a b xs' = go 1 xs' where
     go n ss@(x:xs)
         | n >= num           = ss -- we're done
         | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs -- the next AwStat has the right time, modify with new stat
-        | otherwise          = (mkAwStats (awStationNumSt a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
+        | otherwise          = (mkEmpty (stNum a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
 
 
 mkAwStats :: Text -> LocalTime -> AwStats
