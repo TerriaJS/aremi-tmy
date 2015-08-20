@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records)
 import Data.List                            (groupBy, foldl1')
-import Data.Maybe                           (fromJust, isJust)
+import Data.Maybe                           (fromJust)
 import Data.Text                            (Text, unpack)
 import Data.Time.Clock                      (diffUTCTime)
 import Data.Time.Lens                       (flexDT, minutes)
@@ -82,7 +82,7 @@ processSingleSite fn s = do
         awInfilled = infill awStatP awAirTempSt awStats
         -- awInfilled = check awAirTempSt awStats
         -- slInfilled = infill slStats
-        awChecked = check (lensIsJust awAirTempSt) awLTimeSt awInfilled
+        awChecked = check (unLTime . awLTimeSt) awAirTempSt awInfilled
         -- group into hours
         awStatGroups = groupBy (hourGrouper awLTimeSt) awChecked
         slStatGroups = groupBy (hourGrouper slLTimeSt) slStats
@@ -102,22 +102,22 @@ processSingleSite fn s = do
 
 -- | Check that the infilling of values has succeeded and there are no more gaps
 --   of data shorter than the infill max gap length.
-check :: (a -> Bool)
-      -> (a -> LTime)
+check :: (a -> LocalTime)
+      -> (Lens' a (Maybe b))
       -> [a]
       -> [a]
-check p lt ss = go ss where
+check lt f ss = go ss where
     go (a:b:xs) =
         -- check if a has a value for this time
-        case p a of
-            False -> a : go (b:xs) -- skip until we find a value for the field
-            True  ->
+        case a ^. f of
+            Nothing -> a : go (b:xs) -- skip until we find a value for the field
+            Just _  ->
                 -- check if b has a value for this time
-                case p b of
-                    -- if it does not, then check that the gap is more than we are supposed to have filled in
-                    False ->
-                        let lta = (unLTime (lt a))
-                            ltb = (unLTime (lt b))
+                case b ^. f of
+                    -- if it does not, then there is a gap, check that the gap is more than we are supposed to have filled in
+                    Nothing ->
+                        let lta = lt a
+                            ltb = lt b
                             mins = minDiff ltb lta
                         in  if isLessThan5Hours mins
                                 then error ("Found a gap of " ++ show mins
@@ -125,14 +125,14 @@ check p lt ss = go ss where
                                             ++ show lta ++ " to " ++ show ltb ++ ".")
                                 else a : go (b:xs)
                     -- if b does have a value, then there is no gap, put b back and iterate
-                    True  -> a : go (b:xs)
+                    Just _  -> a : go (b:xs)
     go xs = xs
 
 
 data Processing recType = Processing
     { lTime   :: recType -> LocalTime
     , stNum   :: recType -> Text
-    , mkEmpty :: Text -> LocalTime -> recType
+    , mkEmpty :: Text    -> LocalTime -> recType
     -- , mkStat   :: Double1Dec -> stat
     -- , getMean  :: stat -> Double1Dec
     }
@@ -209,8 +209,3 @@ linearlyInterpolate (Processing{..}) f num a b xs' = go 1 xs' where
 mkAwStats :: Text -> LocalTime -> AwStats
 mkAwStats stNum lt = AwStats stNum (LTime lt)
                         Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-
-
-lensIsJust :: Lens' a (Maybe b) -> a -> Bool
-lensIsJust l a = isJust (a ^. l)
-
