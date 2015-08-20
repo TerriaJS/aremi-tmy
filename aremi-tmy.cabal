@@ -16,6 +16,10 @@ cabal-version:       >=1.10
 executable aremi-tmy-oneMinSolar
   hs-source-dirs:      src
   main-is:             Tmy/OneMinSolar/Main.hs
+  other-modules:       Tmy.Common
+                     , Tmy.Csv
+                     , Tmy.OneMinSolar.Functions
+                     , Tmy.OneMinSolar.Types
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:       base
                      , bytestring
