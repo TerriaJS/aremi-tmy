@@ -84,10 +84,10 @@ instance ToNamedRecord (Maybe AwStats) where
             , statRecord "dew point"                  (_awDewPointTempSt    =<< a)
             , statRecord "relative humidity"          (_awRelHumidSt        =<< a)
             , statRecord "wind speed"                 (_awWindSpeedSt       =<< a)
-            , sumCountRecord "visibility"             (_awVisibilitySt      =<< a)
-            , sumCountRecord "msl pressure"           (_awMslPressSt        =<< a)
-            , sumCountRecord "station level pressure" (_awStationLvlPressSt =<< a)
-            , sumCountRecord "qnh pressure"           (_awQnhPressSt        =<< a)
+            , meanRecord "visibility"                 (_awVisibilitySt      =<< a)
+            , meanRecord "msl pressure"               (_awMslPressSt        =<< a)
+            , meanRecord "station level pressure"     (_awStationLvlPressSt =<< a)
+            , meanRecord "qnh pressure"               (_awQnhPressSt        =<< a)
             ]
 
 
@@ -242,12 +242,12 @@ instance ToNamedRecord (Maybe SlStats) where
                 , "seconds dni exceeding 120 W/sq m" .= (fmap getSum . _slSunshineSecs120St =<< a)
                 , "seconds dni exceeding 144 W/sq m" .= (fmap getSum . _slSunshineSecs144St =<< a)
                 ]
-            , statRecord     "ghi"         (_slGhiSt    =<< a)
-            , statRecord     "dni"         (_slDniSt    =<< a)
-            , statRecord     "diffuse"     (_slDiffSt   =<< a)
-            , statRecord     "terrestrial" (_slTerrSt   =<< a)
-            , statRecord     "dhi"         (_slDhiSt    =<< a)
-            , sumCountRecord "zenith"      (_slZenithSt =<< a)
+            , statRecord "ghi"         (_slGhiSt    =<< a)
+            , statRecord "dni"         (_slDniSt    =<< a)
+            , statRecord "diffuse"     (_slDiffSt   =<< a)
+            , statRecord "terrestrial" (_slTerrSt   =<< a)
+            , statRecord "dhi"         (_slDhiSt    =<< a)
+            , meanRecord "zenith"      (_slZenithSt =<< a)
             ]
 
 

@@ -67,21 +67,25 @@ statMean :: Fractional a => Stat a -> a
 statMean (Stat ssum _ _ scount sfcount) = (ssum / fromIntegral (scount + sfcount))
 
 
-sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (Mean a) -> NamedRecord
-sumCountRecord prefix Nothing =
+meanRecord :: (ToField a, Fractional a, Show a) => Text -> Maybe (Mean a) -> NamedRecord
+meanRecord prefix Nothing =
     let col = encodeUtf8 . append prefix
     in  namedRecord
         [ col " mean"       .= empty
         , col " count"      .= empty
         , col " fill count" .= empty
         ]
-sumCountRecord prefix (Just (Mean ssum scount sfcount)) =
+meanRecord prefix (Just (Mean ssum scount sfcount)) =
     let col = encodeUtf8 . append prefix
     in  namedRecord
-        [ col " mean"       .= (ssum / fromIntegral scount)
+        [ col " mean"       .= (ssum / fromIntegral (scount + sfcount))
         , col " count"      .= scount
         , col " fill count" .= sfcount
         ]
+
+
+mMean :: Fractional a => Mean a -> a
+mMean (Mean ssum scount sfcount) = ssum / fromIntegral (scount + sfcount)
 
 
 maybeStat :: (a -> Spaced (Maybe b))

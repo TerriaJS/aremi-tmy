@@ -79,11 +79,11 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
         -- fill in missing data
-        awInfilled = awFillGaps awStats
-        slInfilled = slFillGaps slStats
+        awInfilled = awProcess infill awStats
+        slInfilled = slProcess infill slStats
         -- check the filled in data
-        awChecked = awCheckGaps awInfilled
-        slChecked = slCheckGaps slInfilled
+        awChecked = awProcess check awInfilled
+        slChecked = slProcess check slInfilled
         -- group into hours
         awStatGroups = groupBy (hourGrouper awLTimeSt) awChecked
         slStatGroups = groupBy (hourGrouper slLTimeSt) slChecked
@@ -114,52 +114,45 @@ ftStat = FieldType
     }
 
 
-awFillGaps :: [AwStats] -> [AwStats]
-awFillGaps xs =
-    ( f awAirTempSt      ftStat
-    . f awWetBulbTempSt  ftStat
-    . f awDewPointTempSt ftStat
-    . f awRelHumidSt     ftStat
-    . f awWindSpeedSt    ftStat
+ftMean :: FieldType (Mean Double1Dec)
+ftMean = FieldType
+    { mkValue  = mkFillMean
+    , getValue = mMean
+    }
+
+
+type Processor = (Show a, Show b) => Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a]
+
+
+awProcess :: Processor -> [AwStats] -> [AwStats]
+awProcess p xs =
+    ( f awAirTempSt         ftStat
+    . f awWetBulbTempSt     ftStat
+    . f awDewPointTempSt    ftStat
+    . f awRelHumidSt        ftStat
+    . f awWindSpeedSt       ftStat
+    . f awVisibilitySt      ftMean
+    . f awMslPressSt        ftMean
+    . f awStationLvlPressSt ftMean
+    . f awQnhPressSt        ftMean
     ) xs
     where
-        f = infill awStatP
+        f :: Show b => Lens' AwStats (Maybe b) -> FieldType b -> [AwStats] -> [AwStats]
+        f = p awStatsP
 
 
-awCheckGaps :: [AwStats] -> [AwStats]
-awCheckGaps xs =
-    ( f awAirTempSt      ftStat
-    . f awWetBulbTempSt  ftStat
-    . f awDewPointTempSt ftStat
-    . f awRelHumidSt     ftStat
-    . f awWindSpeedSt    ftStat
+slProcess :: Processor -> [SlStats] -> [SlStats]
+slProcess p xs =
+    ( f slGhiSt    ftStat
+    . f slDniSt    ftStat
+    . f slDiffSt   ftStat
+    . f slTerrSt   ftStat
+    . f slDhiSt    ftStat
+    . f slZenithSt ftMean
     ) xs
     where
-        f = check awStatP
-
-
-slFillGaps :: [SlStats] -> [SlStats]
-slFillGaps xs =
-    ( f slGhiSt  ftStat
-    . f slDniSt  ftStat
-    . f slDiffSt ftStat
-    . f slTerrSt ftStat
-    . f slDhiSt  ftStat
-    ) xs
-    where
-        f = infill slStatP
-
-
-slCheckGaps :: [SlStats] -> [SlStats]
-slCheckGaps xs =
-    ( f slGhiSt  ftStat
-    . f slDniSt  ftStat
-    . f slDiffSt ftStat
-    . f slTerrSt ftStat
-    . f slDhiSt  ftStat
-    ) xs
-    where
-        f = check slStatP
+        f :: Show b => Lens' SlStats (Maybe b) -> FieldType b -> [SlStats] -> [SlStats]
+        f = p slStatsP
 
 
 -- | Check that the infilling of values has succeeded and there are no more gaps
@@ -196,23 +189,22 @@ data Processing recType = Processing
     }
 
 
-awStatP :: Processing AwStats
-awStatP = Processing
+awStatsP :: Processing AwStats
+awStatsP = Processing
     { lTime   = unLTime . awLTimeSt
     , stNum   = awStationNumSt
     , mkEmpty = mkAwStats
     }
 
 
-slStatP :: Processing SlStats
-slStatP = Processing
+slStatsP :: Processing SlStats
+slStatsP = Processing
     { lTime   = unLTime . slLTimeSt
     , stNum   = slStationNumSt
     , mkEmpty = mkSlStats
     }
 
 
--- infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill :: Processing a
        -> (Lens' a (Maybe b))
        -> FieldType b
