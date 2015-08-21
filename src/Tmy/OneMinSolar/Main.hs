@@ -101,13 +101,26 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
+data FieldType ftype = FieldType
+    { mkValue  :: Double1Dec -> ftype
+    , getValue :: ftype      -> Double1Dec
+    }
+
+
+ftStat :: FieldType (Stat Double1Dec)
+ftStat = FieldType
+    { mkValue  = \v -> mkFillStat v v v
+    , getValue = statMean
+    }
+
+
 awFillGaps :: [AwStats] -> [AwStats]
 awFillGaps xs =
-    ( f awAirTempSt
-    . f awWetBulbTempSt
-    . f awDewPointTempSt
-    . f awRelHumidSt
-    . f awWindSpeedSt
+    ( f awAirTempSt      ftStat
+    . f awWetBulbTempSt  ftStat
+    . f awDewPointTempSt ftStat
+    . f awRelHumidSt     ftStat
+    . f awWindSpeedSt    ftStat
     ) xs
     where
         f = infill awStatP
@@ -127,11 +140,11 @@ awCheckGaps xs =
 
 slFillGaps :: [SlStats] -> [SlStats]
 slFillGaps xs =
-    ( f slGhiSt
-    . f slDniSt
-    . f slDiffSt
-    . f slTerrSt
-    . f slDhiSt
+    ( f slGhiSt  ftStat
+    . f slDniSt  ftStat
+    . f slDiffSt ftStat
+    . f slTerrSt ftStat
+    . f slDhiSt  ftStat
     ) xs
     where
         f = infill slStatP
@@ -176,11 +189,9 @@ check pr@(Processing{..}) f ss = go ss where
 
 
 data Processing recType = Processing
-    { lTime   :: recType -> LocalTime
-    , stNum   :: recType -> Text
-    , mkEmpty :: Text    -> LocalTime -> recType
-    -- , mkStat   :: Double1Dec -> stat
-    -- , getMean  :: stat -> Double1Dec
+    { lTime    :: recType -> LocalTime
+    , stNum    :: recType -> Text
+    , mkEmpty  :: Text    -> LocalTime -> recType
     }
 
 
@@ -202,14 +213,15 @@ slStatP = Processing
 
 -- infill :: (Lens' AwStats (Maybe (Stat Double1Dec))) -> [AwStats] -> [AwStats]
 infill :: Processing a
-       -> (Lens' a (Maybe (Stat Double1Dec)))
+       -> (Lens' a (Maybe b))
+       -> FieldType b
        -> [a]
        -> [a]
-infill pr@(Processing{..}) f as@(a:xs) =
+infill pr@(Processing{..}) f ft as@(a:xs) =
     -- check that we have a record with a value for this field
     case a ^. f of
         -- if not then we must be at the start of the list, so iterate until we find one
-        Nothing -> a : infill pr f xs
+        Nothing -> a : infill pr f ft xs
         Just _  ->
             -- if we do then check how long until the next value for this field
             case minutesUntil pr f (lTime a) xs of
@@ -217,10 +229,10 @@ infill pr@(Processing{..}) f as@(a:xs) =
                 Nothing -> as
                 Just ((mins, b)) ->
                     if mins > 1 && isLessThan5Hours mins
-                        then let xs' = linearlyInterpolate pr f mins a b xs
-                             in  a : infill pr f xs'
-                        else a : infill pr f xs
-infill _ _ [] = []
+                        then let xs' = linearlyInterpolate pr f ft mins a b xs
+                             in  a : infill pr f ft xs'
+                        else a : infill pr f ft xs
+infill _ _ _ [] = []
 
 
 isLessThan5Hours :: Int -> Bool
@@ -248,29 +260,29 @@ minutesUntil (Processing{..}) f lt xs = go xs where
 
 
 linearlyInterpolate :: Processing a
-                    -> (Lens' a (Maybe (Stat Double1Dec)))
+                    -> (Lens' a (Maybe b))
+                    -> FieldType b
                     -> Int
                     -> a
                     -> a
                     -> [a]
                     -> [a]
-linearlyInterpolate _ _ 0   _ _ xs = xs
-linearlyInterpolate (Processing{..}) f num a b xs' = go 1 xs' where
+linearlyInterpolate _ _ _ 0 _ _ xs = xs
+linearlyInterpolate (Processing{..}) f (FieldType{..}) num a b xs' = go 1 xs' where
     lt x       = lTime x                        -- get the LocalTime from an AwStats
     addMin x m = lt x & flexDT.minutes +~ m     -- add minutes to a LocalTime
-    va         = statMean (fromJust (a ^. f))   -- the mean value of the field for a
-    vb         = statMean (fromJust (b ^. f))   -- the mean value of the field for b
+    va         = getValue (fromJust (a ^. f))   -- the mean value of the field for a
+    vb         = getValue (fromJust (b ^. f))   -- the mean value of the field for b
     vincr      = (vb - va) / fromIntegral (num) -- the linear increment
     val n      = va + (vincr * fromIntegral n)  -- the new mean of the nth linearly interpolated record
-    stat v     = mkFillStat v v v               -- the new Stat value for the field
     go _ []    = []
     go n ss@(x:xs)
         -- we've done as many infills as we needed, all done
         | n >= num           = ss
         -- found a record with the right time, modify with new stat
-        | lt x == addMin a n = (x & f .~ Just (stat (val n))) : go (n+1) xs
+        | lt x == addMin a n = (x & f .~ Just (mkValue (val n))) : go (n+1) xs
         -- no record with the right time, make one and set the stat
-        | otherwise          = (mkEmpty (stNum a) (addMin a n) & f .~ Just (stat (val n))) : go (n+1) ss
+        | otherwise          = (mkEmpty (stNum a) (addMin a n) & f .~ Just (mkValue (val n))) : go (n+1) ss
 
 
 mkAwStats :: Text -> LocalTime -> AwStats
