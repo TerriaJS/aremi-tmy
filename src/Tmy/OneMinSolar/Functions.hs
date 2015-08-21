@@ -72,10 +72,10 @@ awToStat a =
         , _awWindSpeedSt       = maybeQualStat awWindSpeedQual    awWindSpeed    awWindGustMax     awWindSpeedMin    a
         , _awPrecipSinceLastSt = Sum <$> qFilter awPrecipQual  awPrecipSinceLast a
         , awWindDirSt          = qFilter awWindDirQual awWindDir a
-        , _awVisibilitySt      = mkSumCount <$> qFilter awVisibilityQual      awVisibility      a
-        , _awMslPressSt        = mkSumCount <$> qFilter awMslPressQual        awMslPress        a
-        , _awStationLvlPressSt = mkSumCount <$> qFilter awStationLvlPressQual awStationLvlPress a
-        , _awQnhPressSt        = mkSumCount <$> qFilter awQnhPressQual        awQnhPress        a
+        , _awVisibilitySt      = mkMean <$> qFilter awVisibilityQual      awVisibility      a
+        , _awMslPressSt        = mkMean <$> qFilter awMslPressQual        awMslPress        a
+        , _awStationLvlPressSt = mkMean <$> qFilter awStationLvlPressQual awStationLvlPress a
+        , _awQnhPressSt        = mkMean <$> qFilter awQnhPressQual        awQnhPress        a
         }
 
 
@@ -92,6 +92,6 @@ slToStat a =
         , _slSunshineSecs96St  = Sum <$> unSpaced (slSunshineSecs96  a)
         , _slSunshineSecs120St = Sum <$> unSpaced (slSunshineSecs120 a)
         , _slSunshineSecs144St = Sum <$> unSpaced (slSunshineSecs144 a)
-        , _slZenithSt          = mkSumCount <$> unSpaced (slZenith a)
+        , _slZenithSt          = mkMean <$> unSpaced (slZenith a)
         }
 

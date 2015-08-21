@@ -31,15 +31,15 @@ instance (Num a, Ord a) => Semigroup (Stat a) where
              (afcnt +  bfcnt)
 
 
-data SumCount a = SumCount
+data Mean a = Mean
     { sSum       :: !a
     , sCount     :: !Int
     , sFillCount :: !Int
     } deriving (Show, Eq, Ord)
 
-instance (Num a, Ord a) => Semigroup (SumCount a) where
-    (SumCount asum acount afcount) <> (SumCount bsum bcount bfcount) =
-        SumCount (asum + bsum) (acount + bcount) (afcount + bfcount)
+instance (Num a, Ord a) => Semigroup (Mean a) where
+    (Mean asum acount afcount) <> (Mean bsum bcount bfcount) =
+        Mean (asum + bsum) (acount + bcount) (afcount + bfcount)
 
 
 statRecord :: (ToField a, Fractional a, Show a) => ByteString -> Maybe (Stat a) -> NamedRecord
@@ -67,7 +67,7 @@ statMean :: Fractional a => Stat a -> a
 statMean (Stat ssum _ _ scount sfcount) = (ssum / fromIntegral (scount + sfcount))
 
 
-sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (SumCount a) -> NamedRecord
+sumCountRecord :: (ToField a, Fractional a) => Text -> Maybe (Mean a) -> NamedRecord
 sumCountRecord prefix Nothing =
     let col = encodeUtf8 . append prefix
     in  namedRecord
@@ -75,7 +75,7 @@ sumCountRecord prefix Nothing =
         , col " count"      .= empty
         , col " fill count" .= empty
         ]
-sumCountRecord prefix (Just (SumCount ssum scount sfcount)) =
+sumCountRecord prefix (Just (Mean ssum scount sfcount)) =
     let col = encodeUtf8 . append prefix
     in  namedRecord
         [ col " mean"       .= (ssum / fromIntegral scount)
@@ -129,12 +129,12 @@ mkFillStat :: a -> a -> a -> Stat a
 mkFillStat smean smax smin = Stat smean (Max smax) (Min smin) 0 1
 
 
-mkSumCount :: a -> SumCount a
-mkSumCount a = SumCount a 1 0
+mkMean :: a -> Mean a
+mkMean a = Mean a 1 0
 
 
-mkFillSumCount :: a -> SumCount a
-mkFillSumCount a = SumCount a 0 1
+mkFillMean :: a -> Mean a
+mkFillMean a = Mean a 0 1
 
 
 hourGrouper :: (a -> LTime) -> a -> a -> Bool

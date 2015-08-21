@@ -62,10 +62,10 @@ data AwStats = AwStats
     , _awRelHumidSt        :: !(Maybe (Stat Double1Dec))
     , _awWindSpeedSt       :: !(Maybe (Stat Double1Dec))
     , awWindDirSt          :: !(Maybe Int)
-    , _awVisibilitySt      :: !(Maybe (SumCount Double1Dec))
-    , _awMslPressSt        :: !(Maybe (SumCount Double1Dec))
-    , _awStationLvlPressSt :: !(Maybe (SumCount Double1Dec))
-    , _awQnhPressSt        :: !(Maybe (SumCount Double1Dec))
+    , _awVisibilitySt      :: !(Maybe (Mean Double1Dec))
+    , _awMslPressSt        :: !(Maybe (Mean Double1Dec))
+    , _awStationLvlPressSt :: !(Maybe (Mean Double1Dec))
+    , _awQnhPressSt        :: !(Maybe (Mean Double1Dec))
     } deriving (Show, Eq, Ord)
 
 makeLenses ''AwStats
@@ -229,7 +229,7 @@ data SlStats = SlStats
     , _slSunshineSecs96St  :: !(Maybe (Sum Int))
     , _slSunshineSecs120St :: !(Maybe (Sum Int))
     , _slSunshineSecs144St :: !(Maybe (Sum Int))
-    , _slZenithSt          :: !(Maybe (SumCount Double1Dec))  -- TODO: is it correct to just average the zenith angle?
+    , _slZenithSt          :: !(Maybe (Mean Double1Dec))  -- TODO: is it correct to just average the zenith angle?
     } deriving (Show, Eq, Ord)
 
 makeLenses ''SlStats
