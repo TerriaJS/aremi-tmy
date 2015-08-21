@@ -128,11 +128,11 @@ awFillGaps xs =
 
 awCheckGaps :: [AwStats] -> [AwStats]
 awCheckGaps xs =
-    ( f awAirTempSt
-    . f awWetBulbTempSt
-    . f awDewPointTempSt
-    . f awRelHumidSt
-    . f awWindSpeedSt
+    ( f awAirTempSt      ftStat
+    . f awWetBulbTempSt  ftStat
+    . f awDewPointTempSt ftStat
+    . f awRelHumidSt     ftStat
+    . f awWindSpeedSt    ftStat
     ) xs
     where
         f = check awStatP
@@ -152,11 +152,11 @@ slFillGaps xs =
 
 slCheckGaps :: [SlStats] -> [SlStats]
 slCheckGaps xs =
-    ( f slGhiSt
-    . f slDniSt
-    . f slDiffSt
-    . f slTerrSt
-    . f slDhiSt
+    ( f slGhiSt  ftStat
+    . f slDniSt  ftStat
+    . f slDiffSt ftStat
+    . f slTerrSt ftStat
+    . f slDhiSt  ftStat
     ) xs
     where
         f = check slStatP
@@ -167,9 +167,10 @@ slCheckGaps xs =
 check :: (Show a, Show b)
       => Processing a
       -> (Lens' a (Maybe b))
+      -> FieldType b
       -> [a]
       -> [a]
-check pr@(Processing{..}) f ss = go ss where
+check pr@(Processing{..}) f _ ss = go ss where
     go as@(a:xs) =
         -- check if a has a value for this time
         case a ^. f of
