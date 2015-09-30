@@ -20,6 +20,7 @@ executable aremi-tmy-oneMinSolar
                      , Tmy.Csv
                      , Tmy.OneMinSolar.Functions
                      , Tmy.OneMinSolar.Types
+                     , Tmy.OneMinSolar.FillInterp
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -O2
   build-depends:       base
                      , bytestring

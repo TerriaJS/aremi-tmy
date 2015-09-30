@@ -1,5 +1,15 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RankNTypes #-}
+
+
 module Tmy.OneMinSolar.Functions where
 
+import Control.Lens                         (Lens', (^.), (.~), (&), (+~))
+import Data.Maybe                           (fromJust)
+import Data.Time.Clock                      (diffUTCTime)
+import Data.Time.Lens                       (flexDT, minutes)
+import Data.Text                            (Text)
+import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 
 import Control.Applicative                  ((<$>))
 import Data.Semigroup                       (Sum(..))
@@ -94,4 +104,25 @@ slToStat a =
         , _slSunshineSecs144St = Sum <$> unSpaced (slSunshineSecs144 a)
         , _slZenithSt          = mkMean <$> unSpaced (slZenith a)
         }
+
+
+minDiff :: LocalTime -> LocalTime -> Int
+minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) / 60)
+
+
+-- | Find the number of minutes as well as the record that has a Just value for a given field
+minutesUntil :: Processing a
+             -> (Lens' a (Maybe b))
+             -> LocalTime
+             -> [a]
+             -> Maybe (Int, a)
+minutesUntil (Processing{..}) f lt xs = go xs where
+    -- check if the field we are interested in has a value
+    go (a:as) = case a ^. f of
+                    -- if it doesn't, then increment and keep looking
+                    Nothing -> go as
+                    -- if the field has a value then return the minutes difference and the record
+                    Just _  -> Just (minDiff (lTime a) lt, a)
+    go [] = Nothing
+
 

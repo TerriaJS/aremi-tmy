@@ -13,6 +13,7 @@ import Data.Csv
 import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Sum(..))
 import Data.Text                            (Text)
+import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 
@@ -444,3 +445,16 @@ instance ToNamedRecord AwSlCombined where
             , toNamedRecord aw
             , toNamedRecord sl
             ]
+
+data Processing recType = Processing
+    { lTime    :: recType -> LocalTime
+    , stNum    :: recType -> Text
+    , mkEmpty  :: Text    -> LocalTime -> recType
+    }
+
+data FieldType ftype = FieldType
+    { mkValue  :: Double1Dec -> ftype
+    , getValue :: ftype      -> Double1Dec
+    }
+
+
