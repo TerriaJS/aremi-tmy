@@ -29,6 +29,7 @@ import System.FilePath.Find                 (find, always, (~~?), fileName)
 import Tmy.OneMinSolar.Functions
 import Tmy.OneMinSolar.Types
 import Tmy.OneMinSolar.FillInterp
+import Tmy.OneMinSolar.FillAdjacent
 import Tmy.Common
 import Tmy.Csv
 
@@ -76,12 +77,15 @@ processSingleSite fn s = do
         -- turn the records into Stat recs, this filters out aw values by quality
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
-        -- fill in missing data (and check)
-        awInfilled = awProcess fillInterpAndCheck awStats
-        slInfilled = slProcess fillInterpAndCheck slStats
+        -- fill in missing data for small gaps via linear interpolation (and check)
+        awShortFilled = awProcess fillInterpAndCheck awStats
+        slShortFilled = slProcess fillInterpAndCheck slStats
+        -- fill in missing data for medium gaps with adjacent days
+        awMedFilled = awProcess fillAdjacent awShortFilled
+        slMedFilled = slProcess fillAdjacent slShortFilled
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
-        slStatGroups = groupBy (hourGrouper slLTimeSt) slInfilled
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awMedFilled 
+        slStatGroups = groupBy (hourGrouper slLTimeSt) slMedFilled 
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
         slFolded = map (foldl1' slAggr) slStatGroups
