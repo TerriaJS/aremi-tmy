@@ -76,15 +76,12 @@ processSingleSite fn s = do
         -- turn the records into Stat recs, this filters out aw values by quality
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
-        -- fill in missing data
-        awInfilled = awProcess fillInterp awStats
-        slInfilled = slProcess fillInterp slStats
-        -- check the filled in data
-        awChecked = awProcess check awInfilled
-        slChecked = slProcess check slInfilled
+        -- fill in missing data (and check)
+        awInfilled = awProcess fillInterpAndCheck awStats
+        slInfilled = slProcess fillInterpAndCheck slStats
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awChecked
-        slStatGroups = groupBy (hourGrouper slLTimeSt) slChecked
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awInfilled
+        slStatGroups = groupBy (hourGrouper slLTimeSt) slInfilled
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
         slFolded = map (foldl1' slAggr) slStatGroups
@@ -112,9 +109,6 @@ ftMean = FieldType
     { mkValue  = mkFillMean
     , getValue = mMean
     }
-
-
-type Processor = (Show a, Show b) => Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a]
 
 
 awProcess :: Processor -> [AwStats] -> [AwStats]

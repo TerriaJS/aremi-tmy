@@ -4,11 +4,8 @@
 
 module Tmy.OneMinSolar.Functions where
 
-import Control.Lens                         (Lens', (^.), (.~), (&), (+~))
-import Data.Maybe                           (fromJust)
+import Control.Lens                         (Lens', (^.))
 import Data.Time.Clock                      (diffUTCTime)
-import Data.Time.Lens                       (flexDT, minutes)
-import Data.Text                            (Text)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 
 import Control.Applicative                  ((<$>))
@@ -125,4 +122,8 @@ minutesUntil (Processing{..}) f lt xs = go xs where
                     Just _  -> Just (minDiff (lTime a) lt, a)
     go [] = Nothing
 
+
+composeProcessors :: Processor -> Processor -> Processor
+composeProcessors f g =
+  \p l t a -> g p l t (f p l t a)
 

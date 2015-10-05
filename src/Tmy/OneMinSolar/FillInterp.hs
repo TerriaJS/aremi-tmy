@@ -91,3 +91,11 @@ linearlyInterpolate (Processing{..}) f (FieldType{..}) num a b xs' = go 1 xs' wh
         | otherwise          = (mkEmpty (stNum a) (addMin a n) & f .~ Just (mkValue (val n))) : go (n+           1)         ss
 
 
+fillInterpAndCheck :: (Show a, Show b)
+      => Processing a
+      -> (Lens' a (Maybe b))
+      -> FieldType b
+      -> [a]
+      -> [a]
+fillInterpAndCheck =
+  composeProcessors fillInterp check
