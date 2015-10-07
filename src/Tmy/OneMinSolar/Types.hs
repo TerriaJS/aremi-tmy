@@ -3,16 +3,18 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Tmy.OneMinSolar.Types where
 
 import Control.Applicative                  ((<$>), (<*>), (<|>))
-import Control.Lens                         (makeLenses)
+import Control.Lens                         (Lens', makeLenses)
 -- import Data.ByteString                      (empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Sum(..))
 import Data.Text                            (Text)
+import Data.Time.LocalTime                  (LocalTime)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 
@@ -444,3 +446,17 @@ instance ToNamedRecord AwSlCombined where
             , toNamedRecord aw
             , toNamedRecord sl
             ]
+
+data Processing recType = Processing
+    { lTime    :: recType -> LocalTime
+    , stNum    :: recType -> Text
+    , mkEmpty  :: Text    -> LocalTime -> recType
+    }
+
+data FieldType ftype = FieldType
+    { mkValue  :: Double1Dec -> ftype
+    , getValue :: ftype      -> Double1Dec
+    }
+
+
+type Processor = (Show a, Show b) => Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a]

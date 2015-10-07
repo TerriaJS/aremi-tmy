@@ -17,3 +17,6 @@ cabal.sandbox.config
 .stack-work/
 tmp/
 sample_data/
+
+# vim
+*.swp
