@@ -15,7 +15,7 @@
 
 module Main where
 
-import Control.Lens                         (Lens') 
+import Control.Lens                         (Lens')
 import qualified Data.ByteString.Lazy as BL
 import Data.Csv
 import Data.Csv.Streaming                   (Records)

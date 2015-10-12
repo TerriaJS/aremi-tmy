@@ -3,6 +3,7 @@
 module Tmy.Csv where
 
 import Control.Applicative                  ((<$>), (<*>))
+import Control.Concurrent.Async             (concurrently)
 import Control.Monad                        (mplus)
 import qualified Data.ByteString      as B  (span, spanEnd)
 import qualified Data.ByteString.Lazy as BL (readFile, empty)
@@ -65,8 +66,10 @@ maybeLTime y m d h mn = LTime <$> (LocalTime
 
 mapRecords_ :: (a -> IO ()) -> Records a -> IO ()
 mapRecords_ f (Cons eith rs) = do
-    either (printFailure "Record failed: ") f eith
-    mapRecords_ f rs
+    _ <- concurrently
+            (either (printFailure "Record failed: ") f eith)
+            (mapRecords_ f rs)
+    return ()
 mapRecords_ _ (Nil err _) =
     maybe (return ()) (printFailure "Failed to parse: ") err
 
