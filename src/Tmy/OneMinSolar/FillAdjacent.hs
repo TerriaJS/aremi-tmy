@@ -4,9 +4,11 @@
 module Tmy.OneMinSolar.FillAdjacent where
 
 import Control.Lens                         (Lens', (^.))
+import Control.Applicative                  ((<$>),(<|>))
 import Data.Maybe                           (isJust,isNothing)
 import Data.Function                        (on)
-import Data.Time.LocalTime                  (LocalTime)
+import Data.Time.Clock                      (addUTCTime,NominalDiffTime)
+import Data.Time.LocalTime                  (LocalTime,localTimeToUTC,utcToLocalTime,utc)
 import Data.List.NonEmpty                   (NonEmpty(..))
 import qualified Data.List.NonEmpty as NE   (head,last)
 
@@ -32,8 +34,14 @@ fillAdjacent pr@(Processing{..}) f ft as@(a:xs) =
             else a : fillAdjacent pr f ft xs
 fillAdjacent _ _ _ [] = []
 
+replaceEmptyChunk :: Chunk a b -> Chunk a b
+replaceEmptyChunk c@(Chunk False _ _) = c
+replaceEmptyChunk c@(Chunk True f a) = 
 
--- |Optionally get values of 
+
+
+-- |Optionally get values between the given timestamps shifted by a day
+--  and for which all entries of the specified field exist
 getAdjacentDaysValues :: Processing a
                       -> (Lens' a (Maybe b))
                       -> FieldType b
@@ -42,20 +50,15 @@ getAdjacentDaysValues :: Processing a
                       -> [a]
                       -> Maybe [a]
 getAdjacentDaysValues pr f ft start end a =
-  --let yesterday = completeTimeSlice pr f ft (start + 
-    undefined
-{-
-getAdjacentDaysValues = pr f ft 
-  let t0 = undefined
-      t0 = undefined
-      yesterday = completeTimeSlice 
-      t0 = undefined
-      t0 = undefined
-      tomorrow= completeTimeSlice 
-  in yesterday <|> tomorrow where
--}
+    let dayBefore = addDay (-1)
+        dayAfter  = addDay 1
+        yesterday = completeTimeSlice pr f ft (dayBefore start) (dayBefore end) a
+        tomorrow  = completeTimeSlice pr f ft (dayAfter start) (dayAfter end) a
+    in yesterday <|> tomorrow
 
--- |Optionally get a complete timeslice of data between given times
+
+-- |Optionally get a timeslice of data between given times 
+--  for which the specified field is complete
 completeTimeSlice :: Processing a
                   -> (Lens' a (Maybe b))
                   -> FieldType b
@@ -63,15 +66,28 @@ completeTimeSlice :: Processing a
                   -> LocalTime
                   -> [a]
                   -> Maybe [a]
-completeTimeSlice pr f ft start end as = 
-    Nothing
-    
+completeTimeSlice _ _ _ _ _ [] = Nothing
+completeTimeSlice pr@(Processing{..}) f ft start end (a:as) 
+    | (lTime a) > start  = completeTimeSlice pr f ft start end as
+    | (lTime a) == start && isJust (a ^. f) 
+                         = if (lTime a) == end
+                           then Just [a]
+                           else (a:) <$> completeTimeSlice pr f ft (addMinute start) end as
+    | otherwise          = Nothing
 
+addDiffLocal :: NominalDiffTime -> LocalTime -> LocalTime
+addDiffLocal dt t = utcToLocalTime utc $ addUTCTime dt (localTimeToUTC utc t)
 
+addMinute :: LocalTime -> LocalTime
+addMinute = addDiffLocal 60
+
+addDay :: Int -> LocalTime -> LocalTime
+addDay = addDiffLocal . realToFrac . (1440*)
 
 isMediumGap :: Int -> Bool
 isMediumGap mins = mins >= 300 && mins <= 1440 
 
+--Chunks
 data Chunk a b = Chunk Bool (Lens' a (Maybe b)) (NonEmpty a)
 
 chunkByField' :: [a] -> (Lens' a (Maybe b)) -> [Chunk a b]
