@@ -77,18 +77,20 @@ processSingleSite fn s = do
         -- turn the records into Stat recs, this filters out aw values by quality
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
+
+        b = False
         -- fill in missing data for small gaps via linear interpolation (and check)
-        awShortFilled = awProcess fillInterpAndCheck awStats
-        slShortFilled = slProcess fillInterpAndCheck slStats
+        awShortFilled = fif b (awProcess fillInterpAndCheck) awStats
+        slShortFilled = fif b (slProcess fillInterpAndCheck) slStats
         -- fill in missing data for medium gaps with adjacent days
-        awMedFilled = awProcess fillAdjacent awShortFilled
-        slMedFilled = slProcess fillAdjacent slShortFilled
+        awMedFilled =  fif b (awProcess fillAdjacent) awShortFilled
+        slMedFilled =  fif b (slProcess fillAdjacent) slShortFilled
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awMedFilled 
-        slStatGroups = groupBy (hourGrouper slLTimeSt) slMedFilled 
+        awFolded =  fif b ((map (foldl1' awAggr)) . (groupBy (hourGrouper awLTimeSt))) awMedFilled
+        slFolded =  fif b ((map (foldl1' slAggr)) . (groupBy (hourGrouper slLTimeSt))) slMedFilled
         -- aggregate 1-minute records to hours
-        awFolded = map (foldl1' awAggr) awStatGroups
-        slFolded = map (foldl1' slAggr) slStatGroups
+        --awFolded =  fif b (map (foldl1' awAggr)) awStatGroups
+        --slFolded =  fif b (map (foldl1' slAggr)) slStatGroups
         -- !_ = traceShowId ((take 5) awFolded)
         -- !_ = traceShowId ((take 5) slFolded)
         -- combine 1-hour aw and sl records
@@ -100,6 +102,9 @@ processSingleSite fn s = do
             BL.appendFile newCsv (encodeDefaultOrderedByNameWith encOpts merged)
 
 
+fif :: Bool -> (a -> a) -> a -> a
+fif True  f a   = f a
+fif False _ a = a
 
 ftStat :: FieldType (Stat Double1Dec)
 ftStat = FieldType

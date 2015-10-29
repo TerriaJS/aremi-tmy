@@ -5,75 +5,75 @@ module Tmy.OneMinSolar.FillAdjacent where
 
 import Control.Lens                         (Lens', (^.))
 import Control.Applicative                  ((<$>),(<|>))
-import Data.Maybe                           (isJust,isNothing)
+import Data.Maybe                           (isJust,fromMaybe)
 import Data.Function                        (on)
 import Data.Time.Clock                      (addUTCTime,NominalDiffTime)
 import Data.Time.LocalTime                  (LocalTime,localTimeToUTC,utcToLocalTime,utc)
-import Data.List.NonEmpty                   (NonEmpty(..))
+import Data.List                            (intercalate)
+import Data.List.NonEmpty                   (NonEmpty(..),(<|),toList)
 import qualified Data.List.NonEmpty as NE   (head,last)
 
 import Tmy.OneMinSolar.Functions
 import Tmy.OneMinSolar.Types
 
+import GHC.Stack
+
 fillAdjacent :: Processing a
-       -> (Lens' a (Maybe b))
+       -> Lens' a (Maybe b)
        -> FieldType b
        -> [a]
        -> [a]
-fillAdjacent pr@(Processing{..}) f ft as@(a:xs) = 
-  case a ^. f of
-    Nothing -> a : fillAdjacent pr f ft xs
-    Just _  ->
-      case minutesUntil pr f (lTime a) xs of
-        Nothing         -> as
-        Just (mins, b)  ->
-          if isMediumGap mins
-            then case getAdjacentDaysValues pr f ft (lTime a) (lTime b) xs of
-              Nothing  -> a : fillAdjacent pr f ft xs
-              Just xs' -> a : xs' ++ fillAdjacent pr f ft xs              
-            else a : fillAdjacent pr f ft xs
 fillAdjacent _ _ _ [] = []
+fillAdjacent pr f _ a =
+    unChunk $ map (replaceEmptyChunk pr) (chunkByField f a)
 
-replaceEmptyChunk :: Chunk a b -> Chunk a b
-replaceEmptyChunk c@(Chunk False _ _) = c
-replaceEmptyChunk c@(Chunk True f a) = 
-
-
+replaceEmptyChunk :: Processing a
+                  -> Chunk a b 
+                  -> Chunk a b
+replaceEmptyChunk pr c@(Chunk True f a) 
+    | isMediumGap $ chunkMinT pr c =
+        let start = chunkStartT pr c
+            end   = chunkEndT pr c
+            g     = getAdjacentDaysValues pr f start end
+        in errorTimes [start,end] 
+        --in c { list = fromMaybe a (g (toList a)) }
+replaceEmptyChunk _ c = c
 
 -- |Optionally get values between the given timestamps shifted by a day
 --  and for which all entries of the specified field exist
 getAdjacentDaysValues :: Processing a
-                      -> (Lens' a (Maybe b))
-                      -> FieldType b
+                      -> Lens' a (Maybe b)
                       -> LocalTime
                       -> LocalTime
                       -> [a]
-                      -> Maybe [a]
-getAdjacentDaysValues pr f ft start end a =
+                      -> Maybe (NonEmpty a)
+getAdjacentDaysValues pr f start end a =
     let dayBefore = addDay (-1)
         dayAfter  = addDay 1
-        yesterday = completeTimeSlice pr f ft (dayBefore start) (dayBefore end) a
-        tomorrow  = completeTimeSlice pr f ft (dayAfter start) (dayAfter end) a
+        yesterday = completeTimeSlice pr f (dayBefore start) (dayBefore end) a
+        tomorrow  = completeTimeSlice pr f (dayAfter start) (dayAfter end) a
     in yesterday <|> tomorrow
 
 
--- |Optionally get a timeslice of data between given times 
+-- |Optionally get a time slice of data between given times
 --  for which the specified field is complete
 completeTimeSlice :: Processing a
-                  -> (Lens' a (Maybe b))
-                  -> FieldType b
+                  -> Lens' a (Maybe b)
                   -> LocalTime
                   -> LocalTime
                   -> [a]
-                  -> Maybe [a]
-completeTimeSlice _ _ _ _ _ [] = Nothing
-completeTimeSlice pr@(Processing{..}) f ft start end (a:as) 
-    | (lTime a) > start  = completeTimeSlice pr f ft start end as
-    | (lTime a) == start && isJust (a ^. f) 
-                         = if (lTime a) == end
-                           then Just [a]
-                           else (a:) <$> completeTimeSlice pr f ft (addMinute start) end as
+                  -> Maybe (NonEmpty a)
+completeTimeSlice _ _ _ _ _ = Nothing
+completeTimeSlice pr@(Processing{..}) f start end (a:as) 
+    | lTime a < start  = completeTimeSlice pr f start end as
+    | lTime a == start = errorTimes [lTime a, start, end] --delete
+    | lTime a == start && isJust (a ^. f)
+                         = if lTime a == end
+                             then errorTimes [lTime a, start, end] --Just (a:|[])
+                             else errorTimes [lTime a, start, end] --(a<|) <$> completeTimeSlice pr f (addMinute start) end as
     | otherwise          = Nothing
+
+errorTimes l = error $ intercalate " | " $ show <$> l 
 
 addDiffLocal :: NominalDiffTime -> LocalTime -> LocalTime
 addDiffLocal dt t = utcToLocalTime utc $ addUTCTime dt (localTimeToUTC utc t)
@@ -85,13 +85,16 @@ addDay :: Int -> LocalTime -> LocalTime
 addDay = addDiffLocal . realToFrac . (1440*)
 
 isMediumGap :: Int -> Bool
-isMediumGap mins = mins >= 300 && mins <= 1440 
+isMediumGap m = m > 300 && m <= 1440
 
 --Chunks
-data Chunk a b = Chunk Bool (Lens' a (Maybe b)) (NonEmpty a)
+data Chunk a b = Chunk { bool :: Bool
+                       , lens :: Lens' a (Maybe b)
+                       , list :: NonEmpty a
+                       }
 
-chunkByField' :: [a] -> (Lens' a (Maybe b)) -> [Chunk a b]
-chunkByField' as f =
+chunkByField :: Lens' a (Maybe b) -> [a] -> [Chunk a b]
+chunkByField f as =
     let p = (isJust . (^. f)) 
         g xs = Chunk (p (NE.head xs)) f xs  
     in fmap g (gatherBy p as)
@@ -107,6 +110,10 @@ chunkEndT (Processing{..}) (Chunk _ _ as)
 chunkMinT :: Processing a -> Chunk a b -> Int
 chunkMinT pr c = 
     minDiff (chunkStartT pr c) (chunkEndT pr c)
+
+unChunk :: [Chunk a b] -> [a]
+unChunk = let f (Chunk _ _ a) as = toList a ++ as
+           in foldr f []
 
 -- |Gather adjacent elements of a list together for which the given function 
 --  evaluates to the same value. Returns a list of non-empty lists.
