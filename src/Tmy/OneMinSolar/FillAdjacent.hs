@@ -30,14 +30,15 @@ fillAdjacent pr f _ a =
 replaceEmptyChunk :: Processing a
                   -> Chunk a b 
                   -> Chunk a b
-replaceEmptyChunk pr c@(Chunk True f a) 
+replaceEmptyChunk pr c@(Chunk False f a) 
     | isMediumGap $ chunkMinT pr c =
         let start = chunkStartT pr c
             end   = chunkEndT pr c
             g     = getAdjacentDaysValues pr f start end
-        in errorTimes [start,end] 
+        in if isJust (g (toList a)) then (error "yes") else (error "no") --errorTimes [start,end] 
         --in c { list = fromMaybe a (g (toList a)) }
-replaceEmptyChunk _ c = c
+    | otherwise   = error $ "not medium: " ++ show (chunkMinT pr c) ++ " | " ++ show (chunkStartT pr c) ++ " | " ++ show (chunkEndT pr c) --c
+replaceEmptyChunk pr c = c --error $ "not gap: " ++ show (chunkMinT pr c) ++ " | " ++ show (chunkStartT pr c) ++ " | " ++ show (chunkEndT pr c) --c
 
 -- |Optionally get values between the given timestamps shifted by a day
 --  and for which all entries of the specified field exist
@@ -85,7 +86,8 @@ addDay :: Int -> LocalTime -> LocalTime
 addDay = addDiffLocal . realToFrac . (1440*)
 
 isMediumGap :: Int -> Bool
-isMediumGap m = m > 300 && m <= 1440
+--isMediumGap m = m > 0 && m <= 1440
+isMediumGap m = m > 0 && m <= 1440
 
 --Chunks
 data Chunk a b = Chunk { bool :: Bool
@@ -109,7 +111,7 @@ chunkEndT (Processing{..}) (Chunk _ _ as)
 
 chunkMinT :: Processing a -> Chunk a b -> Int
 chunkMinT pr c = 
-    minDiff (chunkStartT pr c) (chunkEndT pr c)
+    minDiff (chunkEndT pr c) (chunkStartT pr c)
 
 unChunk :: [Chunk a b] -> [a]
 unChunk = let f (Chunk _ _ a) as = toList a ++ as
