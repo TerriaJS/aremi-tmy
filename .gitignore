@@ -20,3 +20,7 @@ sample_data/
 
 # vim
 *.swp
+
+# intellij
+.idea
+*.iml
