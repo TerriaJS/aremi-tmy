@@ -78,8 +78,8 @@ processSingleSite fn s = do
         awStats = map awToStat awRecsList
         slStats = map slToStat slRecsList
 
-        sFill  = False
-        sCheck = False
+        sFill  = True
+        sCheck = True
         mFill  = True
         mCheck = False
         ag     = True 
