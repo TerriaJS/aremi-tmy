@@ -148,17 +148,19 @@ slProcess p xs =
 
 awStatsP :: Processing AwStats
 awStatsP = Processing
-    { lTime   = unLTime . awLTimeSt
-    , stNum   = awStationNumSt
-    , mkEmpty = mkAwStats
+    { lTime    = unLTime . awLTimeSt
+    , stNum    = awStationNumSt
+    , setLTime = \x t -> x { awLTimeSt = LTime t }
+    , mkEmpty  = mkAwStats
     }
 
 
 slStatsP :: Processing SlStats
 slStatsP = Processing
-    { lTime   = unLTime . slLTimeSt
-    , stNum   = slStationNumSt
-    , mkEmpty = mkSlStats
+    { lTime    = unLTime . slLTimeSt
+    , stNum    = slStationNumSt
+    , setLTime = \x t -> x { slLTimeSt = LTime t }
+    , mkEmpty  = mkSlStats
     }
 
 
