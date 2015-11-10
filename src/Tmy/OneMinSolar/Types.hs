@@ -449,6 +449,7 @@ instance ToNamedRecord AwSlCombined where
 
 data Processing recType = Processing
     { lTime    :: recType -> LocalTime
+    , setLTime :: recType -> LocalTime -> recType
     , stNum    :: recType -> Text
     , mkEmpty  :: Text    -> LocalTime -> recType
     }
