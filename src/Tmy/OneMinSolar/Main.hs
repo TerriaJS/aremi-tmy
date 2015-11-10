@@ -81,7 +81,7 @@ processSingleSite fn s = do
         sFill  = False
         sCheck = False
         mFill  = True
-        mCheck = True
+        mCheck = False
         ag     = True 
         -- fill in missing data for small gaps via linear interpolation (and check)
         awShortFilled = runIf sFill (awProcess fillInterp) awStats

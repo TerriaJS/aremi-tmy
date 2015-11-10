@@ -36,24 +36,25 @@ fillAdjacent pr@(Processing{..}) f ft as@(a:xs) =
                 Nothing -> as
                 Just ((mins, b)) ->
                     if isMediumGap mins
-                        then let start = lTime a
-                                 end   = addDiffLocal (realToFrac mins) start --lTime b
+                        then let start = addDiffLocal 60 (lTime a)
+                                 end   = addDiffLocal (-60) (lTime b) --addDiffLocal (realToFrac mins) start --lTime b
                                  g     = getAdjacentDaysValues pr f start end as
                              in case g of 
-                                Nothing -> a : fillAdjacent pr f ft xs
+                                Nothing -> errorTimes "no_adjacent" [start,end]-- a : fillAdjacent pr f ft xs -- 
                                 Just h  -> let xs' = update pr f ft h xs    
-                                           in  a : fillAdjacent pr f ft xs'
+                                           in  a : fillAdjacent pr f ft xs'--}
                         else a : fillAdjacent pr f ft xs
 fillAdjacent _ _ _ [] = []
 
 
 update :: Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a] -> [a]
 update pr@(Processing{..}) f ft (x:xs) (a:as)  
+    -- | True = errorTimes "update" [lTime x, lTime a]
     -- if time matches update field with value
     | lTime a == lTime x = (a & f .~ (x ^. f)) : update pr f ft xs as
     -- if time is missing add new field with value
     | otherwise          = (mkEmpty (stNum x) (lTime x) & f .~ (x ^. f)) : update pr f ft xs (a:as)
-update _ _ _ _ _ = []
+update _ _ _ [] as = as -- error "update _"
     
 
 
@@ -90,15 +91,39 @@ getAdjacentDaysValues :: Processing a
                       -> LocalTime
                       -> [a]
                       -> Maybe [a]
-getAdjacentDaysValues pr f start end a =
+getAdjacentDaysValues pr@(Processing{..}) f start end a =
     let dayBefore = addDay (-1)
         dayAfter  = addDay 1
         valBefore = toList <$> completeTimeSlice pr f (dayBefore start) (dayBefore end) a
         valAfter  = toList <$> completeTimeSlice pr f (dayAfter start) (dayAfter end) a
         nowBefore = dayOffset 1 pr <$> valBefore
         nowAfter  = dayOffset (-1) pr <$> valAfter
-    in nowAfter <|> nowBefore
-    --in errorTimes "d" [start, dayAfter start, dayBefore start, end, dayAfter end, dayBefore end]
+    in if isJust valAfter
+        then nowAfter--  <|> nowBefore
+        else let va2 = toList <$> completeTimeSlice' pr f (dayAfter start) (dayAfter end) a 
+        in if isJust va2
+            then error "what"
+            else errorTimes ("help"++ (show $ length a)) [start, dayAfter start, dayBefore start, end, dayAfter end, dayBefore end, lTime (head a), lTime (last a)]
+    -- in errorTimes "d" [start, dayAfter start, dayBefore start, end, dayAfter end, dayBefore end]
+    --in error $ fromMaybe "nothing here" ( show <$> lTime <$> head <$> nowAfter)
+    
+completeTimeSlice' :: Processing a
+                  -> Lens' a (Maybe b)
+                  -> LocalTime
+                  -> LocalTime
+                  -> [a]
+                  -> Maybe (NonEmpty a)
+completeTimeSlice' _ _ s e as 
+    | null as = Nothing --errorTimes ( "Nothing []" ++ (show $ length as)) [s, e] -- 
+completeTimeSlice' pr@(Processing{..}) f start end (a:as) 
+    | lTime a < start  = completeTimeSlice' pr f start end as
+    | lTime a == start = errorTimes "0" [lTime a, start, end] --delete
+    | lTime a == start && isJust (a ^. f)
+                         = if lTime a == end
+                             then errorTimes "1" [lTime a, start, end] -- Just (a:|[]) -- 
+                             else (a<|) <$> completeTimeSlice' pr f (addMinute start) end as --errorTimes "2" [lTime a, start, end] -- 
+    | otherwise          = errorTimes "4" [lTime a, start, end] -- Nothing --
+
 
 -- |Optionally get a time slice of data between given times
 --  for which the specified field is complete
@@ -114,9 +139,9 @@ completeTimeSlice pr@(Processing{..}) f start end (a:as)
     -- | lTime a == start = errorTimes "0" [lTime a, start, end] --delete
     | lTime a == start && isJust (a ^. f)
                          = if lTime a == end
-                             then Just (a:|[]) -- errorTimes "1" [lTime a, start, end] --
-                             else (a<|) <$> completeTimeSlice pr f (addMinute start) end as -- errorTimes "2" [lTime a, start, end] 
-    | otherwise          = Nothing -- errorTimes "4" [lTime a, start, end] --
+                             then Just (a:|[]) -- errorTimes "1" [lTime a, start, end] -- 
+                             else (a<|) <$> completeTimeSlice pr f (addMinute start) end as --errorTimes "2" [lTime a, start, end] -- 
+    | otherwise          = errorTimes "4" [lTime a, start, end] -- Nothing --
 
 errorTimes s l = error $ intercalate " | " $ s : (show <$> l)
 
@@ -134,7 +159,7 @@ dayOffset n (Processing{..}) = map (\a -> setLTime a (addDay n $ lTime a))
 
 isMediumGap :: Int -> Bool
 --isMediumGap m = m > 0 && m <= 1440
-isMediumGap m = m > 0 && m <= 1440
+isMediumGap m = m > 10 && m <= 1440
 
 --Chunks
 {--
