@@ -3,12 +3,14 @@
 
 module Tmy.OneMinSolar.FillAdjacent where
 
-import Control.Lens                         (Lens', (^.), (.~), (&))
-import Control.Applicative                  ((<$>),(<|>))
+import Prelude                      hiding  (head,last)
+import Control.Lens                         (Lens', view, (^.), (.~), (&))
+import Control.Applicative                  ((<$>), (<|>), liftA2)
 import Data.Maybe                           (isJust)
-import Data.Time.Clock                      (addUTCTime,NominalDiffTime)
-import Data.Time.LocalTime                  (LocalTime,localTimeToUTC,utcToLocalTime,utc)
-import Data.List.NonEmpty                   (NonEmpty(..),(<|),toList)
+import Data.Time.Clock                      (addUTCTime, NominalDiffTime)
+import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utcToLocalTime,utc)
+import Data.List.NonEmpty                   (NonEmpty(..), (<|), toList, head, last)
+import Data.Function                        (on)
 
 import Tmy.OneMinSolar.Functions
 import Tmy.OneMinSolar.Types
@@ -20,19 +22,21 @@ fillAdjacent :: Processing a
        -> FieldType b
        -> [a]
        -> [a]
-fillAdjacent pr@(Processing{..}) f _ as = go as where 
+fillAdjacent pr@(Processing{..}) f ft as = go as where 
     go (x:xs) = case x ^. f of
+        -- skip until we have a value
         Nothing -> x : go xs
         Just _  -> case minutesUntil pr f (lTime x) xs of
+            -- if no gap we must be at the end
             Nothing -> x : xs
-            Just (mins,y) -> if isMediumGap mins
-                then let start = add1Minute (lTime x)
-                         end   = subtract1Minute (lTime y)
-                         adj   = getAdjacentDaysValues pr f start end as
-                     in case adj of 
+            Just (mins,y) -> 
+                if isMediumGap mins
+                    -- if medium gap then attempt to fill it (else skip)
+                    then case getAdjValues pr f ft x y as of
+                        -- if valid adjacent values exist, update
                         Nothing -> x : go xs
                         Just vs -> x : go (update vs xs)
-                else x : go xs
+                    else x : go xs
     go [] = []      
 
     -- update the entries in x with entries in v for value f
@@ -47,23 +51,33 @@ fillAdjacent pr@(Processing{..}) f _ as = go as where
 
 -- |Optionally get values between the given timestamps shifted by a day
 --  and for which all entries of the specified field exist
-getAdjacentDaysValues :: Processing a
-                      -> Lens' a (Maybe b)
-                      -> LocalTime
-                      -> LocalTime
-                      -> [a]
-                      -> Maybe [a]
-getAdjacentDaysValues pr@(Processing{..}) f start end a =
-    let dayBefore = addDays (-1)
+getAdjValues :: Processing a
+             -> Lens' a (Maybe b)
+             -> FieldType b
+             -> a 
+             -> a
+             -> [a]
+             -> Maybe [a]
+getAdjValues pr@(Processing{..}) f (FieldType{..}) x y a =
+    let start     = add1Minute (lTime x)
+        end       = subtract1Minute (lTime y)
+        dayBefore = addDays (-1)
         dayAfter  = addDays 1
         -- get values for same time period of day before and after
-        valBefore = toList <$> completeTimeSlice pr f (dayBefore start) (dayBefore end) a
-        valAfter  = toList <$> completeTimeSlice pr f (dayAfter start) (dayAfter end) a
-        -- update the times to match current day
-        nowBefore = dayOffset 1 pr <$> valBefore
-        nowAfter  = dayOffset (-1) pr <$> valAfter
-    in nowBefore <|> nowAfter 
-    
+        valBefore = completeTimeSlice pr f (dayBefore start) (dayBefore end) a
+        valAfter  = completeTimeSlice pr f (dayAfter start) (dayAfter end) a
+        -- measure difference between the endpoints of the gap to see which is a better fit
+        g v w     = abs <$> ( liftA2 (subtract `on` getValue) (v ^. f) (view f =<< w) )
+        mBefore   = liftA2 (+) (g x $ head <$> valBefore) (g y $ last <$> valBefore)
+        mAfter    = liftA2 (+) (g x $ head <$> valAfter)  (g y $ last <$> valAfter)
+        -- shift times to match current day
+        nowBefore = dayOffset   1  pr <$> toList <$> valBefore
+        nowAfter  = dayOffset (-1) pr <$> toList <$> valAfter
+    in case liftA2 (>) mBefore mAfter of
+        -- if data from day after is closer to gap at edges then prefer it 
+        Just True -> nowAfter  <|> nowBefore
+        _         -> nowBefore <|> nowAfter 
+
 
 -- |Optionally get a time slice of data between given times
 --  for which the specified field is complete
@@ -75,12 +89,15 @@ completeTimeSlice :: Processing a
                   -> Maybe (NonEmpty a)
 completeTimeSlice _ _ _ _ [] = Nothing
 completeTimeSlice pr@(Processing{..}) f start end (a:as) 
+    -- skip until we reach the start time
     | lTime a < start  = completeTimeSlice pr f start end as
+    -- if at start time and value exists
     | lTime a == start && isJust (a ^. f)
-                       = if lTime a == end
+                       = if start == end
                              then Just (a:|[]) 
                              else (a<|) <$> completeTimeSlice pr f (add1Minute start) end as 
     | otherwise        = Nothing 
+
 
 -- Functions for modifying time values
 addDiffLocal :: NominalDiffTime -> LocalTime -> LocalTime
@@ -102,5 +119,5 @@ dayOffset :: Int -> Processing a -> [a] -> [a]
 dayOffset n (Processing{..}) = map (\a -> setLTime a (addDays n $ lTime a)) 
 
 isMediumGap :: Int -> Bool
-isMediumGap m = m >= 300 && m < 1440
+isMediumGap m = m >= 300 && m <= 1440
 
