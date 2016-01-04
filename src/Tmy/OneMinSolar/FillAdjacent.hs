@@ -22,14 +22,14 @@ fillAdjacent :: Processing a
        -> FieldType b
        -> [a]
        -> [a]
-fillAdjacent pr@(Processing{..}) f ft as = go as where 
+fillAdjacent pr@(Processing{..}) f ft as = go as where
     go (x:xs) = case x ^. f of
         -- skip until we have a value
         Nothing -> x : go xs
         Just _  -> case minutesUntil pr f (lTime x) xs of
             -- if no gap we must be at the end
             Nothing -> x : xs
-            Just (mins,y) -> 
+            Just (mins,y) ->
                 if isMediumGap mins
                     -- if medium gap then attempt to fill it (else skip)
                     then case getAdjValues pr f ft x y as of
@@ -37,7 +37,7 @@ fillAdjacent pr@(Processing{..}) f ft as = go as where
                         Nothing -> x : go xs
                         Just vs -> x : go (update vs xs)
                     else x : go xs
-    go [] = []      
+    go [] = []
 
     -- update the entries in x with entries in v for value f
     update (v:vs) (x:xs)
@@ -54,18 +54,18 @@ fillAdjacent pr@(Processing{..}) f ft as = go as where
 getAdjValues :: Processing a
              -> Lens' a (Maybe b)
              -> FieldType b
-             -> a 
+             -> a
              -> a
              -> [a]
              -> Maybe [a]
-getAdjValues pr@(Processing{..}) f (FieldType{..}) x y a =
+getAdjValues pr@(Processing{..}) f (FieldType{..}) x y as =
     let start     = add1Minute (lTime x)
         end       = subtract1Minute (lTime y)
         dayBefore = addDays (-1)
         dayAfter  = addDays 1
         -- get values for same time period of day before and after
-        valBefore = completeTimeSlice pr f (dayBefore start) (dayBefore end) a
-        valAfter  = completeTimeSlice pr f (dayAfter start) (dayAfter end) a
+        valBefore = completeTimeSlice pr f (dayBefore start) (dayBefore end) as
+        valAfter  = completeTimeSlice pr f (dayAfter start) (dayAfter end) as
         -- measure difference between the endpoints of the gap to see which is a better fit
         g v w     = abs <$> ( liftA2 (subtract `on` getValue) (v ^. f) (view f =<< w) )
         mBefore   = liftA2 (+) (g x $ head <$> valBefore) (g y $ last <$> valBefore)
@@ -74,9 +74,9 @@ getAdjValues pr@(Processing{..}) f (FieldType{..}) x y a =
         nowBefore = dayOffset   1  pr <$> toList <$> valBefore
         nowAfter  = dayOffset (-1) pr <$> toList <$> valAfter
     in case liftA2 (>) mBefore mAfter of
-        -- if data from day after is closer to gap at edges then prefer it 
+        -- if data from day after is closer to gap at edges then prefer it
         Just True -> nowAfter  <|> nowBefore
-        _         -> nowBefore <|> nowAfter 
+        _         -> nowBefore <|> nowAfter
 
 
 -- |Optionally get a time slice of data between given times
@@ -88,15 +88,15 @@ completeTimeSlice :: Processing a
                   -> [a]
                   -> Maybe (NonEmpty a)
 completeTimeSlice _ _ _ _ [] = Nothing
-completeTimeSlice pr@(Processing{..}) f start end (a:as) 
+completeTimeSlice pr@(Processing{..}) f start end (a:as)
     -- skip until we reach the start time
     | lTime a < start  = completeTimeSlice pr f start end as
     -- if at start time and value exists
     | lTime a == start && isJust (a ^. f)
                        = if start == end
-                             then Just (a:|[]) 
-                             else (a<|) <$> completeTimeSlice pr f (add1Minute start) end as 
-    | otherwise        = Nothing 
+                             then Just (a:|[])
+                             else (a<|) <$> completeTimeSlice pr f (add1Minute start) end as
+    | otherwise        = Nothing
 
 
 -- Functions for modifying time values
@@ -116,7 +116,7 @@ addDays :: Int -> LocalTime -> LocalTime
 addDays = addDiffLocal . realToFrac . (86400*)
 
 dayOffset :: Int -> Processing a -> [a] -> [a]
-dayOffset n (Processing{..}) = map (\a -> setLTime a (addDays n $ lTime a)) 
+dayOffset n (Processing{..}) = map (\a -> setLTime a (addDays n $ lTime a))
 
 isMediumGap :: Int -> Bool
 isMediumGap m = m >= 300 && m <= 1440

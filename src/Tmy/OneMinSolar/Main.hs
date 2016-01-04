@@ -84,8 +84,8 @@ processSingleSite fn s = do
         awMedFilled = awProcess fillAdjacent awShortFilled
         slMedFilled = slProcess fillAdjacent slShortFilled
         -- group into hours
-        awStatGroups = groupBy (hourGrouper awLTimeSt) awMedFilled 
-        slStatGroups = groupBy (hourGrouper slLTimeSt) slMedFilled 
+        awStatGroups = groupBy (hourGrouper awLTimeSt) awMedFilled
+        slStatGroups = groupBy (hourGrouper slLTimeSt) slMedFilled
         -- aggregate 1-minute records to hours
         awFolded = map (foldl1' awAggr) awStatGroups
         slFolded = map (foldl1' slAggr) slStatGroups
