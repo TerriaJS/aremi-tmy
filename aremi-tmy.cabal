@@ -27,14 +27,17 @@ executable aremi-tmy-oneMinSolar
                      , async
                      , bytestring
                      , cassava
+                     , containers
                      , directory
                      , filemanip
                      , lens
                      , lens-datetime
                      , old-locale
+                     , old-time
                      , semigroups
                      , text
                      , time
+                     , time-locale-compat
                      , vector
                      , unordered-containers
   default-language:    Haskell2010

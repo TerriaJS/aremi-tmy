@@ -8,7 +8,6 @@ import Control.Lens                         (Lens', (^.))
 import Data.Time.Clock                      (diffUTCTime)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 
-import Control.Applicative                  ((<$>))
 import Data.Semigroup                       (Sum(..))
 
 import Tmy.OneMinSolar.Types

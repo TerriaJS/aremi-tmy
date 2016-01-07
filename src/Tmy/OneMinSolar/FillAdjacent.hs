@@ -6,13 +6,13 @@
 module Tmy.OneMinSolar.FillAdjacent where
 
 import Prelude                      hiding  (head,last)
+import Control.Applicative                  ((<|>), liftA2)
 import Control.Lens                         (Lens', view, (^.), (.~), (&))
-import Control.Applicative                  ((<$>), (<|>), liftA2)
+import Data.Function                        (on)
+import Data.List.NonEmpty                   (NonEmpty(..), (<|), toList, head, last)
 import Data.Maybe                           (isJust)
 import Data.Time.Clock                      (addUTCTime, NominalDiffTime)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utcToLocalTime,utc)
-import Data.List.NonEmpty                   (NonEmpty(..), (<|), toList, head, last)
-import Data.Function                        (on)
 
 import Tmy.OneMinSolar.Functions
 import Tmy.OneMinSolar.Types

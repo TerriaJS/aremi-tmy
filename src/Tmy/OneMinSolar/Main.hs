@@ -26,12 +26,12 @@ import System.Directory                     (doesFileExist)
 import System.Environment                   (getArgs)
 import System.FilePath.Find                 (find, always, (~~?), fileName)
 
-import Tmy.OneMinSolar.Functions
-import Tmy.OneMinSolar.Types
-import Tmy.OneMinSolar.FillInterp
-import Tmy.OneMinSolar.FillAdjacent
 import Tmy.Common
 import Tmy.Csv
+import Tmy.OneMinSolar.FillAdjacent
+import Tmy.OneMinSolar.FillInterp
+import Tmy.OneMinSolar.Functions
+import Tmy.OneMinSolar.Types
 
 -- import Debug.Trace
 
