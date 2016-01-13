@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ -n "$(git status --porcelain)" ]; then
+    echo "There are uncommitted modifications - not making a package!"
+    exit 1
+fi
+
+DESCRIBE=$(git describe)
+DIST='dist'
+
+rm -rf dist && mkdir -p dist
+stack clean
+stack build --copy-bins
