@@ -23,7 +23,7 @@ fillInterp pr@(Processing{..}) f ft as@(a:xs) =
         Nothing -> a : fillInterp pr f ft xs
         Just _  ->
             -- if we do then check how long until the next value for this field
-            case minutesUntil pr f (lTime a) xs of
+            case minutesUntil lTime f (lTime a) xs of
                 -- if not then we must be at the end of the list
                 Nothing -> as
                 Just ((mins, b)) ->
@@ -42,13 +42,13 @@ check :: (Show a, Show b)
       -> FieldType b
       -> [a]
       -> [a]
-check pr@(Processing{..}) f _ ss = go ss where
+check (Processing{..}) f _ ss = go ss where
     go as@(a:xs) =
         -- check if a has a value for this time
         case a ^. f of
             Nothing -> a : go xs -- skip until we find a value for the field
             Just _  ->
-                case minutesUntil pr f (lTime a) xs of
+                case minutesUntil lTime f (lTime a) xs of
                     Nothing -> as
                     Just ((mins, b)) ->
                         if mins > 1 && isLessThan5Hours mins

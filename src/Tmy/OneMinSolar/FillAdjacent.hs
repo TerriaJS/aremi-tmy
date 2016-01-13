@@ -28,19 +28,19 @@ fillAdjacent pr@(Processing{..}) f ft as' = go as' as' where
     go (x:xs) !as'' =
         let as = dropWhile (\y -> lTime y < addDays (-1) (lTime x)) as''
         in case x ^. f of
-        -- skip until we have a value
-        Nothing -> x : go xs as
-        Just _  -> case minutesUntil pr f (lTime x) xs of
-            -- if no gap we must be at the end
-            Nothing -> x : xs
-            Just (mins,y) ->
-                if isMediumGap mins
-                    -- if medium gap then attempt to fill it (else skip)
-                    then case getAdjValues pr f ft x y as'' of
-                        -- if valid adjacent values exist, update
-                        Nothing -> x : go xs as
-                        Just vs -> x : go (update vs xs) as
-                    else x : go xs as
+            -- skip until we have a value
+            Nothing -> x : go xs as
+            Just _  -> case minutesUntil lTime f (lTime x) xs of
+                -- if no gap we must be at the end
+                Nothing -> x : xs
+                Just (mins, y) ->
+                    if isMediumGap mins
+                        -- if medium gap then attempt to fill it (else skip)
+                        then case getAdjValues pr f ft x y as'' of
+                            -- if valid adjacent values exist, update
+                            Nothing -> x : go xs as
+                            Just vs -> x : go (update vs xs) as
+                        else x : go xs as
     go [] _ = []
 
     -- update the entries in x with entries in v for value f
@@ -68,8 +68,8 @@ getAdjValues pr@(Processing{..}) f (FieldType{..}) x y as =
         dayBefore = addDays (-1)
         dayAfter  = addDays 1
         -- get values for same time period of day before and after
-        valBefore = completeTimeSlice pr f (dayBefore start) (dayBefore end) as
-        valAfter  = completeTimeSlice pr f (dayAfter start) (dayAfter end) as
+        valBefore = completeTimeSlice lTime f (dayBefore start) (dayBefore end) as
+        valAfter  = completeTimeSlice lTime f (dayAfter start) (dayAfter end) as
         -- measure difference between the endpoints of the gap to see which is a better fit
         g v w     = abs <$> ( liftA2 (subtract `on` getValue) (v ^. f) (view f =<< w) )
         mBefore   = liftA2 (+) (g x $ head <$> valBefore) (g y $ last <$> valBefore)
@@ -85,21 +85,21 @@ getAdjValues pr@(Processing{..}) f (FieldType{..}) x y as =
 
 -- |Optionally get a time slice of data between given times
 --  for which the specified field is complete
-completeTimeSlice :: Processing a
+completeTimeSlice :: (a -> LocalTime)
                   -> Lens' a (Maybe b)
                   -> LocalTime
                   -> LocalTime
                   -> [a]
                   -> Maybe (NonEmpty a)
 completeTimeSlice _ _ _ _ [] = Nothing
-completeTimeSlice pr@(Processing{..}) f start end (a:as)
+completeTimeSlice lTime f start end (a:as)
     -- skip until we reach the start time
-    | lTime a < start  = completeTimeSlice pr f start end as
+    | lTime a < start  = completeTimeSlice lTime f start end as
     -- if at start time and value exists
     | lTime a == start && isJust (a ^. f)
                        = if start == end
                              then Just (a:|[])
-                             else (a<|) <$> completeTimeSlice pr f (add1Minute start) end as
+                             else (a<|) <$> completeTimeSlice lTime f (add1Minute start) end as
     | otherwise        = Nothing
 
 
