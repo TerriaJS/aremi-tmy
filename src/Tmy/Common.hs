@@ -120,7 +120,7 @@ qFilter :: (a -> Spaced Char)
         -> a
         -> Maybe b
 qFilter qf vf a =
-    if unSpaced (qf a) `elem` "YNSF"
+    if unSpaced (qf a) `elem` ['Y','N','S','F']
         then unSpaced (vf a)
         else Nothing
 

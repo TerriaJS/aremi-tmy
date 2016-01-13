@@ -2,7 +2,6 @@
 
 module Tmy.Csv where
 
-import Control.Applicative                  ((<$>), (<*>))
 import Control.Concurrent.Async             (concurrently)
 import Control.Monad                        (mplus)
 import qualified Data.ByteString      as B  (span, spanEnd)
@@ -12,7 +11,7 @@ import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, d
 import Data.Time.Calendar                   (fromGregorianValid)
 import Data.Time.Format                     (formatTime)
 import Data.Time.LocalTime                  (LocalTime(LocalTime), makeTimeOfDayValid)
-import System.Locale                        (iso8601DateFormat, defaultTimeLocale)
+import Data.Time.Locale.Compat              (iso8601DateFormat, defaultTimeLocale)
 import Text.Printf                          (printf)
 
 

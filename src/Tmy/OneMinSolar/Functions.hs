@@ -8,7 +8,6 @@ import Control.Lens                         (Lens', (^.))
 import Data.Time.Clock                      (diffUTCTime)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 
-import Control.Applicative                  ((<$>))
 import Data.Semigroup                       (Sum(..))
 
 import Tmy.OneMinSolar.Types
@@ -108,12 +107,12 @@ minDiff a b = round (diffUTCTime (localTimeToUTC utc a) (localTimeToUTC utc b) /
 
 
 -- | Find the number of minutes as well as the record that has a Just value for a given field
-minutesUntil :: Processing a
+minutesUntil :: (a -> LocalTime)
              -> (Lens' a (Maybe b))
              -> LocalTime
              -> [a]
              -> Maybe (Int, a)
-minutesUntil (Processing{..}) f lt xs = go xs where
+minutesUntil lTime f lt xs = go xs where
     -- check if the field we are interested in has a value
     go (a:as) = case a ^. f of
                     -- if it doesn't, then increment and keep looking

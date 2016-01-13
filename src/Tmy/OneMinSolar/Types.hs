@@ -7,7 +7,7 @@
 
 module Tmy.OneMinSolar.Types where
 
-import Control.Applicative                  ((<$>), (<*>), (<|>))
+import Control.Applicative                  ((<|>))
 import Control.Lens                         (Lens', makeLenses)
 -- import Data.ByteString                      (empty)
 import Data.Csv
@@ -449,6 +449,7 @@ instance ToNamedRecord AwSlCombined where
 
 data Processing recType = Processing
     { lTime    :: recType -> LocalTime
+    , setLTime :: recType -> LocalTime -> recType
     , stNum    :: recType -> Text
     , mkEmpty  :: Text    -> LocalTime -> recType
     }
@@ -459,4 +460,4 @@ data FieldType ftype = FieldType
     }
 
 
-type Processor = (Show a, Show b) => Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a]
+type Processor = forall a b. (Show a, Show b) => Processing a -> (Lens' a (Maybe b)) -> FieldType b -> [a] -> [a]
