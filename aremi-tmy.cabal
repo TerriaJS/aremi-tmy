@@ -1,17 +1,17 @@
 name:                aremi-tmy
-version:             0.1.0.0
+version:             0.1.1.0
 synopsis:            AREMI TMY from weather observations and satellite irradiance
 description:         A tool to work out Typical Meteorological Year (TMY) from ground weather station observations and satellite solar irradiance data.
 homepage:            https://github.com/NICTA/aremi-tmy
 license:             Apache-2.0
 license-file:        LICENSE
-author:              Mats Henrikson
+author:              Mats Henrikson, Alex Mason, David Cole
 maintainer:          mats.henrikson@nicta.com.au
 copyright:           NICTA 2015
 category:            Web
 build-type:          Simple
 -- extra-source-files:
-cabal-version:       >=1.10
+cabal-version:       >=1.20
 
 executable aremi-tmy-oneMinSolar
   hs-source-dirs:      src
