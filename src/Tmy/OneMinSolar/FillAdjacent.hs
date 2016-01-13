@@ -1,5 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE BangPatterns #-}
+
 
 module Tmy.OneMinSolar.FillAdjacent where
 
@@ -22,22 +24,24 @@ fillAdjacent :: Processing a
        -> FieldType b
        -> [a]
        -> [a]
-fillAdjacent pr@(Processing{..}) f ft as = go as where
-    go (x:xs) = case x ^. f of
+fillAdjacent pr@(Processing{..}) f ft as' = go as' as' where
+    go (x:xs) !as'' =
+        let as = dropWhile (\y -> lTime y < addDays (-1) (lTime x)) as''
+        in case x ^. f of
         -- skip until we have a value
-        Nothing -> x : go xs
+        Nothing -> x : go xs as
         Just _  -> case minutesUntil pr f (lTime x) xs of
             -- if no gap we must be at the end
             Nothing -> x : xs
             Just (mins,y) ->
                 if isMediumGap mins
                     -- if medium gap then attempt to fill it (else skip)
-                    then case getAdjValues pr f ft x y as of
+                    then case getAdjValues pr f ft x y as'' of
                         -- if valid adjacent values exist, update
-                        Nothing -> x : go xs
-                        Just vs -> x : go (update vs xs)
-                    else x : go xs
-    go [] = []
+                        Nothing -> x : go xs as
+                        Just vs -> x : go (update vs xs) as
+                    else x : go xs as
+    go [] _ = []
 
     -- update the entries in x with entries in v for value f
     update (v:vs) (x:xs)
