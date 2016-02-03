@@ -5,11 +5,11 @@
 
 module Tmy.OneMinSolar.FillAdjacent where
 
-import Prelude                      hiding  (head,last)
 import Control.Applicative                  ((<|>), liftA2)
 import Control.Lens                         (Lens', view, (^.), (.~), (&))
 import Data.Function                        (on)
-import Data.List.NonEmpty                   (NonEmpty(..), (<|), toList, head, last)
+import Data.List.NonEmpty                   (NonEmpty(..), (<|), toList)
+import qualified Data.List.NonEmpty as NE   (head, last)
 import Data.Maybe                           (isJust)
 import Data.Time.Clock                      (addUTCTime, NominalDiffTime)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utcToLocalTime,utc)
@@ -20,7 +20,7 @@ import Tmy.OneMinSolar.Types
 
 -- |Fill medium sized gaps with data from adjacent days
 fillAdjacent :: Processing a
-       -> (Lens' a (Maybe b))
+       -> Lens' a (Maybe b)
        -> FieldType b
        -> [a]
        -> [a]
@@ -71,9 +71,10 @@ getAdjValues pr@(Processing{..}) f (FieldType{..}) x y as =
         valBefore = completeTimeSlice lTime f (dayBefore start) (dayBefore end) as
         valAfter  = completeTimeSlice lTime f (dayAfter start) (dayAfter end) as
         -- measure difference between the endpoints of the gap to see which is a better fit
-        g v w     = abs <$> ( liftA2 (subtract `on` getValue) (v ^. f) (view f =<< w) )
-        mBefore   = liftA2 (+) (g x $ head <$> valBefore) (g y $ last <$> valBefore)
-        mAfter    = liftA2 (+) (g x $ head <$> valAfter)  (g y $ last <$> valAfter)
+        g v w     = abs <$> liftA2 (subtract `on` getValue) (v ^. f) (view f =<< w)
+        m ss      = liftA2 (+) (g x $ NE.head <$> ss) (g y $ NE.last <$> ss)
+        mBefore   = m valBefore
+        mAfter    = m valAfter
         -- shift times to match current day
         nowBefore = dayOffset   1  pr <$> toList <$> valBefore
         nowAfter  = dayOffset (-1) pr <$> toList <$> valAfter
