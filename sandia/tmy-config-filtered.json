@@ -1,0 +1,30 @@
+{
+  "params": {
+    "time"                    : "awLocalStdTime",
+    "dry_bulb_tmp_max"        : "awAirTempMax",
+    "dry_bulb_tmp_min"        : "awAirTempMin",
+    "dry_bulb_tmp_mean"       : "awAirTemp",
+    "dew_point_tmp_max"       : "awDewPointTempMax",
+    "dew_point_tmp_min"       : "awDewPointTempMin",
+    "dew_point_tmp_mean"      : "awDewPointTemp",
+    "wind_velocity_max"       : "awWindGustMax",
+    "wind_velocity_mean"      : "awWindSpeed",
+    "global_horiz_radiation"  : "slGhiMean",
+    "direct_normal_radiation" : "slDni"
+  },
+  "weights": {
+    "total": 20,
+    "dry_bulb_tmp_max"        : 1,
+    "dry_bulb_tmp_min"        : 1,
+    "dry_bulb_tmp_mean"       : 2,
+    "dew_point_tmp_max"       : 1,
+    "dew_point_tmp_min"       : 1,
+    "dew_point_tmp_mean"      : 2,
+    "wind_velocity_max"       : 1,
+    "wind_velocity_mean"      : 1,
+    "global_horiz_radiation"  : 5,
+    "direct_normal_radiation" : 5
+  },
+  "cdf_bins": 50,
+  "min_years_required": 9
+}
