@@ -1,7 +1,7 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 """
-Calculate the Typical Meterological Year (TMY) for a weather station given
+Calculate the Typical Meteorological Year (TMY) for a weather station given
 a historical dataset
 
 References:
@@ -36,12 +36,22 @@ def load_bom_csv_file(bom_file,params):
     
     return d
 
+def clean_data(d):
 
-def validate_data(d,config):
-    """ 
-    Validate the data
-    Return True if data is continuous and complete
-    Return False and print error otherwise
+    # remove months with NaNs
+    d = d.groupby(pd.TimeGrouper('M')).filter(lambda x: not x.isnull().any().any())
+
+    return d
+
+def validate_data(d, config):
+    """ Validate the data.
+    
+    Args:
+        d (pd.DataFrame): historical weather data
+        config (dict): configuration
+
+    Returns:
+        bool: True if data is continuous and complete, False otherwise.
     """
     print_details = config['verbose']
     valid = True
@@ -54,7 +64,7 @@ def validate_data(d,config):
         print( "Found {} duplicate timestamps".format(nDups) )
         if print_details:
             for g in duplicates:
-                print g
+                print(g)
 
     # Ensure montonic increasing
     if not d.index.is_monotonic_increasing:
@@ -75,7 +85,7 @@ def validate_data(d,config):
         lt1w = gaps[(gaps.dt < timedelta(days=7)) & (gaps.dt > timedelta(days=1))]
         lt1m = gaps[(gaps.dt < timedelta(days=30)) & (gaps.dt > timedelta(days=7))]
         gt1m = gaps[gaps.dt > timedelta(days=30)]
-        print "Found {} gaps in the dataset:".format(nGaps)
+        print("Found {} gaps in the dataset:".format(nGaps))
         print("  {} gaps < 6 hours".format(len(lt6h)))
         print("  {} gaps < 1 day (> 6 hours)".format(len(lt1d)))
         print("  {} gaps < 1 week (> 1 day)".format(len(lt1w)))
@@ -91,9 +101,9 @@ def validate_data(d,config):
     nOffHour = len(offHour)
     if (nOffHour > 0):
         valid = False
-        print "Found {} times not on the hour in the dataset".format(nOffHour)
+        print("Found {} times not on the hour in the dataset".format(nOffHour))
         if print_details:
-            print offHour
+            print(offHour)
 
     # Check for NaNs
     col_has_nan = d.isnull().any()
@@ -105,8 +115,8 @@ def validate_data(d,config):
                 dnull = d[d[c].apply(np.isnan)]
                 print("  {} rows with NaN values for {}".format(len(dnull),c))
                 if print_details:
-                    print dnull
-
+                    print(dnull)
+        
     # Ensure there are enough valid years worth of data for each month
     years = []
     min_years = config['min_years_required']
@@ -122,7 +132,7 @@ def validate_data(d,config):
     
     if ( (min(years) < min_years) or print_details ):
         for i,yr in enumerate(years):
-            print "  {:10} {}".format(calendar.month_name[i+1],yr)
+            print("  {:10} {}".format(calendar.month_name[i+1],yr))
         
     # Print warning if not valid
     if not valid:
@@ -167,11 +177,13 @@ def select_year(d, m, config):
 
         x = bin_edges[:-1] * np.diff(bin_edges)/2
 
-        for yr in set(d.index.year):
+        for yr in set(d[w].index.year):
             dy = d[d.index.year==yr]
 
             # calculate the CDF for this weight for specific year
-            cdfs[w][yr], b  = cdf(dy,w,bin_edges)
+            f, b  = cdf(dy,w,bin_edges)
+            f[np.isnan(f)] = np.inf
+            cdfs[w][yr] = f
 
             # Finkelstein-Schafer statistic (difference between long term
             # CDF and year CDF
@@ -179,6 +191,9 @@ def select_year(d, m, config):
 
             # Add weighted FS value to score for this year 
             score[yr] += fs[w][yr] * weights[w]/total
+            if np.isnan(score[yr]):
+                print("score for {} is nan".format(yr))
+                score[yr] = np.inf
     
 
     # select the top 5 years ordered by their weighted scores
@@ -188,7 +203,7 @@ def select_year(d, m, config):
     best_year = top5[0]
 
     if config['plot_cdf']:
-        plot_cdfs(m,weights,x,fs,cdfs,set(d.index.year),best_year)
+        plot_cdfs(m,weights,x,fs,cdfs,set(d[w].index.year),best_year)
 
     return best_year
 
@@ -198,35 +213,35 @@ def plot_cdfs(m,weights,x,fs,cdfs,years_set,best_year):
     Plot the cdfs for each param for each year
     """
     plt.figure()
-    plt.suptitle("Typical Meteorolgical Year: {} = {}".format(
+    plt.suptitle("Typical Meteorological Year: {} = {}".format(
         calendar.month_name[m],best_year),fontsize=18)
     k = 1
     for w in weights:
         ax = plt.subplot(3,4,k)
         labels = []
         fs_min = min(fs[w],key=fs[w].get)
-        for yr in years_set:
+        for yr in cdfs[w]:
             labels.append(yr)
             ax.set_xlabel(w)
             ax.set_ylabel("CDF")
             ax.set_ylim(top=1)
             p = ax.plot(x,cdfs[w][yr])
-            if (yr == fs_min):
+            if yr == fs_min:
                 plt.setp(p,color='r',linewidth=2)
-            if (yr == best_year):
+            if yr == best_year:
                 plt.setp(p,color='b',linewidth=2)
             if (yr == fs_min) and (yr == best_year):
                 plt.setp(p,color=[1,0,1],linewidth=2)
+            if yr == 'all':
+                plt.setp(p,color='k',linewidth=2,linestyle='--')
 
         k += 1
-        ax.plot(x,cdfs[w]['all'],color='k',linewidth=2,linestyle='--')
-        labels.append('All')
         ax.legend(labels,prop={'size':9},loc='best')
 
         out = "{} => ".format(w.ljust(max(map(len,weights))))
         for yr in years_set:
             out += "{}: {:.3f}, ".format(str(yr)[2:],fs[w][yr])
-        print out
+        print(out)
 
     plt.show()
 
@@ -240,7 +255,7 @@ def calculate_tmy(d,config):
         year = select_year(d,month,config)
         tmys.append(year)
 
-    print "TMY for '{}' data set:\n{}".format(config['bomfile'],tmys)
+    print("TMY for '{}' data set:\n{}".format(config['bomfile'],tmys))
 
     return tmys
     
@@ -275,12 +290,12 @@ def merge_months(d,tmy):
                 s = s.replace(year=1901)
                 r = (s + buf - x)
                 t = float(r.total_seconds())/3600/12
-                print x, s, r, t
+                print( x, s, r, t)
                 for col in d_merge_last:
                     #d_merge_last.loc(x,col) = t*d_merge_last[col][x] + (1-t)*d_merge[col][x]
                     d_merge_last.loc[x,col] = t*d_merge_last.loc[x,col] + (1-t)*d_merge.loc[x,col]
 
-            print d_merge_last
+            print(d_merge_last)
 
         if (m < 12):
             e = datetime(yr,m+1,1,0,0,0)
@@ -288,7 +303,7 @@ def merge_months(d,tmy):
             ei = d.index.get_loc(e+buf)+1
             d_merge_last = d[si:ei]
             reset_year(d_merge_last)
-            print d_merge_last
+            print(d_merge_last)
 
         reset_year(dm)
         out.append(dm)
@@ -312,7 +327,8 @@ def merge_months(d,tmy):
 
 
 def validate_config(config):
-    """ Ensure config is valid."""
+    """ Ensure config is valid.
+    """
     # Check weights add up
     weights = dict(config['weights'])
     total = weights.pop('total')
@@ -336,6 +352,7 @@ def main(args):
 
     d = load_bom_csv_file(config['bomfile'],config['params'])
 
+    d = clean_data(d)
     is_valid = validate_data(d,config)
 
     if True:
