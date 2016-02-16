@@ -24,3 +24,6 @@ sample_data/
 # intellij
 .idea
 *.iml
+
+# python
+*.pyc
