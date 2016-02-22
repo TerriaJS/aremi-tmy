@@ -26,19 +26,19 @@ def load_bom_csv_file(bom_file,params):
     Load csv file containing weather station data into a pandas DataFrame
     """
     if ( not os.path.isfile(bom_file) ):
-        raise IOError("BOM data file: '{}' not found".format(bom_file)) 
+        raise IOError("BOM data file: '{}' not found".format(bom_file))
 
     col_names = dict( zip(params.values(), params.keys()) )
 
     d = pd.read_csv(bom_file,usecols=col_names,parse_dates=[params['time']])
     d.rename(columns=col_names,inplace=True)
     d.set_index('time',inplace=True)
-    
+
     return d
 
 
 def validate_data(d,config):
-    """ 
+    """
     Validate the data
     Return True if data is continuous and complete
     Return False and print error otherwise
@@ -65,9 +65,9 @@ def validate_data(d,config):
     t = pd.DataFrame(d.index)
     t['dt'] = t['time'].diff()
     t['gap']  = t['dt'] > timedelta(hours=1)
-    t['gap']  = t['gap'].apply(lambda x: 1 if x else 0).cumsum() 
+    t['gap']  = t['gap'].apply(lambda x: 1 if x else 0).cumsum()
     gaps = t.groupby('gap').head(1).drop(0)
-    nGaps = len(gaps) 
+    nGaps = len(gaps)
     if (nGaps > 0):
         valid = False
         lt6h = gaps[gaps.dt < timedelta(hours=6)]
@@ -107,9 +107,12 @@ def validate_data(d,config):
                 if print_details:
                     print dnull
 
+    d = removeMonthsWithNulls(config["params"].keys(), d)
+
     # Ensure there are enough valid years worth of data for each month
     years = []
     min_years = config['min_years_required']
+
     for m in range(1,13):
         years.append(len(np.unique(d[d.index.month==m].index.year)))
 
@@ -118,18 +121,42 @@ def validate_data(d,config):
         print("Found month(s) with less than {} years of data:".format(min_years))
 
     if print_details:
-        print("Each month has the following number of years data avaliable:")
-    
+        print("Each month has the following number of years data available:")
+
+    total_years = 0
     if ( (min(years) < min_years) or print_details ):
         for i,yr in enumerate(years):
             print "  {:10} {}".format(calendar.month_name[i+1],yr)
-        
+            total_years = total_years + yr
+
+    # Exit if we have no data at all
+    if total_years < 1:
+        print("\nERROR: No valid data found. Exiting.\n")
+        sys.exit(1)
+
     # Print warning if not valid
     if not valid:
         print("\nWARNING: dataset is incomplete.\n")
 
     return valid
 
+def removeMonthsWithNulls(col_names, d):
+    """
+    Remove any months that have rows that contain a null.
+    """
+    months_to_remove = set()
+    nulls = d.isnull()
+    for (date, series) in nulls.iterrows():
+        for (ind, val) in series.iteritems():
+            if val:
+                months_to_remove.add((date.month, date.year))
+
+    for month, year in list(months_to_remove):
+        _, end_month = calendar.monthrange(year, month)
+        start = datetime(year,month,1,0,0,0)
+        end = datetime(year,month,end_month,0,0,0) + timedelta(days=1)
+        d = d[(d.index > end) | (d.index < start)]
+    return d
 
 def cdf(d,prop,bins):
     """
@@ -177,13 +204,13 @@ def select_year(d, m, config):
             # CDF and year CDF
             fs[w][yr] = np.mean( abs(cdfs[w]['all'] - cdfs[w][yr]) )
 
-            # Add weighted FS value to score for this year 
+            # Add weighted FS value to score for this year
             score[yr] += fs[w][yr] * weights[w]/total
-    
+
 
     # select the top 5 years ordered by their weighted scores
     top5 = sorted(score,key=score.get)[:5]
-    
+
     # TODO: select best year based on further statistics
     best_year = top5[0]
 
@@ -243,7 +270,7 @@ def calculate_tmy(d,config):
     print "TMY for '{}' data set:\n{}".format(config['bomfile'],tmys)
 
     return tmys
-    
+
 
 def merge_months(d,tmy):
     """
@@ -259,18 +286,18 @@ def merge_months(d,tmy):
     d_merge_last = None
     for mi,yr in enumerate(tmy):
         m = mi + 1
-        dy = d[d.index.year==yr]   
+        dy = d[d.index.year==yr]
         dm = dy[dy.index.month==m]
         #ndays = calendar.monthrange(1901,m)[1]
         buf = timedelta(hours=6)
-        
+
         if (m > 1):
             s = datetime(yr,m,1,0,0,0)
             si = d.index.get_loc(s-buf)
             ei = d.index.get_loc(s+buf)+1
             d_merge = d[si:ei]
             reset_year(d_merge)
-            
+
             for x in d_merge_last.index:
                 s = s.replace(year=1901)
                 r = (s + buf - x)
@@ -292,9 +319,9 @@ def merge_months(d,tmy):
 
         reset_year(dm)
         out.append(dm)
-    
+
     dtmy = pd.concat(out)
-    
+
     plt.figure()
     ax=plt.subplot(311)
     dtmy['awAirTemp'].plot()
@@ -320,7 +347,7 @@ def validate_config(config):
     if (total != wsum):
         err_msg = "Weights sum ({}) and provided total ({}) do not match".format(wsum,total)
         raise IOError(err_msg)
-    
+
 
 def main(args):
 
