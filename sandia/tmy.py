@@ -9,6 +9,8 @@ References:
 """
 
 import sys, os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+import validate_data
 import argparse
 import json
 from datetime import datetime, timedelta
@@ -21,7 +23,8 @@ import matplotlib
 
 matplotlib.style.use('ggplot')
 
-def load_bom_csv_file(bom_file,params):
+
+def loadBomCsvFile(bom_file,params):
     """
     Load csv file containing weather station data into a pandas DataFrame
     """
@@ -36,114 +39,8 @@ def load_bom_csv_file(bom_file,params):
 
     return d
 
-
-def validate_data(d,config):
-    """
-    Validate the data
-    Return True if data is continuous and complete
-    Return False and print error otherwise
-    """
-    print_details = config['verbose']
-    valid = True
-
-    # Ensure timestamps are unique
-    if not d.index.is_unique:
-        valid = False
-        duplicates = d.groupby(level=0).filter(lambda x: len(x) > 1)
-        nDups = len(duplicates)
-        print( "Found {} duplicate timestamps".format(nDups) )
-        if print_details:
-            for g in duplicates:
-                print g
-
-    # Ensure montonic increasing
-    if not d.index.is_monotonic_increasing:
-        valid = False
-        print( "Timestamps are not monotonic increasing")
-
-    # Find gaps in the data
-    t = pd.DataFrame(d.index)
-    t['dt'] = t['time'].diff()
-    t['gap']  = t['dt'] > timedelta(hours=1)
-    t['gap']  = t['gap'].apply(lambda x: 1 if x else 0).cumsum()
-    gaps = t.groupby('gap').head(1).drop(0)
-    nGaps = len(gaps)
-    if (nGaps > 0):
-        valid = False
-        lt6h = gaps[gaps.dt < timedelta(hours=6)]
-        lt1d = gaps[(gaps.dt < timedelta(days=1)) & (gaps.dt > timedelta(hours=6))]
-        lt1w = gaps[(gaps.dt < timedelta(days=7)) & (gaps.dt > timedelta(days=1))]
-        lt1m = gaps[(gaps.dt < timedelta(days=30)) & (gaps.dt > timedelta(days=7))]
-        gt1m = gaps[gaps.dt > timedelta(days=30)]
-        print "Found {} gaps in the dataset:".format(nGaps)
-        print("  {} gaps < 6 hours".format(len(lt6h)))
-        print("  {} gaps < 1 day (> 6 hours)".format(len(lt1d)))
-        print("  {} gaps < 1 week (> 1 day)".format(len(lt1w)))
-        print("  {} gaps < 1 month (> 1 week)".format(len(lt1m)))
-        print("  {} gaps > 1 month".format(len(gt1m)))
-
-    # Find any timestamps that are not on the hour
-    dt = pd.DatetimeIndex(t['time'])
-    t['minute'] = dt.minute
-    t['second'] = dt.second
-    t['nanosecond'] = dt.nanosecond
-    offHour = t.query('(minute != 0) | (second != 0) | (nanosecond != 0)')
-    nOffHour = len(offHour)
-    if (nOffHour > 0):
-        valid = False
-        print "Found {} times not on the hour in the dataset".format(nOffHour)
-        if print_details:
-            print offHour
-
-    # Check for NaNs
-    col_has_nan = d.isnull().any()
-    if col_has_nan.any():
-        valid = False
-        print("Found {} NaN values present in dataset:".format(d.isnull().sum().sum()))
-        for c in col_has_nan.index:
-            if col_has_nan[c]:
-                dnull = d[d[c].apply(np.isnan)]
-                print("  {} rows with NaN values for {}".format(len(dnull),c))
-                if print_details:
-                    print dnull
-
-    d = removeMonthsWithNulls(config["params"].keys(), d)
-
-    # Ensure there are enough valid years worth of data for each month
-    years = []
-    min_years = config['min_years_required']
-
-    for m in range(1,13):
-        years.append(len(np.unique(d[d.index.month==m].index.year)))
-
-    if (min(years) < min_years):
-        valid = False
-        print("Found month(s) with less than {} years of data:".format(min_years))
-
-    if print_details:
-        print("Each month has the following number of years data available:")
-
-    total_years = 0
-    if ( (min(years) < min_years) or print_details ):
-        for i,yr in enumerate(years):
-            print "  {:10} {}".format(calendar.month_name[i+1],yr)
-            total_years = total_years + yr
-
-    # Exit if we have no data at all
-    if total_years < 1:
-        print("\nERROR: No valid data found. Exiting.\n")
-        sys.exit(1)
-
-    # Print warning if not valid
-    if not valid:
-        print("\nWARNING: dataset is incomplete.\n")
-
-    return valid
-
 def removeMonthsWithNulls(col_names, d):
-    """
-    Remove any months that have rows that contain a null.
-    """
+    """ Remove any months that have rows that contain a null, as we can't do statistics on this. """
     months_to_remove = set()
     nulls = d.isnull()
     for (date, series) in nulls.iterrows():
@@ -170,7 +67,7 @@ def cdf(d,prop,bins):
     return cdf, b
 
 
-def select_year(d, m, config):
+def selectYear(d, m, config):
     """
     Use the Sandia method, to select the most typical year of data
     for the given month
@@ -215,12 +112,12 @@ def select_year(d, m, config):
     best_year = top5[0]
 
     if config['plot_cdf']:
-        plot_cdfs(m,weights,x,fs,cdfs,set(d.index.year),best_year)
+        plotCdfs(m,weights,x,fs,cdfs,set(d.index.year),best_year)
 
     return best_year
 
 
-def plot_cdfs(m,weights,x,fs,cdfs,years_set,best_year):
+def plotCdfs(m,weights,x,fs,cdfs,years_set,best_year):
     """
     Plot the cdfs for each param for each year
     """
@@ -258,13 +155,13 @@ def plot_cdfs(m,weights,x,fs,cdfs,years_set,best_year):
     plt.show()
 
 
-def calculate_tmy(d,config):
+def calculateTmy(d,config):
     """
     Calculate TMY from historical data using Sandia method
     """
     tmys = []
     for month in range(1,13):
-        year = select_year(d,month,config)
+        year = selectYear(d,month,config)
         tmys.append(year)
 
     print "TMY for '{}' data set:\n{}".format(config['bomfile'],tmys)
@@ -272,14 +169,14 @@ def calculate_tmy(d,config):
     return tmys
 
 
-def merge_months(d,tmy):
+def mergeMonths(d,tmy):
     """
     Merge selected months of TMY together
     """
 
     #TODO: this function is incomplete
 
-    def reset_year(d):
+    def resetYear(d):
         d.index=d.index.map(lambda x: x.replace(year=1901))
 
     out = []
@@ -296,7 +193,7 @@ def merge_months(d,tmy):
             si = d.index.get_loc(s-buf)
             ei = d.index.get_loc(s+buf)+1
             d_merge = d[si:ei]
-            reset_year(d_merge)
+            resetYear(d_merge)
 
             for x in d_merge_last.index:
                 s = s.replace(year=1901)
@@ -314,10 +211,10 @@ def merge_months(d,tmy):
             si = d.index.get_loc(e-buf)
             ei = d.index.get_loc(e+buf)+1
             d_merge_last = d[si:ei]
-            reset_year(d_merge_last)
+            resetYear(d_merge_last)
             print d_merge_last
 
-        reset_year(dm)
+        resetYear(dm)
         out.append(dm)
 
     dtmy = pd.concat(out)
@@ -338,7 +235,7 @@ def merge_months(d,tmy):
     plt.show()
 
 
-def validate_config(config):
+def validateConfig(config):
     """ Ensure config is valid."""
     # Check weights add up
     weights = dict(config['weights'])
@@ -356,19 +253,23 @@ def main(args):
 
     config.update(args)
 
-    validate_config(config)
+    validateConfig(config)
 
     if config['verbose']:
         print(json.dumps(config,indent=4))
 
-    d = load_bom_csv_file(config['bomfile'],config['params'])
+    d = loadBomCsvFile(config['bomfile'], config['params'])
+    # Keeping this in addition to d, because we want to report on any nulls that exist to the user.
+    d_no_nulls = removeMonthsWithNulls(config["params"].keys(), d)
+    validator = validate_data.DataValidator(d, d_no_nulls, config["verbose"], config["min_years_required"])
+    success = validator.validate()
+    if not success:
+        print("Cannot continue with invalid data. Exiting...")
+        sys.exit(1)
 
-    is_valid = validate_data(d,config)
+    tmy = calculateTmy(d,config)
 
-    if True:
-        tmy = calculate_tmy(d,config)
-
-        #merge_months(d,tmy)
+    #mergeMonths(d,tmy)
 
 
 if __name__ == "__main__":

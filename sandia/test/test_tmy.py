@@ -11,20 +11,20 @@ class TmyTests(unittest.TestCase):
 
     def test_has_data_works(self):
         args = {"config": os.path.join(CONFIG_DIR, "tmy-config.json"),
-              "verbose": True,
+              "verbose": False,
               "plot_cdf": False,
               "bomfile": "melbourne.csv"}
         tmy.main(args)
 
     def test_missing_data_fails(self):
         args = {"config": os.path.join(CONFIG_DIR, "tmy-config.json"),
-              "verbose": True,
+              "verbose": False,
               "plot_cdf": False,
               "bomfile": "cape_grim.csv"}
         with self.assertRaises(SystemExit):
             tmy.main(args)
 
-    def test_remove_rows_with_nulls(self):
+    def test_remove_months_with_nulls(self):
         test_csv_filepath = "test_csv.csv"
         expected_csv_filepath = "expected_csv.csv"
         # If we failed to clean up after the last test for some reason, do so now.
@@ -60,7 +60,6 @@ class TmyTests(unittest.TestCase):
         col_names = ["col1", "col2", "col3"]
 
         d = tmy.removeMonthsWithNulls(col_names, d)
-        print d
         expected_d = pd.read_csv(expected_csv_filepath, parse_dates=[0])
         expected_d.set_index('time', inplace=True)
 
@@ -71,6 +70,27 @@ class TmyTests(unittest.TestCase):
            os.remove(test_csv_filepath)
         if os.path.exists(expected_csv_filepath):
            os.remove(expected_csv_filepath)
+
+    def test_remove_months_border_cases(self):
+        pass
+
+    def test_data_duplicate_timestamps(self):
+        pass
+
+    def test_data_timestamps_not_monotonic_increase(self):
+        pass
+
+    def test_data_gaps(self):
+        pass
+
+    def test_timestamps_not_on_hour(self):
+        pass
+
+    def test_nan_check(self):
+        pass
+
+    def test_sufficient_data(self):
+        pass
 
 
 
