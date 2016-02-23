@@ -150,16 +150,16 @@ class DataValidator(object):
         if self.verbose:
             print("Each month has the following number of years data available:")
 
-        total_years = 0
         if ( (min(years) < self.min_years) or self.verbose ):
             for i,yr in enumerate(years):
                 print "  {:10} {}".format(calendar.month_name[i+1],yr)
+            print ""
 
-        # Must have at least one year!
+        # All months must have at least one year
         for i,yr in enumerate(years):
-            total_years = total_years + yr
-        if total_years < 1:
-            return False
+            if yr < 1:
+                print("No data for %s" % calendar.month_name[i+1])
+                return False
 
         return True
 

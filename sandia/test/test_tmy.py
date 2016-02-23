@@ -2,8 +2,10 @@ import unittest
 import pandas as pd
 import sys
 import os
+import json
 sys.path.append(os.path.abspath(os.path.join("..", os.path.dirname(__file__))))
 import tmy
+import validate_data
 
 CONFIG_DIR = os.path.abspath(os.path.join("..", os.path.dirname(__file__)))
 
@@ -71,27 +73,83 @@ class TmyTests(unittest.TestCase):
         if os.path.exists(expected_csv_filepath):
            os.remove(expected_csv_filepath)
 
-    def test_remove_months_border_cases(self):
-        pass
-
     def test_data_duplicate_timestamps(self):
-        pass
+        test_csv_filepath = "little_melbourne_dup_timestamps.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._timestampsAreUnique())
 
     def test_data_timestamps_not_monotonic_increase(self):
-        pass
+        test_csv_filepath = "little_melbourne_no_monotonic.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._timestampsAreMonotonicIncreasing())
 
     def test_data_gaps(self):
-        pass
+        test_csv_filepath = "little_melbourne_has_gaps.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._dataHasNoGaps())
 
     def test_timestamps_not_on_hour(self):
-        pass
+        test_csv_filepath = "little_melbourne_ts_off_hour.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._timestampsAreOnTheHour())
 
     def test_nan_check(self):
-        pass
+        test_csv_filepath = "little_melbourne_has_nans.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._dataHasNoNans())
 
-    def test_sufficient_data(self):
-        pass
+    def test_sufficient_data_1(self):
+        # Some months have less than 9 (not ok)
+        test_csv_filepath = "sufficient_data_01.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        config["verbose"] = True
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._sufficientDataAvailable())
 
+    def test_sufficient_data_2(self):
+        # One month has no data (not ok)
+        test_csv_filepath = "sufficient_data_02.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        config["verbose"] = True
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._sufficientDataAvailable())
+
+    def test_sufficient_data_3(self):
+        # 1 has nine or more but rest have 1 (ok)
+        test_csv_filepath = "sufficient_data_03.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        config["verbose"] = True
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertTrue(validator._sufficientDataAvailable())
 
 
 if __name__ == '__main__':
