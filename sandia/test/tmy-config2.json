@@ -1,0 +1,6 @@
+{
+  "params": {
+    "time"                    : "local time",
+    "global_horiz_radiation"  : "ghi mean"
+  }
+}

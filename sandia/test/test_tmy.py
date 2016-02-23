@@ -151,6 +151,17 @@ class TmyTests(unittest.TestCase):
         validator = validate_data.DataValidator(d, d_no_null, False, 9)
         self.assertTrue(validator._sufficientDataAvailable())
 
+    def test_merge(self):
+        test_csv_filepath = "months_merge.csv"
+        with open("tmy-config2.json") as f:
+            config = json.load(f)
+        config["verbose"] = True
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        typical_meterological_years = [2012, 2012]
+        #d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        tmy.mergeMonths(d, typical_meterological_years)
+
+
 
 if __name__ == '__main__':
     unittest.main()

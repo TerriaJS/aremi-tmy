@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 matplotlib.style.use('ggplot')
-
+pd.options.mode.chained_assignment = None  # default='warn'
 
 def loadBomCsvFile(bom_file,params):
     """
@@ -169,7 +169,7 @@ def calculateTmy(d,config):
     return tmys
 
 
-def mergeMonths(d,tmy):
+def mergeMonths(d, tmys):
     """
     Merge selected months of TMY together
     """
@@ -177,15 +177,16 @@ def mergeMonths(d,tmy):
     #TODO: this function is incomplete
 
     def resetYear(d):
-        d.index=d.index.map(lambda x: x.replace(year=1901))
+        # This has to be a leap year, otherwise if you get a month from a leap year and try to convert it to a
+        # non-leap year, you get "day is out of range for month".
+        d.index=d.index.map(lambda x: x.replace(year=1904))
 
     out = []
     d_merge_last = None
-    for mi,yr in enumerate(tmy):
+    for mi,yr in enumerate(tmys):
         m = mi + 1
         dy = d[d.index.year==yr]
         dm = dy[dy.index.month==m]
-        #ndays = calendar.monthrange(1901,m)[1]
         buf = timedelta(hours=6)
 
         if (m > 1):
@@ -199,12 +200,11 @@ def mergeMonths(d,tmy):
                 s = s.replace(year=1901)
                 r = (s + buf - x)
                 t = float(r.total_seconds())/3600/12
-                print x, s, r, t
+                print "x %s s %s r %s t %s" % (x, s, r, t)
                 for col in d_merge_last:
-                    #d_merge_last.loc(x,col) = t*d_merge_last[col][x] + (1-t)*d_merge[col][x]
                     d_merge_last.loc[x,col] = t*d_merge_last.loc[x,col] + (1-t)*d_merge.loc[x,col]
 
-            print d_merge_last
+            #print d_merge_last
 
         if (m < 12):
             e = datetime(yr,m+1,1,0,0,0)
@@ -212,7 +212,7 @@ def mergeMonths(d,tmy):
             ei = d.index.get_loc(e+buf)+1
             d_merge_last = d[si:ei]
             resetYear(d_merge_last)
-            print d_merge_last
+            #print d_merge_last
 
         resetYear(dm)
         out.append(dm)
@@ -220,17 +220,19 @@ def mergeMonths(d,tmy):
     dtmy = pd.concat(out)
 
     plt.figure()
-    ax=plt.subplot(311)
-    dtmy['awAirTemp'].plot()
-    ax.ylabel('awAirTemp')
-
+    #ax=plt.subplot(311)
+    #ax=plt.subplot()
+    dtmy['global_horiz_radiation'].plot()
+    #ax.ylabel('dry_bulb_tmp_mean')
+    """
     ax=plt.subplot(312)
-    dtmy['awWindSpeed'].plot()
-    ax.ylabel('awWindSpeed')
+    dtmy['wind_velocity_mean'].plot()
+    #ax.ylabel('wind_velocity_mean')
 
     ax=plt.subplot(313)
-    dtmy['slGhiMean'].plot()
-    ax.ylabel('slChiMean')
+    dtmy['global_horiz_radiation'].plot()
+    #ax.ylabel('global_horiz_radiation')
+    """
 
     plt.show()
 
@@ -256,7 +258,7 @@ def main(args):
     validateConfig(config)
 
     if config['verbose']:
-        print(json.dumps(config,indent=4))
+        print(json.dumps(config, indent=4))
 
     d = loadBomCsvFile(config['bomfile'], config['params'])
     # Keeping this in addition to d, because we want to report on any nulls that exist to the user.
@@ -267,9 +269,8 @@ def main(args):
         print("Cannot continue with invalid data. Exiting...")
         sys.exit(1)
 
-    tmy = calculateTmy(d,config)
-
-    #mergeMonths(d,tmy)
+    tmys = calculateTmy(d_no_nulls, config)
+    mergeMonths(d, tmys)
 
 
 if __name__ == "__main__":
