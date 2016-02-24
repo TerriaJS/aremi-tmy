@@ -139,11 +139,8 @@ class DataValidator(object):
 
     def _sufficientDataAvailable(self):
         """ Ensure there are enough valid years worth of data for each month. """
-        years = []
 
-        for m in range(1,13):
-            years.append(len(np.unique(self.d_no_nulls[self.d_no_nulls.index.month==m].index.year)))
-
+        years = self.getValidYearsOfDataForEachMonth()
         if (min(years) < self.min_years):
             print("Found month(s) with less than {} years of data:".format(self.min_years))
 
@@ -162,4 +159,14 @@ class DataValidator(object):
                 return False
 
         return True
+
+    def getValidYearsOfDataForEachMonth(self):
+        """ Find out how many times months appear in entire dataset, where they are excluded if invalid. """
+        years = []
+
+        for m in range(1,13):
+            years.append(len(np.unique(self.d_no_nulls[self.d_no_nulls.index.month==m].index.year)))
+
+        return years
+
 

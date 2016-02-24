@@ -1,5 +1,6 @@
 {
   "params": {
+    "station"                 : "station",
     "time"                    : "local time",
     "dry_bulb_tmp_max"        : "air temp max",
     "dry_bulb_tmp_min"        : "air temp min",
@@ -26,5 +27,6 @@
     "direct_normal_radiation" : 5
   },
   "cdf_bins": 50,
-  "min_years_required": 9
+  "min_years_required": 9,
+  "solar_stations_url": "http://nationalmap.gov.au/renewables/datasets/SolarStationHistoricalObservations/SolarStations.csv"
 }

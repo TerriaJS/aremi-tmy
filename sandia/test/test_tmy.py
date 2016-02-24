@@ -1,7 +1,9 @@
 import unittest
+import filecmp
 import pandas as pd
 import sys
 import os
+import shutil
 import json
 sys.path.append(os.path.abspath(os.path.join("..", os.path.dirname(__file__))))
 import tmy
@@ -118,17 +120,6 @@ class TmyTests(unittest.TestCase):
         validator = validate_data.DataValidator(d, d_no_null, False, 9)
         self.assertFalse(validator._dataHasNoNans())
 
-    def test_sufficient_data_1(self):
-        # Some months have less than 9 (not ok)
-        test_csv_filepath = "sufficient_data_01.csv"
-        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
-            config = json.load(f)
-        config["verbose"] = True
-        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
-        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
-        validator = validate_data.DataValidator(d, d_no_null, False, 9)
-        self.assertFalse(validator._sufficientDataAvailable())
-
     def test_sufficient_data_2(self):
         # One month has no data (not ok)
         test_csv_filepath = "sufficient_data_02.csv"
@@ -153,13 +144,53 @@ class TmyTests(unittest.TestCase):
 
     def test_merge(self):
         test_csv_filepath = "months_merge.csv"
+        test_csv_out_path = "months_merge_out.csv"
+        test_csv_expected_path = "months_merge_out_tmy_expected.csv"
+
+        if os.path.exists(test_csv_out_path):
+           os.remove(test_csv_out_path)
         with open("tmy-config2.json") as f:
             config = json.load(f)
+
         config["verbose"] = True
+        config["bomfile"] = test_csv_out_path
         d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
         typical_meterological_years = [2012, 2012]
-        #d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
-        tmy.mergeMonths(d, typical_meterological_years)
+        filepath_out = tmy.mergeMonths(d, typical_meterological_years, config)
+        self.assertTrue(os.path.exists(filepath_out))
+        self.assertTrue(filecmp.cmp(test_csv_expected_path, filepath_out))
+
+        # Clean up
+        if os.path.exists(filepath_out):
+           os.remove(filepath_out)
+
+    def test_update_solar_stations_csv_no_existing(self):
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        tmy_path = "SolarStationsTmy.csv"
+        if os.path.exists(tmy_path):
+           os.remove(tmy_path)
+        self.assertFalse(os.path.exists("SolarStationsTmy.csv"))
+        new_solar_path = tmy.updateSolarStationsCsv(86282, [2012, 2015, 1904], config, [5, 12, 2])
+        self.assertTrue(filecmp.cmp(new_solar_path, "SolarStationsTmy_orig.csv"))
+        if os.path.exists(tmy_path):
+           os.remove(tmy_path)
+
+    def test_update_solar_stations_csv_existing(self):
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        tmy_path = "SolarStationsTmy.csv"
+        if os.path.exists(tmy_path):
+           os.remove(tmy_path)
+        shutil.copy("SolarStationsTmy_orig.csv", tmy_path)
+        self.assertTrue(os.path.exists(tmy_path))
+        new_solar_path = tmy.updateSolarStationsCsv(3003, [2222, 1993, 1901], config, [8, 7, 9])
+        expected_file_path = "SolarStationsExistingExpected.csv"
+        self.assertTrue(filecmp.cmp(new_solar_path, expected_file_path))
+
+        if os.path.exists(tmy_path):
+           os.remove(tmy_path)
+
 
 
 

@@ -13,8 +13,11 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import validate_data
 import argparse
 import json
+import wget
+import shutil
 from datetime import datetime, timedelta
 import calendar
+import collections
 import numpy as np
 import pandas as pd
 
@@ -22,7 +25,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 matplotlib.style.use('ggplot')
-pd.options.mode.chained_assignment = None  # default='warn'
+
 
 def loadBomCsvFile(bom_file,params):
     """
@@ -155,7 +158,7 @@ def plotCdfs(m,weights,x,fs,cdfs,years_set,best_year):
     plt.show()
 
 
-def calculateTmy(d,config):
+def calculateTmy(d, config):
     """
     Calculate TMY from historical data using Sandia method
     """
@@ -165,76 +168,82 @@ def calculateTmy(d,config):
         tmys.append(year)
 
     print "TMY for '{}' data set:\n{}".format(config['bomfile'],tmys)
-
     return tmys
 
 
-def mergeMonths(d, tmys):
+def mergeMonths(d, tmys, config):
     """
-    Merge selected months of TMY together
+    Merge selected months of TMY together. No interpolation done at this time.
     """
-
-    #TODO: this function is incomplete
-
-    def resetYear(d):
-        # This has to be a leap year, otherwise if you get a month from a leap year and try to convert it to a
-        # non-leap year, you get "day is out of range for month".
-        d.index=d.index.map(lambda x: x.replace(year=1904))
-
     out = []
-    d_merge_last = None
     for mi,yr in enumerate(tmys):
         m = mi + 1
         dy = d[d.index.year==yr]
         dm = dy[dy.index.month==m]
-        buf = timedelta(hours=6)
-
-        if (m > 1):
-            s = datetime(yr,m,1,0,0,0)
-            si = d.index.get_loc(s-buf)
-            ei = d.index.get_loc(s+buf)+1
-            d_merge = d[si:ei]
-            resetYear(d_merge)
-
-            for x in d_merge_last.index:
-                s = s.replace(year=1901)
-                r = (s + buf - x)
-                t = float(r.total_seconds())/3600/12
-                print "x %s s %s r %s t %s" % (x, s, r, t)
-                for col in d_merge_last:
-                    d_merge_last.loc[x,col] = t*d_merge_last.loc[x,col] + (1-t)*d_merge.loc[x,col]
-
-            #print d_merge_last
-
-        if (m < 12):
-            e = datetime(yr,m+1,1,0,0,0)
-            si = d.index.get_loc(e-buf)
-            ei = d.index.get_loc(e+buf)+1
-            d_merge_last = d[si:ei]
-            resetYear(d_merge_last)
-            #print d_merge_last
-
-        resetYear(dm)
         out.append(dm)
 
     dtmy = pd.concat(out)
+    col_names = dict(zip(config["params"].keys(), config["params"].values()))
+    dtmy.rename(columns=col_names, inplace=True)
+    filepath_out = os.path.splitext(config["bomfile"])[0] + "_tmy" + os.path.splitext(config["bomfile"])[-1]
+    print("Writing merged months to %s" % filepath_out)
+    dtmy.to_csv(filepath_out, index_label=config["params"]["time"])
+    return filepath_out
 
-    plt.figure()
-    #ax=plt.subplot(311)
-    #ax=plt.subplot()
-    dtmy['global_horiz_radiation'].plot()
-    #ax.ylabel('dry_bulb_tmp_mean')
+
+def updateSolarStationsCsv(station_num, tmys, config, years):
     """
-    ax=plt.subplot(312)
-    dtmy['wind_velocity_mean'].plot()
-    #ax.ylabel('wind_velocity_mean')
-
-    ax=plt.subplot(313)
-    dtmy['global_horiz_radiation'].plot()
-    #ax.ylabel('global_horiz_radiation')
+    Append tmy information to solar stations csv. If this is in current dir, use that one, because that allows us to
+    process multiple stations at once. Otherwise download from data source.
     """
+    new_solar_path, new_file = getSolarStationsPath(config)
 
-    plt.show()
+    bom_station_num = "Bureau of Meteorology station number"
+    new_data = collections.OrderedDict({bom_station_num: station_num})
+    for i, typical_meterological_year in enumerate(tmys):
+        month = i + 1
+        new_data[calendar.month_name[month] + " TMY"] = [typical_meterological_year]
+
+    for i, year in enumerate(years):
+        month = i + 1
+        new_data[calendar.month_name[month] + " years data available"] = [year]
+    new_data_pd = pd.DataFrame(new_data, columns = new_data.keys())
+    solar_stations = pd.read_csv(new_solar_path)
+
+    if new_file:
+        # If the file has been downloaded, it might contain old data for January TMY etc. Clear this.
+        new_data_keys = new_data.keys()
+        new_data_keys.remove(bom_station_num)
+        for new_data_key in new_data_keys:
+            try:
+                del solar_stations[new_data_key]
+            except:
+                print("Couldn't delete %s from downloaded solar stations. It's possible it doesn't exist." % new_data_key)
+
+        full_data = pd.merge(left=solar_stations, right=new_data_pd, how='outer')
+        print("Writing solar stations csv to %s" % new_solar_path)
+        full_data.to_csv(new_solar_path, index=False)
+    else:
+        cols = solar_stations.columns
+        solar_stations.set_index(bom_station_num, inplace=True)
+        new_data_pd.set_index(bom_station_num, inplace=True)
+        solar_stations.update(new_data_pd, overwrite=True)
+
+        solar_stations.reset_index(drop=False, inplace=True)
+        solar_stations = solar_stations[cols]
+        print("Writing solar stations csv to %s" % new_solar_path)
+        solar_stations.to_csv(new_solar_path, index=False, cols=cols)
+    return new_solar_path
+
+
+def getSolarStationsPath(config):
+    new_solar_path = "SolarStationsTmy.csv"
+    new_file = False
+    if not os.path.exists(new_solar_path):
+        solar_stations_csv = wget.download(config["solar_stations_url"])
+        shutil.move(solar_stations_csv, new_solar_path)
+        new_file = True
+    return new_solar_path, new_file
 
 
 def validateConfig(config):
@@ -248,8 +257,7 @@ def validateConfig(config):
         raise IOError(err_msg)
 
 
-def main(args):
-
+def main(args, continue_on_fail=False):
     with open(args['config']) as f:
         config = json.load(f)
 
@@ -266,16 +274,34 @@ def main(args):
     validator = validate_data.DataValidator(d, d_no_nulls, config["verbose"], config["min_years_required"])
     success = validator.validate()
     if not success:
-        print("Cannot continue with invalid data. Exiting...")
-        sys.exit(1)
+        if not continue_on_fail:
+            print("Cannot continue with invalid data. Exiting...")
+            sys.exit(1)
+        else:
+            return False
 
     tmys = calculateTmy(d_no_nulls, config)
-    mergeMonths(d, tmys)
+    mergeMonths(d, tmys, config)
+    station_num = int(d.loc[:, config["params"]["station"]][-1])
+    updateSolarStationsCsv(station_num, tmys, config, validator.getValidYearsOfDataForEachMonth())
+    return True
+
+
+def doAll(args):
+    pass
+#    solar_stations_path, new_file = getSolarStationsPath()
+#    solar_stations = pd.read_csv(new_solar_path)
+#    data_files = solar_stations[
+
+#    updateSolarStationsCsv(tmys, config, validator.getValidYearsOfDataForEachMonth())
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Calculate a Typical Meteorological Year (TMY)')
+    parser.add_argument('-a','--all',action='store_true', default=False,
+            help='Download every station, work out tmy, and dump out csv files including updating master csv.'\
+                 ' Otherwise, provide a bomfile argument to operate on.')
     parser.add_argument('-c','--config',metavar="<config_file>",required=True,
             help='JSON config file for TMY settings')
     parser.add_argument('-v','--verbose',action='store_true',
@@ -283,8 +309,11 @@ if __name__ == "__main__":
     parser.add_argument('-p','--plot-cdf',action='store_true',
             help='Plot CDF for each param for each year')
     parser.add_argument('bomfile',metavar="<bom_file>",
-            help='CSV file containing weather station data')
+            help='CSV file containing weather station data (required if "all" not specified)')
     args = parser.parse_args(sys.argv[1:])
 
-    main( vars(args) )
+    if vars(args)['all']:
+        doAll(vars(args))
+    else:
+        main(vars(args))
 
