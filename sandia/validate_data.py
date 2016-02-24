@@ -153,10 +153,18 @@ class DataValidator(object):
             print ""
 
         # All months must have at least one year
+        # At least one month must have greater than self.min_years.
+        found_good_month = False
         for i,yr in enumerate(years):
             if yr < 1:
                 print("No data for %s" % calendar.month_name[i+1])
                 return False
+            if yr > self.min_years:
+                found_good_month = True
+
+        if not found_good_month:
+            print("Missing a month that has more than {} years of data.".format(self.min_years))
+            return False
 
         return True
 

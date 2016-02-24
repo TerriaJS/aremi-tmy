@@ -8,12 +8,15 @@ References:
     Wilcox, S., Marion, W., 'Users Manual for TMY3 Data Sets', NREL
 """
 
-import sys, os
+import sys, os, re
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 import validate_data
 import argparse
 import json
+import random
+import string
 import wget
+import zipfile
 import shutil
 from datetime import datetime, timedelta
 import calendar
@@ -36,6 +39,7 @@ def loadBomCsvFile(bom_file,params):
 
     col_names = dict( zip(params.values(), params.keys()) )
 
+    print("About to read %s" % bom_file)
     d = pd.read_csv(bom_file,usecols=col_names,parse_dates=[params['time']])
     d.rename(columns=col_names,inplace=True)
     d.set_index('time',inplace=True)
@@ -191,7 +195,7 @@ def mergeMonths(d, tmys, config):
     return filepath_out
 
 
-def updateSolarStationsCsv(station_num, tmys, config, years):
+def updateSolarStationsCsv(station_num, tmys, config, years, merged_csv_filepath):
     """
     Append tmy information to solar stations csv. If this is in current dir, use that one, because that allows us to
     process multiple stations at once. Otherwise download from data source.
@@ -199,14 +203,16 @@ def updateSolarStationsCsv(station_num, tmys, config, years):
     new_solar_path, new_file = getSolarStationsPath(config)
 
     bom_station_num = "Bureau of Meteorology station number"
+    download_tmy = "Download TMY (CSV)"
     new_data = collections.OrderedDict({bom_station_num: station_num})
+    new_data[download_tmy] = "<a href='%s%s'>TMY File</a>" % (config["csv_datasets_url"], merged_csv_filepath)
     for i, typical_meterological_year in enumerate(tmys):
         month = i + 1
         new_data[calendar.month_name[month] + " TMY"] = [typical_meterological_year]
 
     for i, year in enumerate(years):
         month = i + 1
-        new_data[calendar.month_name[month] + " years data available"] = [year]
+        new_data[calendar.month_name[month] + " valid years"] = [year]
     new_data_pd = pd.DataFrame(new_data, columns = new_data.keys())
     solar_stations = pd.read_csv(new_solar_path)
 
@@ -231,7 +237,7 @@ def updateSolarStationsCsv(station_num, tmys, config, years):
 
         solar_stations.reset_index(drop=False, inplace=True)
         solar_stations = solar_stations[cols]
-        print("Writing solar stations csv to %s" % new_solar_path)
+        print("Writing solar stations csv to existing file %s" % new_solar_path)
         solar_stations.to_csv(new_solar_path, index=False, cols=cols)
     return new_solar_path
 
@@ -240,6 +246,7 @@ def getSolarStationsPath(config):
     new_solar_path = "SolarStationsTmy.csv"
     new_file = False
     if not os.path.exists(new_solar_path):
+        print("Can't find %s. Downloading..." % new_solar_path)
         solar_stations_csv = wget.download(config["solar_stations_url"])
         shutil.move(solar_stations_csv, new_solar_path)
         new_file = True
@@ -268,6 +275,67 @@ def main(args, continue_on_fail=False):
     if config['verbose']:
         print(json.dumps(config, indent=4))
 
+    if 'all' in args and args['all']:
+        doAll(args, config)
+
+    else:
+        if args["bomfile"] is None:
+            print("ERROR: Need to specify bom file, unless option 'all' is specified.")
+            sys.exit(1)
+        doOne(args, config, continue_on_fail)
+    return True
+
+
+def doAll(args, config):
+    # Next line from http://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+    rand_str = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
+    dirname = "tmy_outfiles_%s" % rand_str
+    orig_dir = os.getcwd()
+    os.mkdir(dirname)
+    os.chdir(dirname)
+
+    solar_stations_path, _ = getSolarStationsPath(config)
+    solar_stations = pd.read_csv(solar_stations_path)
+    # Don't want this in list of csvs to process
+    os.remove(solar_stations_path)
+
+    data_files = solar_stations.loc[:, config["ss_download_historical_obs"]]
+    for data_file in data_files:
+        hist_obs_url = re.search("<a href='(.*)'>", data_file).group(1)
+        hist_objs_zip = wget.download(hist_obs_url)
+
+        zfile = zipfile.ZipFile(hist_objs_zip)
+        # Can only be used with trustworthy zips
+        zfile.extractall()
+        os.remove(hist_objs_zip)
+
+    hist_obs_csvs = os.listdir(os.getcwd())
+    fail_csvs = []
+    for hist_obs_csv in hist_obs_csvs:
+        print("------------------------------------\n")
+        config["bomfile"] = hist_obs_csv
+        tmys, merged_csv_filepath, validator, station_num = doOne(args, config, continue_on_fail=True)
+        if tmys is None:
+            fail_csvs.append(hist_obs_csv)
+            continue
+        updateSolarStationsCsv(station_num,
+                               tmys,
+                               config,
+                               validator.getValidYearsOfDataForEachMonth(),
+                               merged_csv_filepath)
+
+    for hist_obs_csv in hist_obs_csvs:
+        os.remove(hist_obs_csv)
+
+    print("\n See %s for output files." % dirname)
+    if len(fail_csvs) > 0:
+        print("Some files appeared to have no valid data. These weren't processed. They were:")
+        for f in fail_csvs:
+            print(f)
+    os.chdir(orig_dir)
+
+
+def doOne(args, config, continue_on_fail):
     d = loadBomCsvFile(config['bomfile'], config['params'])
     # Keeping this in addition to d, because we want to report on any nulls that exist to the user.
     d_no_nulls = removeMonthsWithNulls(config["params"].keys(), d)
@@ -278,22 +346,12 @@ def main(args, continue_on_fail=False):
             print("Cannot continue with invalid data. Exiting...")
             sys.exit(1)
         else:
-            return False
+            return (None, None, None, None)
 
     tmys = calculateTmy(d_no_nulls, config)
-    mergeMonths(d, tmys, config)
+    merged_csv_filepath = mergeMonths(d, tmys, config)
     station_num = int(d.loc[:, config["params"]["station"]][-1])
-    updateSolarStationsCsv(station_num, tmys, config, validator.getValidYearsOfDataForEachMonth())
-    return True
-
-
-def doAll(args):
-    pass
-#    solar_stations_path, new_file = getSolarStationsPath()
-#    solar_stations = pd.read_csv(new_solar_path)
-#    data_files = solar_stations[
-
-#    updateSolarStationsCsv(tmys, config, validator.getValidYearsOfDataForEachMonth())
+    return (tmys, merged_csv_filepath, validator, station_num)
 
 
 if __name__ == "__main__":
@@ -308,12 +366,9 @@ if __name__ == "__main__":
             help='Print lots of info')
     parser.add_argument('-p','--plot-cdf',action='store_true',
             help='Plot CDF for each param for each year')
-    parser.add_argument('bomfile',metavar="<bom_file>",
+    parser.add_argument('-b','--bomfile',metavar="<bom_file>", default=None, required=False,
             help='CSV file containing weather station data (required if "all" not specified)')
     args = parser.parse_args(sys.argv[1:])
 
-    if vars(args)['all']:
-        doAll(vars(args))
-    else:
-        main(vars(args))
+    main(vars(args))
 

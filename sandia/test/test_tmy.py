@@ -120,6 +120,17 @@ class TmyTests(unittest.TestCase):
         validator = validate_data.DataValidator(d, d_no_null, False, 9)
         self.assertFalse(validator._dataHasNoNans())
 
+    def test_sufficient_data_1(self):
+        # All months have less than nine (not ok)
+        test_csv_filepath = "sufficient_data_01.csv"
+        with open(os.path.join(CONFIG_DIR, "tmy-config.json")) as f:
+            config = json.load(f)
+        config["verbose"] = True
+        d = tmy.loadBomCsvFile(test_csv_filepath, config["params"])
+        d_no_null = tmy.removeMonthsWithNulls(config["params"].keys(), d)
+        validator = validate_data.DataValidator(d, d_no_null, False, 9)
+        self.assertFalse(validator._sufficientDataAvailable())
+
     def test_sufficient_data_2(self):
         # One month has no data (not ok)
         test_csv_filepath = "sufficient_data_02.csv"
@@ -171,7 +182,7 @@ class TmyTests(unittest.TestCase):
         if os.path.exists(tmy_path):
            os.remove(tmy_path)
         self.assertFalse(os.path.exists("SolarStationsTmy.csv"))
-        new_solar_path = tmy.updateSolarStationsCsv(86282, [2012, 2015, 1904], config, [5, 12, 2])
+        new_solar_path = tmy.updateSolarStationsCsv(86282, [2012, 2015, 1904], config, [5, 12, 2], "fake/filepath.csv")
         self.assertTrue(filecmp.cmp(new_solar_path, "SolarStationsTmy_orig.csv"))
         if os.path.exists(tmy_path):
            os.remove(tmy_path)
@@ -184,8 +195,8 @@ class TmyTests(unittest.TestCase):
            os.remove(tmy_path)
         shutil.copy("SolarStationsTmy_orig.csv", tmy_path)
         self.assertTrue(os.path.exists(tmy_path))
-        new_solar_path = tmy.updateSolarStationsCsv(3003, [2222, 1993, 1901], config, [8, 7, 9])
-        expected_file_path = "SolarStationsExistingExpected.csv"
+        new_solar_path = tmy.updateSolarStationsCsv(3003, [2222, 1993, 1901], config, [8, 7, 9], "fake/filepath.csv")
+        expected_file_path = "SolarStationsTmy_existing_expected.csv"
         self.assertTrue(filecmp.cmp(new_solar_path, expected_file_path))
 
         if os.path.exists(tmy_path):
