@@ -8,13 +8,15 @@
 module Tmy.OneMinSolar.Types where
 
 import Control.Applicative                  ((<|>))
-import Control.Lens                         (Lens', makeLenses)
+import Control.Lens                         (Lens', makeLenses, Getter, to, (^.))
 -- import Data.ByteString                      (empty)
 import Data.Csv
 import Data.HashMap.Strict                  (unions)
 import Data.Semigroup                       (Sum(..))
 import Data.Text                            (Text)
 import Data.Time.LocalTime                  (LocalTime)
+import Data.Time.Clock                      (UTCTime)
+import Data.Time.Format                     (parseTimeM, defaultTimeLocale, iso8601DateFormat)
 import qualified Data.Vector as V           (length)
 import GHC.Generics                         (Generic)
 
@@ -446,6 +448,259 @@ instance ToNamedRecord AwSlCombined where
             , toNamedRecord aw
             , toNamedRecord sl
             ]
+
+data SolarSat = SolarSat
+  {_ssTime :: UTCTime
+  ,_ssVal  :: !(Maybe Double1Dec)
+  } deriving (Show, Eq, Ord, Generic )
+
+makeLenses ''SolarSat
+
+instance FromNamedRecord SolarSat where
+  parseNamedRecord r = SolarSat
+    <$> (r .: "Time (AEST)" >>= parseTimeM True defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S%Z")))
+    <*> (r .: "MW")
+
+
+data BoMStation = BoMStation
+    {                                                       -- ignoring col hm
+    _bsStationNum            :: !(Spaced Text)               -- Station Number,
+    , _bsLTime               :: !LTime                       -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+    , _bsLocalStdTime        :: !LTime                       -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+    , _bsPrecip              :: !(Spaced (Maybe Double1Dec)) -- Precipitation since 9am local time in mm,
+    , _bsPrecipQual          :: !(Spaced (Maybe Char))       -- Quality of precipitation since 9am local time,
+    , _bsAirTemp             :: !(Spaced (Maybe Double1Dec)) -- Air Temperature in degrees C,
+    , _bsAirTempQual         :: !(Spaced (Maybe Char))       -- Quality of air temperature,
+    , _bsWetBulbTemp         :: !(Spaced (Maybe Double1Dec)) -- Wet bulb temperature in degrees C,
+    , _bsWetBulbTempQual     :: !(Spaced (Maybe Char))       -- Quality of Wet bulb temperature,
+    , _bsDewPoint            :: !(Spaced (Maybe Double1Dec)) -- Dew point temperature in degrees C,
+    , _bsDewPointQual        :: !(Spaced (Maybe Char))       -- Quality of dew point temperature,
+    , _bsRelHumid            :: !(Spaced (Maybe Double1Dec)) -- Relative humidity in percentage %,
+    , _bsRelHumidQual        :: !(Spaced (Maybe Char))       -- Quality of relative humidity,
+    , _bsVapourPres          :: !(Spaced (Maybe Double1Dec)) -- Vapour pressure in hPa,
+    , _bsVapourPresQual      :: !(Spaced (Maybe Char))       -- Quality of vapour pressure,
+    , _bsSatVapourPres       :: !(Spaced (Maybe Double1Dec)) -- Saturated vapour pressure in hPa,
+    , _bsSatVapourPresQual   :: !(Spaced (Maybe Char))       -- Quality of saturated vapour pressure,
+    , _bsWindSpeed           :: !(Spaced (Maybe Double1Dec)) -- Wind speed in km/h,
+    , _bsWindSpeedQual       :: !(Spaced (Maybe Char))       -- Wind speed quality,
+    , _bsWindDir             :: !(Spaced (Maybe Int))        -- Wind direction in degrees true,
+    , _bsWindDirQual         :: !(Spaced (Maybe Char))       -- Wind direction quality,
+    , _bsWindGustMax         :: !(Spaced (Maybe Double1Dec)) -- Speed of maximum windgust in last 10 minutes in  km/h,
+    , _bsWindGustMaxQual     :: !(Spaced (Maybe Char))       -- Quality of speed of maximum windgust in last 10 minutes,
+    , _bsSeaLevPress         :: !(Spaced (Maybe Double1Dec)) -- Mean sea level pressure in hPa,
+    , _bsSeaLevPressQual     :: !(Spaced (Maybe Char))       -- Quality of mean sea level pressure,
+    , _bsAWSFlag             :: !(Spaced (Maybe Int))        -- AWS Flag,
+    , _bsUTCTime             :: !(Maybe UTCTime)
+    } deriving (Show, Eq, Ord, Generic)
+
+makeLenses ''BoMStation
+
+bomStationStdTime :: Getter BoMStation (Text,LocalTime)
+bomStationStdTime = to (\bs -> (bs ^. bsStationNum . to unSpaced,bs ^. bsLocalStdTime . to unLTime))
+
+instance FromRecord BoMStation where
+    parseRecord v
+        | V.length v /= 36 = fail $ "Expected 36 columns, found " ++ show (V.length v)
+        | otherwise = BoMStation
+          <$> v .! 1            -- Station Number,
+          <*> fieldsToLTime 2 v -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+          <*> fieldsToLTime 7 v -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+          <*> v .! 12           -- Precipitation since 9am local time in mm,
+          <*> v .! 13           -- Quality of precipitation since 9am local time,
+          <*> v .! 14           -- Air Temperature in degrees C,
+          <*> v .! 15           -- Quality of air temperature,
+          <*> v .! 16           -- Wet bulb temperature in degrees C,
+          <*> v .! 17           -- Quality of Wet bulb temperature,
+          <*> v .! 18           -- Dew point temperature in degrees C,
+          <*> v .! 19           -- Quality of dew point temperature,
+          <*> v .! 20           -- Relative humidity in percentage %,
+          <*> v .! 21           -- Quality of relative humidity,
+          <*> v .! 22           -- Vapour pressure in hPa,
+          <*> v .! 23           -- Quality of vapour pressure,
+          <*> v .! 24           -- Saturated vapour pressure in hPa,
+          <*> v .! 25           -- Quality of saturated vapour pressure,
+          <*> v .! 26           -- Wind speed in km/h,
+          <*> v .! 27           -- Wind speed quality,
+          <*> v .! 28           -- Wind direction in degrees true,
+          <*> v .! 29           -- Wind direction quality,
+          <*> v .! 30           -- Speed of maximum windgust in last 10 minutes in  km/h,
+          <*> v .! 31           -- Quality of speed of maximum windgust in last 10 minutes,
+          <*> v .! 32           -- Mean sea level pressure in hPa,
+          <*> v .! 33           -- Quality of mean sea level pressure,
+          <*> v .! 34           -- AWS Flag,
+          <*> pure Nothing
+
+{-
+hd,
+Station Number,
+ Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+ Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
+Quality of average air temperature in last 30 minutes,
+Count of average air temperature observations in last 30 minutes,
+Relative humidity in percentage %,
+Quality of relative humidity,
+Average wind speed in last 30 minutes in km/h where observations count >= 12,
+Quality of average wind speed in last 30 minutes,
+Count of average wind speed observations in last 30 minutes,
+Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
+Quality of Highest maximum 3 sec wind gust in last 30 minutes,
+Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
+Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
+Quality of average direction of wind in last 30 minutes,
+Count of average direction of wind observations in last 30 minutes,
+#
+
+-}
+
+data BoMAveStation = BoMAveStation
+  {
+  -- Station Number,
+  _basStationNum :: !(Spaced Text)
+  --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+  , _basLTime    :: !LTime
+  --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+  , _basLocalStdTime    :: !LTime
+  -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
+  , _basAirTemp    :: !(Spaced (Maybe Double1Dec))
+  -- Quality of average air temperature in last 30 minutes,
+  , _basAirTempQual :: !(Spaced Char)
+  -- Count of average air temperature observations in last 30 minutes,
+  , _basAirTempCount :: !(Spaced Int)
+  -- Relative humidity in percentage %,
+  , _basHumidPct :: !(Spaced (Maybe Double1Dec))
+  -- Quality of relative humidity,
+  , _basHumidPctQual :: !(Spaced Char)
+  -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
+  , _basWindSpeed :: !(Spaced (Maybe Double1Dec))
+  -- Quality of average wind speed in last 30 minutes,
+  , _basWindSpeedQual :: !(Spaced Char)
+  -- Count of average wind speed observations in last 30 minutes,
+  , _basWindSpeedCount :: !(Spaced Int)
+  -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
+  , _basGustSpeed :: !(Spaced (Maybe Double1Dec))
+  -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
+  , _basGustSpeedQual :: !(Spaced Char)
+  -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
+  , _basGustSpeedCount :: !(Spaced Int)
+  -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
+  , _basWindDir :: !(Spaced (Maybe Double1Dec))
+  -- Quality of average direction of wind in last 30 minutes,
+  , _basWindDirQual :: !(Spaced Char)
+  -- Count of average direction of wind observations in last 30 minutes,
+  , _basWindDirCount :: !(Spaced Int)
+  , _basUTCTime :: !(Maybe UTCTime)
+  }
+
+makeLenses ''BoMAveStation
+
+bomAveStationStdTime :: Getter BoMAveStation (Text,LocalTime)
+bomAveStationStdTime = to (\bas -> (bas ^. basStationNum . to unSpaced,bas ^. basLocalStdTime . to unLTime))
+
+szero :: Parser (Spaced Int)
+szero = pure (Spaced 0)
+
+sspace :: Parser (Spaced Char)
+sspace = pure (Spaced ' ')
+
+instance FromRecord BoMAveStation where
+  parseRecord r
+    | V.length r /= 27 = fail $ "Expected 27 columns, found " ++ show (V.length r)
+    | otherwise = BoMAveStation
+      <$> r .! 1              -- Station Number,
+      <*> fieldsToLTime 2 r   --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+      <*> fieldsToLTime 7 r   --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+      <*> r .! 12             -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
+      <*> (r .! 13 <|> sspace) -- Quality of average air temperature in last 30 minutes,
+      <*> (r .! 14 <|> szero)  -- Count of average air temperature observations in last 30 minutes,
+      <*> r .! 15             -- Relative humidity in percentage %,
+      <*> (r .! 16 <|> sspace) -- Quality of relative humidity,
+      <*> r .! 17             -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
+      <*> (r .! 18 <|> sspace) -- Quality of average wind speed in last 30 minutes,
+      <*> (r .! 19 <|> szero)  -- Count of average wind speed observations in last 30 minutes,
+      <*> r .! 20             -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
+      <*> (r .! 21 <|> sspace)  -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
+      <*> (r .! 22 <|> szero)  -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
+      <*> r .! 23             -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
+      <*> (r .! 24  <|> sspace) -- Quality of average direction of wind in last 30 minutes,
+      <*> (r .! 25 <|> szero)  -- Count of average direction of wind observations in last 30 minutes,
+      <*> pure Nothing
+
+
+
+
+data StationMeta = StationMeta
+  {
+  -- | Bureau of Meteorology Station Number.
+  _smStationNum     :: !(Spaced Text)
+  -- | Rainfall district code
+  , _smRainDist      :: !(Spaced Int)
+  -- | Station Name.
+  , _smStationName   :: !(Spaced Text)
+  -- | Month/Year site opened. (MM/YYYY)
+  , _smSiteOpen      :: !(Spaced Text)
+  -- | Month/Year site closed. (MM/YYYY)
+  , _smSiteClosed    :: !(Spaced Text)
+  -- | Latitude to 4 decimal places - in decimal degrees.
+  , _smLat           :: !(Spaced Double)
+  -- | Longitude to 4 decimal places - in decimal degrees.
+  , _smLon           :: !(Spaced Double)
+  -- | Method by which latitude/longitude was derived.
+  , _smLocMethod     :: !(Spaced Text)
+  -- | State.
+  , _smState         :: !(Spaced Text)
+  -- | Height of station above mean sea level in metres.
+  , _smHeightASL     :: !(Spaced (Maybe Double))
+  -- | Height of barometer above mean sea level in metres.
+  , _smHeightBaroASL :: !(Spaced (Maybe Double))
+  -- | WMO (World Meteorological Organisation) Index Number.
+  , _smWMONum        :: !(Spaced (Maybe Int))
+  -- | First year of data supplied in data file.
+  , _smFirstYear     :: !(Spaced Int)
+  -- | Last year of data supplied in data file.0.
+  , _smLastYear      :: !(Spaced Int)
+  -- | Percentage complete between first and last records.
+  , _smPctComplete   :: !(Spaced Int)
+  -- | Percentage of values with quality flag 'Y'.
+  , _smValY          :: !(Spaced Int)
+  -- | Percentage of values with quality flag 'N'.
+  , _smValN          :: !(Spaced Int)
+  -- | Percentage of values with quality flag 'W'.
+  , _smValW          :: !(Spaced Int)
+  -- | Percentage of values with quality flag 'S'.
+  , _smValS          :: !(Spaced Int)
+  -- | Percentage of values with quality flag 'I'.
+  , _smValI          :: !(Spaced Int)
+  , _smUTCTime       :: !(Maybe UTCTime)
+  } deriving (Show, Eq, Generic)
+
+makeLenses ''StationMeta
+
+instance FromRecord StationMeta where
+  parseRecord r
+    | V.length r /= 22 = fail $ "FromRecord StationMeta: Expected 21 columns, found " ++ show (V.length r)
+    | otherwise = StationMeta
+      <$> r .! 1                        -- Bureau of Meteorology Station Number.
+      <*> r .! 2                        -- Rainfall district code
+      <*> r .! 3                        -- Station Name.
+      <*> r .! 4                        -- Month/Year site opened. (MM/YYYY)
+      <*> r .! 5                        -- Month/Year site closed. (MM/YYYY)
+      <*> r .! 6                        -- Latitude to 4 decimal places - in decimal degrees.
+      <*> r .! 7                        -- Longitude to 4 decimal places - in decimal degrees.
+      <*> r .! 8                        -- Method by which latitude/longitude was derived.
+      <*> r .! 9                        -- State.
+      <*> r .! 10                       -- Height of station above mean sea level in metres.
+      <*> r .! 11                       -- Height of barometer above mean sea level in metres.
+      <*> r .! 12                       -- WMO (World Meteorological Organisation) Index Number.
+      <*> r .! 13                       -- First year of data supplied in data file.
+      <*> r .! 14                       -- Last year of data supplied in data file.
+      <*> r .! 15                       -- Percentage complete between first and last records.
+      <*> (r .! 16 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'Y'.
+      <*> (r .! 17 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'N'.
+      <*> (r .! 18 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'W'.
+      <*> (r .! 19 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'S'.
+      <*> (r .! 20 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'I'.
+      <*> pure Nothing
 
 data Processing recType = Processing
     { lTime    :: recType -> LocalTime

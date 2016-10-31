@@ -4,15 +4,17 @@
 
 module Tmy.OneMinSolar.Functions where
 
-import Control.Lens                         (Lens', (^.))
-import Data.Time.Clock                      (diffUTCTime)
+import Control.Lens                         (Lens', (^.), Getter, Setter', (.~), (&))
+import Data.Time.Clock                      (diffUTCTime, UTCTime)
 import Data.Time.LocalTime                  (LocalTime, localTimeToUTC, utc)
 
 import Data.Semigroup                       (Sum(..))
 
 import Tmy.OneMinSolar.Types
+import Tmy.OneMinSolar.TimeZones
 import Tmy.Common
 import Tmy.Csv
+import Data.Text (Text)
 
 
 -- Data file prefix and suffix
@@ -122,7 +124,13 @@ minutesUntil lTime f lt xs = go xs where
     go [] = Nothing
 
 
+
+addUTC :: Text -> Getter a (Text,LocalTime) -> Setter' a UTCTime -> a -> Maybe a
+addUTC state get set x = case x ^. get of
+  (station, lt) -> do
+    tz <- getTZ station state
+    pure $ x & set .~ localTimeToUTC tz lt
+
 composeProcessors :: Processor -> Processor -> Processor
 composeProcessors f g =
   \p l t a -> g p l t (f p l t a)
-

@@ -27,3 +27,4 @@ sample_data/
 
 # python
 *.pyc
+/BoM_observations

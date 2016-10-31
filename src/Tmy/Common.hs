@@ -10,6 +10,7 @@ import Data.Semigroup                       (Semigroup, Min(..), Max(..), (<>))
 import Data.Text                            (Text, append)
 import Data.Text.Encoding                   (encodeUtf8)
 import Data.Time.LocalTime                  (LocalTime(..), TimeOfDay(..), localTimeOfDay, localDay, todHour, todMin)
+import Data.Time.Clock                      (UTCTime(..), secondsToDiffTime)
 
 import Tmy.Csv
 
@@ -148,6 +149,16 @@ hourGrouper f a b = floorMinute (f a) == floorMinute (f b)
 floorMinute :: LTime -> LTime
 floorMinute (LTime a) = LTime (LocalTime (localDay a) (TimeOfDay (todHour (localTimeOfDay a)) 0 0))
 
+utcHourGrouper :: (a -> UTCTime) -> a -> a -> Bool
+utcHourGrouper f a b = utcFloorMinute (f a) == utcFloorMinute (f b)
+
+utcFloorMinute :: UTCTime -> UTCTime
+utcFloorMinute (UTCTime day difftime) =
+    UTCTime day . secondsToDiffTime $
+      secondsInHour * (fst (properFraction difftime) `div` secondsInHour)
+
+secondsInHour :: Integer
+secondsInHour = 60*60
 
 minute :: LTime -> Int
 minute (LTime a) = (todMin . localTimeOfDay) a
@@ -169,4 +180,3 @@ mergeWith fa fb comb xs ys = go xs ys where
 
 combine :: Semigroup b => (a -> b) -> a -> a -> b
 combine f a b = f a <> f b
-

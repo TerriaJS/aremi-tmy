@@ -4,7 +4,7 @@ module Tmy.Csv where
 
 import Control.Concurrent.Async             (concurrently)
 import Control.Monad                        (mplus)
-import qualified Data.ByteString      as B  (span, spanEnd)
+import qualified Data.ByteString      as B  (dropWhile, spanEnd)
 import qualified Data.ByteString.Lazy as BL (readFile, empty)
 import Data.Csv                      hiding (decodeByName, decode)
 import Data.Csv.Streaming                   (Records(Cons, Nil), decodeByName, decode)
@@ -19,7 +19,7 @@ newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
     -- filter out leading and trailing spaces
-    parseField bs = Spaced <$> parseField (fst . B.spanEnd (== 32) . snd . B.span (== 32) $ bs)
+    parseField bs = Spaced <$> parseField (fst . B.spanEnd (== 32) . B.dropWhile (== 32) $ bs)
 
 
 newtype Double1Dec = Double1Dec Double deriving (Show, Eq, Ord, FromField, Num, Fractional)

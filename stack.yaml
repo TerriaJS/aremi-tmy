@@ -3,5 +3,7 @@ packages:
 - '.'
 extra-deps:
 - lens-datetime-0.2.1
-resolver: lts-4.1
+resolver: lts-7.1
 local-bin-path: dist
+ghc-options:
+  aremi-tmy: -funbox-strict-fields
