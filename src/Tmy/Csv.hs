@@ -15,6 +15,11 @@ import Data.Time.Locale.Compat              (iso8601DateFormat, defaultTimeLocal
 import Text.Printf                          (printf)
 
 
+{-# INLINE (.!!) #-}
+(.!!) :: FromField a => Record -> Int -> Parser a
+(.!!) = unsafeIndex
+
+
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
 instance FromField a => FromField (Spaced a) where
@@ -45,18 +50,19 @@ concatRecs (x:xs) = go x where
 
 -- | For parsing LTime from a CSV with columns like:
 --   'Year Month Day Hours Minutes in YYYY, MM, DD, HH24, MI format in Local time'
+{-# INLINE fieldsToLTime #-}
 fieldsToLTime :: Int -> Record -> Parser LTime
 fieldsToLTime i v =
-    mplus (colsToLTime (v .! i) (v .! (i+1)) (v .! (i+2)) (v .! (i+3)) (v .! (i+4)))
+    mplus (colsToLTime (v .!! i) (v .!! (i+1)) (v .!! (i+2)) (v .!! (i+3)) (v .!! (i+4)))
           (fail $ "Could not parse date starting at col " ++ show i)
 
-
+{-# INLINE colsToLTime #-}
 colsToLTime :: Parser Integer -> Parser Int -> Parser Int -> Parser Int -> Parser Int -> Parser LTime
 colsToLTime y m d h mn = do
     mlt <- maybeLTime <$> y <*> m <*> d <*> h <*> mn
     maybe (fail "Could not parse date") return mlt
 
-
+{-# INLINE maybeLTime #-}
 maybeLTime :: Integer -> Int -> Int -> Int -> Int -> Maybe LTime
 maybeLTime y m d h mn = LTime <$> (LocalTime
                                     <$> fromGregorianValid y m d

@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 
 module Tmy.OneMinSolar.Types where
 
@@ -22,7 +23,6 @@ import GHC.Generics                         (Generic)
 
 import Tmy.Common
 import Tmy.Csv
-
 
 data OneMinSolarSite = OneMinSolarSite
     { bomStationNum    :: !(Spaced Text) -- Bureau of Meteorology station number
@@ -167,57 +167,57 @@ instance FromRecord AutoWeatherObs where
         | V.length v == 62 =
             AutoWeatherObs
                 -- ignoring col 0: aw
-                <$> v .! 1         -- awStationNum
+                <$> v .!! 1         -- awStationNum
                 -- 2: awYearLocal, 3: awMMLocal, 4: awDDLocal, 5: awHH24Local, 6: awMILocal
                 <*> fieldsToLTime 2 v
                 -- 7: awYearLocalStd, 8: awMMLocalStd, 9: awDDLocalStd, 10: awHH24LocalStd, 11: awMILocalStd
                 -- <*> fieldsToLTime 7 v
                 -- 12: awYearUtc, 13: awMMUtc, 14: awDDUtc, 15: awHH24Utc, 16: awMIUtc
                 -- <*> fieldsToLTime 12 v
-                <*> v .! 17        -- awPrecipSinceLast
-                <*> v .! 18        -- awPrecipQual
-                <*> v .! 19        -- awAirTemp
-                <*> v .! 20        -- awAirTempQual
-                <*> v .! 21        -- awAirTempMax
-                <*> v .! 22        -- awAirTempMaxQual
-                <*> v .! 23        -- awAirTempMin
-                <*> v .! 24        -- awAirTempMinQual
-                <*> v .! 25        -- awWetBulbTemp
-                <*> v .! 26        -- awWetBulbTempQual
-                <*> v .! 27        -- awWetBulbTempMax
-                <*> v .! 28        -- awWetBulbTempMaxQual
-                <*> v .! 29        -- awWetBulbTempMin
-                <*> v .! 30        -- awWetBulbTempMinQual
-                <*> v .! 31        -- awDewPointTemp
-                <*> v .! 32        -- awDewPointTempQual
-                <*> v .! 33        -- awDewPointTempMax
-                <*> v .! 34        -- awDewPointTempMaxQual
-                <*> v .! 35        -- awDewPointTempMin
-                <*> v .! 36        -- awDewPointTempMinQual
-                <*> v .! 37        -- awRelHumid
-                <*> v .! 38        -- awRelHumidQual
-                <*> v .! 39        -- awRelHumidMax
-                <*> v .! 40        -- awRelHumidMaxQual
-                <*> v .! 41        -- awRelHumidMin
-                <*> v .! 42        -- awRelHumidMinQual
-                <*> v .! 43        -- awWindSpeed
-                <*> v .! 44        -- awWindSpeedQual
-                <*> v .! 45        -- awWindSpeedMin
-                <*> v .! 46        -- awWindSpeedMinQual
-                <*> v .! 47        -- awWindDir
-                <*> v .! 48        -- awWindDirQual
-                -- <*> v .! 49        -- awWindStdDev
-                -- <*> v .! 50        -- awWindStdDevQual
-                <*> v .! 51        -- awWindGustMax
-                <*> v .! 52        -- awWindGustMaxQual
-                <*> v .! 53        -- awVisibility
-                <*> v .! 54        -- awVisibilityQual
-                <*> v .! 55        -- awMslPress
-                <*> v .! 56        -- awMslPressQual
-                <*> v .! 57        -- awStationLvlPress
-                <*> v .! 58        -- awStationLvlPressQual
-                <*> v .! 59        -- awQnhPress
-                <*> v .! 60        -- awQnhPressQual
+                <*> v .!! 17        -- awPrecipSinceLast
+                <*> v .!! 18        -- awPrecipQual
+                <*> v .!! 19        -- awAirTemp
+                <*> v .!! 20        -- awAirTempQual
+                <*> v .!! 21        -- awAirTempMax
+                <*> v .!! 22        -- awAirTempMaxQual
+                <*> v .!! 23        -- awAirTempMin
+                <*> v .!! 24        -- awAirTempMinQual
+                <*> v .!! 25        -- awWetBulbTemp
+                <*> v .!! 26        -- awWetBulbTempQual
+                <*> v .!! 27        -- awWetBulbTempMax
+                <*> v .!! 28        -- awWetBulbTempMaxQual
+                <*> v .!! 29        -- awWetBulbTempMin
+                <*> v .!! 30        -- awWetBulbTempMinQual
+                <*> v .!! 31        -- awDewPointTemp
+                <*> v .!! 32        -- awDewPointTempQual
+                <*> v .!! 33        -- awDewPointTempMax
+                <*> v .!! 34        -- awDewPointTempMaxQual
+                <*> v .!! 35        -- awDewPointTempMin
+                <*> v .!! 36        -- awDewPointTempMinQual
+                <*> v .!! 37        -- awRelHumid
+                <*> v .!! 38        -- awRelHumidQual
+                <*> v .!! 39        -- awRelHumidMax
+                <*> v .!! 40        -- awRelHumidMaxQual
+                <*> v .!! 41        -- awRelHumidMin
+                <*> v .!! 42        -- awRelHumidMinQual
+                <*> v .!! 43        -- awWindSpeed
+                <*> v .!! 44        -- awWindSpeedQual
+                <*> v .!! 45        -- awWindSpeedMin
+                <*> v .!! 46        -- awWindSpeedMinQual
+                <*> v .!! 47        -- awWindDir
+                <*> v .!! 48        -- awWindDirQual
+                -- <*> v .!! 49        -- awWindStdDev
+                -- <*> v .!! 50        -- awWindStdDevQual
+                <*> v .!! 51        -- awWindGustMax
+                <*> v .!! 52        -- awWindGustMaxQual
+                <*> v .!! 53        -- awVisibility
+                <*> v .!! 54        -- awVisibilityQual
+                <*> v .!! 55        -- awMslPress
+                <*> v .!! 56        -- awMslPressQual
+                <*> v .!! 57        -- awStationLvlPress
+                <*> v .!! 58        -- awStationLvlPressQual
+                <*> v .!! 59        -- awQnhPress
+                <*> v .!! 60        -- awQnhPressQual
                 -- ignoring col 61: #
         | otherwise = fail ("CSV expected to have 62 columns, actual: " ++ show (V.length v) ++ ", row: " ++ show v)
 
@@ -502,32 +502,35 @@ instance FromRecord BoMStation where
     parseRecord v
         | V.length v /= 36 = fail $ "Expected 36 columns, found " ++ show (V.length v)
         | otherwise = BoMStation
-          <$> v .! 1            -- Station Number,
+          <$> v .!! 1            -- Station Number,
           <*> fieldsToLTime 2 v -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
           <*> fieldsToLTime 7 v -- Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
-          <*> v .! 12           -- Precipitation since 9am local time in mm,
-          <*> v .! 13           -- Quality of precipitation since 9am local time,
-          <*> v .! 14           -- Air Temperature in degrees C,
-          <*> v .! 15           -- Quality of air temperature,
-          <*> v .! 16           -- Wet bulb temperature in degrees C,
-          <*> v .! 17           -- Quality of Wet bulb temperature,
-          <*> v .! 18           -- Dew point temperature in degrees C,
-          <*> v .! 19           -- Quality of dew point temperature,
-          <*> v .! 20           -- Relative humidity in percentage %,
-          <*> v .! 21           -- Quality of relative humidity,
-          <*> v .! 22           -- Vapour pressure in hPa,
-          <*> v .! 23           -- Quality of vapour pressure,
-          <*> v .! 24           -- Saturated vapour pressure in hPa,
-          <*> v .! 25           -- Quality of saturated vapour pressure,
-          <*> v .! 26           -- Wind speed in km/h,
-          <*> v .! 27           -- Wind speed quality,
-          <*> v .! 28           -- Wind direction in degrees true,
-          <*> v .! 29           -- Wind direction quality,
-          <*> v .! 30           -- Speed of maximum windgust in last 10 minutes in  km/h,
-          <*> v .! 31           -- Quality of speed of maximum windgust in last 10 minutes,
-          <*> v .! 32           -- Mean sea level pressure in hPa,
-          <*> v .! 33           -- Quality of mean sea level pressure,
-          <*> v .! 34           -- AWS Flag,
+          <*> v .!! 12           -- Precipitation since 9am local time in mm,
+          <*> v .!! 13           -- Quality of precipitation since 9am local time,
+          <*> v .!! 14           -- Air Temperature in degrees C,
+          <*> v .!! 15           -- Quality of air temperature,
+          <*> v .!! 16           -- Wet bulb temperature in degrees C,
+          <*> v .!! 17           -- Quality of Wet bulb temperature,
+          <*> v .!! 18           -- Dew point temperature in degrees C,
+          <*> v .!! 19           -- Quality of dew point temperature,
+          <*> (v .!! 20          -- Relative humidity in percentage %,
+              <|> pure (Spaced Nothing)) -- Sometimes there's '###' entries
+          <*> v .!! 21           -- Quality of relative humidity,
+          <*> v .!! 22           -- Vapour pressure in hPa,
+          <*> v .!! 23           -- Quality of vapour pressure,
+          <*> v .!! 24           -- Saturated vapour pressure in hPa,
+          <*> v .!! 25           -- Quality of saturated vapour pressure,
+          <*> (v .!! 26          -- Wind speed in km/h,
+              <|> pure (Spaced Nothing)) -- Sometimes there's '###' entries
+          <*> v .!! 27           -- Wind speed quality,
+          <*> v .!! 28           -- Wind direction in degrees true,
+          <*> v .!! 29           -- Wind direction quality,
+          <*> (v .!! 30           -- Speed of maximum windgust in last 10 minutes in  km/h,
+              <|> pure (Spaced Nothing)) -- Sometimes there's '###' entries
+          <*> v .!! 31           -- Quality of speed of maximum windgust in last 10 minutes,
+          <*> v .!! 32           -- Mean sea level pressure in hPa,
+          <*> v .!! 33           -- Quality of mean sea level pressure,
+          <*> v .!! 34           -- AWS Flag,
           <*> pure Nothing
 
 {-
@@ -607,23 +610,23 @@ instance FromRecord BoMAveStation where
   parseRecord r
     | V.length r /= 27 = fail $ "Expected 27 columns, found " ++ show (V.length r)
     | otherwise = BoMAveStation
-      <$> r .! 1              -- Station Number,
+      <$> r .!! 1              -- Station Number,
       <*> fieldsToLTime 2 r   --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
       <*> fieldsToLTime 7 r   --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
-      <*> r .! 12             -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
-      <*> (r .! 13 <|> sspace) -- Quality of average air temperature in last 30 minutes,
-      <*> (r .! 14 <|> szero)  -- Count of average air temperature observations in last 30 minutes,
-      <*> r .! 15             -- Relative humidity in percentage %,
-      <*> (r .! 16 <|> sspace) -- Quality of relative humidity,
-      <*> r .! 17             -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
-      <*> (r .! 18 <|> sspace) -- Quality of average wind speed in last 30 minutes,
-      <*> (r .! 19 <|> szero)  -- Count of average wind speed observations in last 30 minutes,
-      <*> r .! 20             -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
-      <*> (r .! 21 <|> sspace)  -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
-      <*> (r .! 22 <|> szero)  -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
-      <*> r .! 23             -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
-      <*> (r .! 24  <|> sspace) -- Quality of average direction of wind in last 30 minutes,
-      <*> (r .! 25 <|> szero)  -- Count of average direction of wind observations in last 30 minutes,
+      <*> r .!! 12             -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
+      <*> (r .!! 13 <|> sspace) -- Quality of average air temperature in last 30 minutes,
+      <*> (r .!! 14 <|> szero)  -- Count of average air temperature observations in last 30 minutes,
+      <*> r .!! 15             -- Relative humidity in percentage %,
+      <*> (r .!! 16 <|> sspace) -- Quality of relative humidity,
+      <*> r .!! 17             -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
+      <*> (r .!! 18 <|> sspace) -- Quality of average wind speed in last 30 minutes,
+      <*> (r .!! 19 <|> szero)  -- Count of average wind speed observations in last 30 minutes,
+      <*> r .!! 20             -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
+      <*> (r .!! 21 <|> sspace)  -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
+      <*> (r .!! 22 <|> szero)  -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
+      <*> r .!! 23             -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
+      <*> (r .!! 24  <|> sspace) -- Quality of average direction of wind in last 30 minutes,
+      <*> (r .!! 25 <|> szero)  -- Count of average direction of wind observations in last 30 minutes,
       <*> pure Nothing
 
 
@@ -680,27 +683,104 @@ instance FromRecord StationMeta where
   parseRecord r
     | V.length r /= 22 = fail $ "FromRecord StationMeta: Expected 21 columns, found " ++ show (V.length r)
     | otherwise = StationMeta
-      <$> r .! 1                        -- Bureau of Meteorology Station Number.
-      <*> r .! 2                        -- Rainfall district code
-      <*> r .! 3                        -- Station Name.
-      <*> r .! 4                        -- Month/Year site opened. (MM/YYYY)
-      <*> r .! 5                        -- Month/Year site closed. (MM/YYYY)
-      <*> r .! 6                        -- Latitude to 4 decimal places - in decimal degrees.
-      <*> r .! 7                        -- Longitude to 4 decimal places - in decimal degrees.
-      <*> r .! 8                        -- Method by which latitude/longitude was derived.
-      <*> r .! 9                        -- State.
-      <*> r .! 10                       -- Height of station above mean sea level in metres.
-      <*> r .! 11                       -- Height of barometer above mean sea level in metres.
-      <*> r .! 12                       -- WMO (World Meteorological Organisation) Index Number.
-      <*> r .! 13                       -- First year of data supplied in data file.
-      <*> r .! 14                       -- Last year of data supplied in data file.
-      <*> r .! 15                       -- Percentage complete between first and last records.
-      <*> (r .! 16 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'Y'.
-      <*> (r .! 17 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'N'.
-      <*> (r .! 18 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'W'.
-      <*> (r .! 19 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'S'.
-      <*> (r .! 20 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'I'.
+      <$> r .!! 1                        -- Bureau of Meteorology Station Number.
+      <*> r .!! 2                        -- Rainfall district code
+      <*> r .!! 3                        -- Station Name.
+      <*> r .!! 4                        -- Month/Year site opened. (MM/YYYY)
+      <*> r .!! 5                        -- Month/Year site closed. (MM/YYYY)
+      <*> r .!! 6                        -- Latitude to 4 decimal places - in decimal degrees.
+      <*> r .!! 7                        -- Longitude to 4 decimal places - in decimal degrees.
+      <*> r .!! 8                        -- Method by which latitude/longitude was derived.
+      <*> r .!! 9                        -- State.
+      <*> r .!! 10                       -- Height of station above mean sea level in metres.
+      <*> r .!! 11                       -- Height of barometer above mean sea level in metres.
+      <*> r .!! 12                       -- WMO (World Meteorological Organisation) Index Number.
+      <*> r .!! 13                       -- First year of data supplied in data file.
+      <*> r .!! 14                       -- Last year of data supplied in data file.
+      <*> r .!! 15                       -- Percentage complete between first and last records.
+      <*> (r .!! 16 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'Y'.
+      <*> (r .!! 17 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'N'.
+      <*> (r .!! 18 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'W'.
+      <*> (r .!! 19 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'S'.
+      <*> (r .!! 20 <|> pure (Spaced 0)) -- Percentage of values with quality flag 'I'.
       <*> pure Nothing
+
+{-
+data TMY3 = TMY3
+  { _tmy3Date -- (MM/DD/YYYY) -- Date (MM/DD/YYYY)
+  , _tmy3Time -- (HH:MM) -- Time (HH:MM)
+  , _tmy3ETR -- (W/m^2) -- ETR (W/m^2)
+  , _tmy3ETRN -- (W/m^2) -- ETRN (W/m^2)
+  , _tmy3GHI -- (W/m^2) -- GHI (W/m^2)
+  , _tmy3GHISource -- -- GHI source
+  , _tmy3GHIUncert -- (%) -- GHI uncert (%)
+  , _tmy3DNI -- (W/m^2) -- DNI (W/m^2)
+  , _tmy3DNISource -- -- DNI source
+  , _tmy3DNIUncert -- (%) -- DNI uncert (%)
+  , _tmy3DHI -- (W/m^2) -- DHI (W/m^2)
+  , _tmy3DHISource -- -- DHI source
+  , _tmy3DHIUncert -- (%) -- DHI uncert (%)
+  , _tmy3GHIllum -- (lx) -- GH illum (lx)
+  , _tmy3GHIllumSource -- -- GH illum source
+  , _tmy3GlobalIllumUncert -- (%) -- Global illum uncert (%)
+  , _tmy3DNIllum -- (lx) -- DN illum (lx)
+  , _tmy3DNIllumSource -- -- DN illum source
+  , _tmy3DNIllumUncert -- (%) -- DN illum uncert (%)
+  , _tmy3DHIllum -- (lx) -- DH illum (lx)
+  , _tmy3DHIllumSource -- -- DH illum source
+  , _tmy3DHIllumUncert -- (%) -- DH illum uncert (%)
+  , _tmy3ZenithLum -- (cd/m^2) -- Zenith lum (cd/m^2)
+  , _tmy3ZenithLumSource -- -- Zenith lum source
+  , _tmy3ZenithLumUncert -- (%) -- Zenith lum uncert (%)
+  , _tmy3TotCld -- (tenths) -- TotCld (tenths)
+  , _tmy3TotCldSource -- -- TotCld source
+  , _tmy3TotCldUncert -- (code) -- TotCld uncert (code)
+  , _tmy3OpqCld -- (tenths) -- OpqCld (tenths)
+  , _tmy3OpqCldSource -- -- OpqCld source
+  , _tmy3OpqCldUncert -- (code) -- OpqCld uncert (code)
+  , _tmy3Dry ---bulb (C) -- Dry-bulb (C)
+  , _tmy3Dry ---bulbSource -- Dry-bulb source
+  , _tmy3Dry ---bulbUncert (code) -- Dry-bulb uncert (code)
+  , _tmy3Dew ---point (C) -- Dew-point (C)
+  , _tmy3Dew ---pointSource -- Dew-point source
+  , _tmy3Dew ---pointUncert (code) -- Dew-point uncert (code)
+  , _tmy3RHum -- (%) -- RHum (%)
+  , _tmy3RHumSource -- -- RHum source
+  , _tmy3RHumUncert -- (code) -- RHum uncert (code)
+  , _tmy3Pressure -- (mbar) -- Pressure (mbar)
+  , _tmy3PressureSource -- -- Pressure source
+  , _tmy3PressureUncert -- (code) -- Pressure uncert (code)
+  , _tmy3Wdir -- (degrees) -- Wdir (degrees)
+  , _tmy3WdirSource -- -- Wdir source
+  , _tmy3WdirUncert -- (code) -- Wdir uncert (code)
+  , _tmy3Wspd -- (m/s) -- Wspd (m/s)
+  , _tmy3WspdSource -- -- Wspd source
+  , _tmy3WspdUncert -- (code) -- Wspd uncert (code)
+  , _tmy3Hvis -- (m) -- Hvis (m)
+  , _tmy3HvisSource -- -- Hvis source
+  , _tmy3HvisUncert -- (code) -- Hvis uncert (code)
+  , _tmy3CeilHgt -- (m) -- CeilHgt (m)
+  , _tmy3CeilHgtSource -- -- CeilHgt source
+  , _tmy3CeilHgtUncert -- (code) -- CeilHgt uncert (code)
+  , _tmy3Pwat -- (cm) -- Pwat (cm)
+  , _tmy3PwatSource -- -- Pwat source
+  , _tmy3PwatUncert -- (code) -- Pwat uncert (code)
+  , _tmy3AOD -- (unitless) -- AOD (unitless)
+  , _tmy3AODSource -- -- AOD source
+  , _tmy3AODUncert -- (code) -- AOD uncert (code)
+  , _tmy3Alb -- (unitless) -- Alb (unitless)
+  , _tmy3AlbSource -- -- Alb source
+  , _tmy3AlbUncert -- (code) -- Alb uncert (code)
+  , _tmy3LprecipDepth -- (mm) -- Lprecip depth (mm)
+  , _tmy3LprecipQuantity -- (hr) -- Lprecip quantity (hr)
+  , _tmy3LprecipSource -- -- Lprecip source
+  , _tmy3LprecipUncert -- (code) -- Lprecip uncert (code)
+  , _tmy3PresWth -- (METAR code) -- PresWth (METAR code)
+  , _tmy3PresWthSource -- -- PresWth source
+  , _tmy3PresWthUncert -- (code) -- PresWth uncert (code)
+
+}
+-}
 
 data Processing recType = Processing
     { lTime    :: recType -> LocalTime
