@@ -1,8 +1,11 @@
 {-# LANGUAGE MultiWayIf        #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
+-- {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE ApplicativeDo     #-}
 
 
 -- TODO:
@@ -18,23 +21,23 @@ module Main where
 
 import           Control.Lens
 import qualified Data.ByteString.Lazy         as BL
-import qualified Data.ByteString              as BS
+-- import qualified Data.ByteString              as BS
 import qualified Data.Vector                  as V
 
 import qualified Data.HashMap.Strict          as M
 
 import           Control.Monad
-import           Data.Monoid ((<>))
+-- import           Data.Monoid ((<>))
 
 import           Data.Csv
 -- import Data.Csv.Streaming                   (Records)
 -- import Data.List                            (groupBy, foldl1')
 import           Data.Text                    (Text, unpack)
-import           Data.Time.LocalTime          (LocalTime)
-import           Data.Vector (toList)
+import           Data.Time.LocalTime          (LocalTime(..),todHour,localTimeToUTC,TimeZone)
+-- import           Data.Vector (toList)
 
 -- import Data.Time.Clock                      (UTCTime)
-import           System.Directory             (doesFileExist)
+-- import           System.Directory             (doesFileExist)
 import           System.Environment           (getArgs)
 import           System.FilePath.Find         (always, fileName, find, (~~?))
 
@@ -45,12 +48,14 @@ import qualified Pipes.Prelude                as P
 import qualified Pipes.Csv                    as PC
 import qualified Pipes.ByteString             as PBS
 import           Pipes.Safe                   (runSafeT, SafeT, bracket)
+import           Pipes.HTTP
+import qualified Control.Foldl                as F
 
 import           Tmy.Common
 import           Tmy.Csv
-import           Tmy.OneMinSolar.FillAdjacent
-import           Tmy.OneMinSolar.FillInterp
-import           Tmy.OneMinSolar.Functions
+-- import           Tmy.OneMinSolar.FillAdjacent
+-- import           Tmy.OneMinSolar.FillInterp
+-- import           Tmy.OneMinSolar.Functions
 import           Tmy.OneMinSolar.TimeZones
 import           Tmy.OneMinSolar.Types
 

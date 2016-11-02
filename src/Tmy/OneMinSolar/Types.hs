@@ -558,41 +558,24 @@ Count of average direction of wind observations in last 30 minutes,
 
 data BoMAveStation = BoMAveStation
   {
-  -- Station Number,
-  _basStationNum :: !(Spaced Text)
-  --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
-  , _basLTime    :: !LTime
-  --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
-  , _basLocalStdTime    :: !LTime
-  -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
-  , _basAirTemp    :: !(Spaced (Maybe Double1Dec))
-  -- Quality of average air temperature in last 30 minutes,
-  , _basAirTempQual :: !(Spaced Char)
-  -- Count of average air temperature observations in last 30 minutes,
-  , _basAirTempCount :: !(Spaced Int)
-  -- Relative humidity in percentage %,
-  , _basHumidPct :: !(Spaced (Maybe Double1Dec))
-  -- Quality of relative humidity,
-  , _basHumidPctQual :: !(Spaced Char)
-  -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
-  , _basWindSpeed :: !(Spaced (Maybe Double1Dec))
-  -- Quality of average wind speed in last 30 minutes,
-  , _basWindSpeedQual :: !(Spaced Char)
-  -- Count of average wind speed observations in last 30 minutes,
-  , _basWindSpeedCount :: !(Spaced Int)
-  -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
-  , _basGustSpeed :: !(Spaced (Maybe Double1Dec))
-  -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
-  , _basGustSpeedQual :: !(Spaced Char)
-  -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
-  , _basGustSpeedCount :: !(Spaced Int)
-  -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
-  , _basWindDir :: !(Spaced (Maybe Double1Dec))
-  -- Quality of average direction of wind in last 30 minutes,
-  , _basWindDirQual :: !(Spaced Char)
-  -- Count of average direction of wind observations in last 30 minutes,
-  , _basWindDirCount :: !(Spaced Int)
-  , _basUTCTime :: !(Maybe UTCTime)
+  _basStationNum        :: !(Spaced Text)                --  Station Number,
+  , _basLTime           :: !LTime                        --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local time,
+  , _basLocalStdTime    :: !LTime                        --  Year Month Day Hour Minutes in YYYY, MM, DD, HH24, MI format in Local standard time,
+  , _basAirTemp         :: !(Spaced (Maybe Double1Dec))  -- Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12,
+  , _basAirTempQual     :: !(Spaced Char)                -- Quality of average air temperature in last 30 minutes,
+  , _basAirTempCount    :: !(Spaced Int)                 -- Count of average air temperature observations in last 30 minutes,
+  , _basHumidPct        :: !(Spaced (Maybe Double1Dec))  -- Relative humidity in percentage %,
+  , _basHumidPctQual    :: !(Spaced Char)                -- Quality of relative humidity,
+  , _basWindSpeed       :: !(Spaced (Maybe Double1Dec))  -- Average wind speed in last 30 minutes in km/h where observations count >= 12,
+  , _basWindSpeedQual   :: !(Spaced Char)                -- Quality of average wind speed in last 30 minutes,
+  , _basWindSpeedCount  :: !(Spaced Int)                 -- Count of average wind speed observations in last 30 minutes,
+  , _basGustSpeed       :: !(Spaced (Maybe Double1Dec))  -- Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12,
+  , _basGustSpeedQual   :: !(Spaced Char)                -- Quality of Highest maximum 3 sec wind gust in last 30 minutes,
+  , _basGustSpeedCount  :: !(Spaced Int)                 -- Count of Highest maximum 3 sec wind gust observations in last 30 minutes,
+  , _basWindDir         :: !(Spaced (Maybe Double1Dec))  -- Average direction of wind in last 30 minutes in degrees true where observations count >= 12,
+  , _basWindDirQual     :: !(Spaced Char)                -- Quality of average direction of wind in last 30 minutes,
+  , _basWindDirCount    :: !(Spaced Int)                 -- Count of average direction of wind observations in last 30 minutes,
+  , _basUTCTime         :: !(Maybe UTCTime)
   }
 
 makeLenses ''BoMAveStation
