@@ -461,6 +461,10 @@ instance FromNamedRecord SolarSat where
     <$> (r .: "Time (AEST)" >>= parseTimeM True defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S%Z")))
     <*> (r .: "MW")
 
+instance FromRecord SolarSat where
+  parseRecord v = SolarSat
+    <$> (v .!! 0 >>= parseTimeM True defaultTimeLocale (iso8601DateFormat (Just "%H:%M:%S%Z")))
+    <*> (v .!! 1 <|> pure Nothing)
 
 data BoMStation = BoMStation
     {                                                       -- ignoring col hm

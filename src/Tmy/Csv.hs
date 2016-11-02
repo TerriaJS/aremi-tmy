@@ -22,8 +22,9 @@ import Text.Printf                          (printf)
 
 newtype Spaced a = Spaced {unSpaced :: a} deriving (Show, Eq, Ord, ToField)
 
+-- filter out leading and trailing spaces
 instance FromField a => FromField (Spaced a) where
-    -- filter out leading and trailing spaces
+    {-# INLINE parseField #-}
     parseField bs = Spaced <$> parseField (fst . B.spanEnd (== 32) . B.dropWhile (== 32) $ bs)
 
 

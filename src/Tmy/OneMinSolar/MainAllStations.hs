@@ -64,12 +64,21 @@ import           Tmy.OneMinSolar.Types
 import           Control.Concurrent.Async     (mapConcurrently)
 import System.IO (openFile, IOMode(..), hClose)
 
+import Data.Either (isLeft, isRight)
+import Data.Function (on)
+import Data.Maybe (fromJust)
+
+import GHC.Generics (Generic)
+
+import Text.Printf
+
 -- import Debug.Trace
 
 
 main :: IO ()
 main = do
     args <- getArgs
+    mgr <- newManager defaultManagerSettings{managerResponseTimeout = Just (300*1000000)}
     if null args
         then putStrLn "No files specified."
         else do
@@ -86,7 +95,11 @@ main = do
               Left err -> putStrLn err
               Right vs -> do
                 let metadata = V.foldl (\mp sm -> M.insert (sm ^. smStationNum . to unSpaced) sm mp) M.empty $ V.concat vs
-                mapM_ (\(file,Right sites) -> mapConcurrently (\site -> processSingleSite file site) sites) sitesAndFiles
+                forM_ sitesAndFiles $ \(file,Right sites) ->
+                  -- mapConcurrently
+                  mapM_
+                    (\site -> processSingleSite mgr file site) sites
+
                 pure ()
 
             -- mapM_ (\(fn,recs) -> mapRecords_ (processSingleSite fn) recs) sitesAndFiles
@@ -103,15 +116,18 @@ wsPrefix :: String
 wsPrefix = "HM01X_Data_"
 avPrefix :: String
 avPrefix = "HD01D_Data_"
+bsPrefix :: String
+bsPrefix = "HM01X_Data_"
 fileGlob :: String
 fileGlob = "*.txt"
 
-processSingleSite :: FilePath -> StationMeta -> IO ()
-processSingleSite fn s = do
+processSingleSite :: Manager -> FilePath -> StationMeta -> IO ()
+processSingleSite mgr fn s = do
     let csvDir = (reverse . dropWhile ('/' /=) . reverse) fn
         stationNum = (unpack . unSpaced . _smStationNum) s
-        state = unSpaced . _smState $ s
-        bsGlob = wsPrefix ++ stationNum ++ fileGlob
+        -- state = unSpaced . _smState $ s
+        bsGlob = bsPrefix ++ stationNum ++ fileGlob
+        -- bsGlob = wsPrefix ++ stationNum ++ fileGlob
         -- slGlob = avPrefix ++ stationNum ++ fileGlob
         newCsv = stationNum ++ "_averaged.csv"
         mtz    = getTZ (s ^. smStationNum . to unSpaced) (s ^. smState . to unSpaced)
@@ -123,35 +139,132 @@ processSingleSite fn s = do
 
     -- bsRecs <- concatRecs <$> mapM readIndexedCsv bsFiles :: IO [BoMStation]
     -- avRecs <- concatRecs <$> mapM readIndexedCsv avFiles :: IO [BoMAveStation]
-    fnExists <- doesFileExist newCsv
-    -- print bsRecs
+    -- print bsFiles
     -- print avRecs
-    hout <- openFile newCsv AppendMode
-    unless fnExists $ BL.hPut hout (( <> "\n") . encode . pure . toList . headerOrder $ (undefined :: AwSlCombined))
-    forM_ bsFiles $ \bsFile -> runSafeT $ do
-      -- n <- P.length $ PC.decodeByName @AutoWeatherObs (readFileP bsFile)
-      -- liftIO $ print (bsFile, n)
-      pure ()
+    -- fnExists <- doesFileExist newCsv
+    -- hout <- openFile newCsv AppendMode
+    -- unless fnExists $ BL.hPut hout (( <> "\n") . encode . pure . toList . headerOrder $ (undefined :: AwSlCombined))
+    req <- parseUrlThrow $ printf "http://services.aremi.nicta.com.au/solar-satellite/v1/DNI/%f/%f" (unSpaced $ _smLat s) (unSpaced $ _smLon s)
+    withHTTP req{requestHeaders=[("Content-Type","text/csv")]} mgr $ \resp ->
+      forM_ bsFiles $ \bsFile -> runSafeT $ do
+        let csvProducer =
+              PC.decode HasHeader (readFileP bsFile)
+              P.>-> P.map (either (Left . (bsFile ++)) Right)
+              P.>-> printErrors
+              P.>-> P.map (addBSUTC mtz)
+        efst <- P.next csvProducer
+        case efst of
+          Left _ -> pure ()
+          Right (f,csvProducer') -> do
+            r <- F.purely P.fold ((,,,) <$> F.length <*> counting isL <*> counting isR <*> counting isBoth) $
+                  (const ()) <$>
+                  P.mapM printRs P.<-<
+                  mergeP (\a b -> compare (_bsUTCTime a) (Just $ _ssTime b))
+                  (P.yield f >> csvProducer')
+                  (P.hoist P.lift
+                    $ PC.decode HasHeader (responseBody resp)
+                    P.>-> printErrors
+                    P.>-> P.dropWhile ((< fromJust (_bsUTCTime f)) . _ssTime))
+            liftIO $ print (bsFile, r)
+        -- n <- F.purely P.fold ((,,) <$> F.length <*> counting isLeft <*> counting isRight) $
+        -- P.runEffect $
+        --   P.mapM_ (\xs -> when (length xs `notElem` [2]) $ liftIO $ print (bsFile,map (unLTime . _bsLocalStdTime) xs))
+        --     P.<-< grouping (sameHour `on` _bsLocalStdTime) csvProducer
+
+        pure ()
 
     pure()
 
+printRs :: (Show a, Show b, MonadIO m) => Or a b -> m (Or a b)
+printRs x = do
+  case x of
+    R x -> liftIO (print x)
+    _ -> pure ()
+  pure x
+
+addBSUTC :: Maybe TimeZone -> BoMStation -> BoMStation
+addBSUTC mtz b = b{_bsUTCTime = flip localTimeToUTC (unLTime $ _bsLocalStdTime b) <$> mtz}
+
+counting :: (a -> Bool) -> F.Fold a Int
+counting p = F.Fold step 0 id where
+  step n a = n `seq` if p a then n+1 else n
 
 readFileP :: FilePath -> P.Producer' PBS.ByteString (SafeT IO) ()
-readFileP file = bracket
-    (do h <- openFile file ReadMode
-        putStrLn $ "{" ++ file ++ " open}"
-        return h )
-    (\h -> do
-        hClose h
-        putStrLn $ "{" ++ file ++ " closed}" )
-    PBS.fromHandle
+readFileP file = bracket (openFile file ReadMode) hClose PBS.fromHandle
 
 printErrors :: (MonadIO m) => Pipe (Either String a) a m b
-printErrors = do
-  e <- P.await
-  either (liftIO . putStrLn) P.yield e
-  printErrors
+printErrors = forever $ P.await >>= either (liftIO . putStrLn) P.yield
 
+grouping :: Monad m => (a -> a -> Bool) -> P.Producer a m b -> P.Producer [a] m b
+grouping p = go [] where
+  go xs pr = do
+    e <- P.lift (P.next pr)
+    case e of
+      Left r -> unless (null xs) (P.yield (reverse xs)) >> return r
+      Right (a,pr') -> case xs of
+        [] -> go [a] pr'
+        (b:_) -> if p a b
+          then go (a:xs) pr'
+          else P.yield (reverse xs) >> go [a] pr'
+
+liftProducer :: (Monad m, P.MonadTrans t, Monad (t m)) => P.Producer a m b -> P.Producer a (t m) b
+liftProducer p = do
+  ea <- P.lift . P.lift $ P.next p
+  case ea of
+    Right (a,p') -> P.yield a >> liftProducer p'
+    Left r -> pure r
+
+sameHour :: LTime -> LTime -> Bool
+sameHour (LTime a) (LTime b) =
+  ((==) `on` localDay) a b
+  && ((==) `on` (todHour . localTimeOfDay)) a b
+
+data Or a b = L a | Both a b | R b deriving (Show, Eq, Generic, Ord)
+
+isL, isR, isBoth :: Or a b -> Bool
+isL (L _)         = True
+isL _             = False
+isR (R _)         = True
+isR _             = False
+isBoth (Both _ _) = True
+isBoth _          = False
+
+mergeP :: Monad m
+       => (a -> b -> Ordering)
+       -> P.Producer a m r1
+       -> P.Producer b m r2
+       -> P.Producer (Or a b) m (r1,r2)
+mergeP f = go where
+  go px py = do
+    a' <- P.lift (P.next px)
+    b' <- P.lift (P.next py)
+    case (a',b') of
+      (Right (a,px'),Right (b,py')) -> case f a b of
+          LT -> P.yield (L a)      >> go px' (P.yield b >> py')
+          EQ -> P.yield (Both a b) >> go px' py'
+          GT -> P.yield (R b)      >> go (P.yield a >> px') py'
+      (Right (a,px'),Left r) -> P.yield (L a) >> (,r) <$> (px' P.>-> P.map L)
+      (Left r,Right (b,py')) -> P.yield (R b) >> (r,) <$> (py' P.>-> P.map R)
+      (Left r1,Left r2)      -> pure (r1,r2)
+
+
+alignP :: Monad m
+       => (a -> b -> Ordering)
+       -> P.Producer a m r1
+       -> P.Producer b m r2
+       -> P.Producer (a,b) m (r1,r2)
+alignP f = go where
+  go px py = do
+    a' <- P.lift (P.next px)
+    b' <- P.lift (P.next py)
+    case (a',b') of
+      (Right (a,px'),Right (b,py')) -> case f a b of
+          EQ -> P.yield (a,b) >> go px' py'
+          LT ->                  go px' (P.yield b >> py')
+          GT ->                  go (P.yield a >> px') py'
+      (Right (_,px'),Left r) -> (,r) <$> (px' P.>-> forever (void P.await))
+      (Left r,Right (_,py')) -> (r,) <$> (py' P.>-> forever (void P.await))
+      (Left r1,Left r2)      -> pure (r1,r2)
 
 {-
     let encOpts = defaultEncodeOptions {encIncludeHeader = not fnExists}
