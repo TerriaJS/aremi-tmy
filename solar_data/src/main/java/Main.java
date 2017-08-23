@@ -24,7 +24,7 @@ public class Main {
         // Latitude: 5
         // Longitude: 6
 
-        String[] line; // = stationsReader.readNext();
+        String[] line;
 
         while ((line = stationsReader.readNext()) != null) {
 
@@ -34,6 +34,7 @@ public class Main {
 
             System.out.println("Working on station " + stnNum);
 
+            // Get call to DNI url
             HttpClient httpClientDNI = HttpClientBuilder.create().build();
             HttpGet getDNIRequest = new HttpGet(DNI + latitude + "/" + longitude);
 
@@ -46,6 +47,7 @@ public class Main {
                 continue;
             }
 
+            // Get call to GHI url
             HttpClient httpClientGHI = HttpClientBuilder.create().build();
             HttpGet getGHIRequest = new HttpGet(GHI + latitude + "/" + longitude);
 
@@ -58,6 +60,7 @@ public class Main {
                 continue;
             }
 
+            // Read the DNI and GHI csv files
             CSVReader dniReader = new CSVReader(new BufferedReader(new InputStreamReader(dniResponse.getEntity().getContent())));
             CSVReader ghiReader = new CSVReader(new BufferedReader(new InputStreamReader(ghiResponse.getEntity().getContent())));
 
@@ -66,6 +69,7 @@ public class Main {
 
             String[] dniReadings, ghiReadings;
 
+            // Save data to a csv file with the name <station_number>_dni_ghi.csv
             CSVWriter writer = new CSVWriter(new BufferedWriter(new FileWriter("solar_data/" + stnNum + "_dni_ghi.csv")));
             writer.writeNext(targetHeader, false);
 
@@ -73,13 +77,14 @@ public class Main {
                 // see if the timestamps are equal and if not, see which one missed a timestamp
                 int comparison = dniReadings[0].compareTo(ghiReadings[0]);
 
-                if (comparison < 0) {
+                if (comparison < 0) { // somehow there are no corresponding GHI values
+                    System.err.println("Missing GHI value for station " + stnNum);
                     dniReader.readNext();
-                } else if (comparison > 0) {
+                } else if (comparison > 0) { // somehow there are no corresponding DNI values
+                    System.err.println("Missing DNI value for station " + stnNum);
                     ghiReader.readNext();
                 } else {
                     writer.writeNext(new String[] {dniReadings[0], dniReadings[1], ghiReadings[1]}, false);
-//                System.out.println(dniReadings[0] + "," + dniReadings[1] + "," + ghiReadings[1]);
                 }
             }
 
