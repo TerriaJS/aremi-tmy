@@ -39,9 +39,11 @@ _NOTE: click [here](#data) to see how to pass the data files_
 _Requires Python 2 (does not work with Python 3) and Anaconda 2*._
 
 * To calculate TMY for a specific station:
+
 `python sandia/tmy.py -c sandia/tmy-config.json -b <station number>_averaged.csv`
 
 * To calculate TMY for all stations:
+
 `python sandia/tmy.py -c sandia/tmy-config.json -a`
 
 
