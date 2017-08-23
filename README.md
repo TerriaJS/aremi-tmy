@@ -15,22 +15,32 @@ This software is written in Haskell - full instructions for building and running
 
 ### Building
 _Building this software requires Haskell Stack._
+
 For initial setup, install  all of the necessary dependencies for this software:
+
 `stack setup`
 
+
 To build and compile the files:
+
 `stack build`
 
 
 ### Running
 **Run the Haskell software to obtain the averaged data of each station**
+
 `stack exec aremi-tmy-oneMinSolar <data>`
+
 _NOTE: click [here](#data) to see how to pass the data files_
 
+
 **Run the Python software to calculate the TMY for each station**
+
 _Requires Python 2 (does not work with Python 3) and Anaconda 2*._
+
 * To calculate TMY for a specific station:
 `python sandia/tmy.py -c sandia/tmy-config.json -b <station number>_averaged.csv`
+
 * To calculate TMY for all stations:
 `python sandia/tmy.py -c sandia/tmy-config.json -a`
 
@@ -53,6 +63,7 @@ The data obtained from different stations should be saved in a directory within 
 ```
 
 Run the software automatically for all stations by passing the site details file:
+
 `data/IDCJAD00114_site_details_file.txt`
 
 
