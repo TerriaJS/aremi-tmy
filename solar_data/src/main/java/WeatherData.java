@@ -8,7 +8,7 @@ public class WeatherData {
     int year, month, day, hrs, mins, yearStd, monthStd, dayStd, hrsStd, minsStd;
     Reading airTemp, humidity, windSpeed, windGust, windDir;
 
-    private String[] stringArray;
+    private String[] dataString;
 
     public static final String ALLOWEDQUALITY = "YNSF";
 
@@ -38,7 +38,7 @@ public class WeatherData {
         windGust = new Reading((!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
         windDir = new Reading((!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
 
-        this.stringArray = data;
+        this.dataString = data;
     }
 
     public boolean checkQuality() {
@@ -49,14 +49,31 @@ public class WeatherData {
                 (ALLOWEDQUALITY.contains(windDir.quality));
     }
 
+    private String rightAlign(String str, int intendedLength) {
+        return String.format("%1$" + intendedLength + "s", str);
+    }
+
     public String[] combineValues() {
         DecimalFormat df = new DecimalFormat("#.#");
-        stringArray[12] = df.format(airTemp.value);
-        stringArray[15] = df.format(humidity.value);
-        stringArray[17] = df.format(windSpeed.value);
-        stringArray[20] = df.format(windGust.value);
-        stringArray[23] = df.format(windDir.value);
+        dataString[12] = rightAlign(df.format(airTemp.value), 6);
+        dataString[13] = rightAlign(airTemp.quality, 1);
+        dataString[14] = rightAlign(Integer.toString(airTemp.count), 3);
 
-        return stringArray;
+        dataString[15] = rightAlign(df.format(humidity.value), 6);
+        dataString[16] = rightAlign(humidity.quality, 1);
+
+        dataString[17] = rightAlign(df.format(windSpeed.value), 6);
+        dataString[18] = rightAlign(windSpeed.quality, 1);
+        dataString[19] = rightAlign(Integer.toString(windSpeed.count), 3);
+
+        dataString[20] = rightAlign(df.format(windGust.value), 6);
+        dataString[21] = rightAlign(windGust.quality, 1);
+        dataString[22] = rightAlign(Integer.toString(windGust.count), 3);
+
+        dataString[23] = rightAlign(df.format(windDir.value), 6);
+        dataString[24] = rightAlign(windDir.quality, 1);
+        dataString[25] = rightAlign(Integer.toString(windDir.count), 3);
+
+        return dataString;
     }
 }

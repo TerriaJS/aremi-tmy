@@ -17,7 +17,6 @@ public class Main {
 //        combineSolarValues(args[0]);
 //        printHalfHourlyData();
         averageHalfHourlyData();
-//        System.out.println((" ".trim().equals("")) ? Double.parseDouble("12.0") : 0);
 
     }
 
@@ -33,93 +32,89 @@ public class Main {
         }
 
         //for (File statesDir : statesList) {
-        CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader("BoM_observations/Half-hourly-averaged-data/NSW_averaged/HD01D_StnDet_999999998661924.txt")));
+            CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader(directoryName + "/NT_averaged/HD01D_StnDet_999999998662826.txt")));
 
-        String[] line = stationsReader.readNext();
+            String[] line;// = stationsReader.readNext();
 
-        //while((line = stationsReader.readNext()) != null) {
-            String stnNum = line[1].trim();
-            System.out.println("Working on " + stnNum + " in " + "NSW_averaged"); //statesDir.getName());
+            while((line = stationsReader.readNext()) != null) {
+                String stnNum = line[1].trim();
+                System.out.println("Working on " + stnNum + " in " + "NSW_averaged"); //statesDir.getName());
 
-            CSVReader reader = new CSVReader(new BufferedReader(new FileReader("BoM_observations/Half-hourly-averaged-data/NSW_averaged/HD01D_Data_" + stnNum + "_999999998661924.txt")));
+                CSVReader reader = new CSVReader(new BufferedReader(new FileReader("BoM_observations/Half-hourly-averaged-data/NT_averaged/HD01D_Data_" + stnNum + "_999999998662826.txt")));
 
-            /*hd
-            Station Number
-            YYYY
-            MM
-            DD
-            HH24
-            MI format in Local time
-            Year Month Day Hour Minutes in YYYY
-            MM
-            DD
-            HH24
-            MI format in Local standard time
-            Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12
-            Quality of average air temperature in last 30 minutes
-            Count of average air temperature observations in last 30 minutes
-            Relative humidity in percentage %
-            Quality of relative humidity
-            Average wind speed in last 30 minutes in km/h where observations count >= 12
-            Quality of average wind speed in last 30 minutes
-            Count of average wind speed observations in last 30 minutes
-            Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12
-            Quality of Highest maximum 3 sec wind gust in last 30 minutes
-            Count of Highest maximum 3 sec wind gust observations in last 30 minutes
-            Average direction of wind in last 30 minutes in degrees true where observations count >= 12
-            Quality of average direction of wind in last 30 minutes
-            Count of average direction of wind observations in last 30 minutes*/
+                /*hd
+                Station Number
+                YYYY
+                MM
+                DD
+                HH24
+                MI format in Local time
+                Year Month Day Hour Minutes in YYYY
+                MM
+                DD
+                HH24
+                MI format in Local standard time
+                Average air temperature in last 30 minutes in degrees Celsius where observations count >= 12
+                Quality of average air temperature in last 30 minutes
+                Count of average air temperature observations in last 30 minutes
+                Relative humidity in percentage %
+                Quality of relative humidity
+                Average wind speed in last 30 minutes in km/h where observations count >= 12
+                Quality of average wind speed in last 30 minutes
+                Count of average wind speed observations in last 30 minutes
+                Highest maximum 3 sec wind gust in last 30 minutes in km/h where observations count >= 12
+                Quality of Highest maximum 3 sec wind gust in last 30 minutes
+                Count of Highest maximum 3 sec wind gust observations in last 30 minutes
+                Average direction of wind in last 30 minutes in degrees true where observations count >= 12
+                Quality of average direction of wind in last 30 minutes
+                Count of average direction of wind observations in last 30 minutes*/
 
 
-            CSVWriter writer = new CSVWriter(new FileWriter("BoM_observations/Hourly-averaged-data/NSW_averaged/HD01D_Data_" + stnNum + "_999999998661924_averaged.csv"));
+                CSVWriter writer = new CSVWriter(new FileWriter("BoM_observations/Hourly-averaged-data/NT_averaged/HD01D_Data_" + stnNum + "_999999998662826_averaged.csv"));
 
-            String[] headers = reader.readNext();
-            writer.writeNext(headers, false);
+                String[] headers = reader.readNext();
+                writer.writeNext(headers, false);
 
-            String[] weatherReadings; //skip the headers
-            while ((weatherReadings = reader.readNext()) != null) {
-                WeatherData w1, w2;
+                String[] weatherReadings; //skip the headers
+                while ((weatherReadings = reader.readNext()) != null) {
+                    WeatherData w1, w2;
 
-                w1 = new WeatherData(weatherReadings);
-                if (w1.mins == 0) {
-                    weatherReadings = reader.readNext();
-                    w2 = new WeatherData(weatherReadings);
-                    if (w1.checkQuality() && w2.checkQuality()) {
-                        WeatherData avgWeather = w1;
-                        avgWeather.airTemp.value = (w1.airTemp.value + w2.airTemp.value) / 2;
-                        avgWeather.humidity.value = (w1.humidity.value + w2.humidity.value) / 2;
-                        avgWeather.windSpeed.value = (w1.windSpeed.value + w2.windSpeed.value) / 2;
-                        avgWeather.windDir.value = (w1.windDir.value + w2.windDir.value) / 2;
-                        avgWeather.windGust.value = (w1.windGust.value + w2.windGust.value) / 2;
-                        writer.writeNext(avgWeather.combineValues(), false);
-                    }
-                } else {
-                    if (w1.checkQuality()) writer.writeNext(weatherReadings, false);
+                    w1 = new WeatherData(weatherReadings);
+                    if (w1.checkQuality()) {
+                        if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
+                            w2 = new WeatherData(weatherReadings);
+                            if (w2.checkQuality()) {
+
+                                w1.airTemp.value = (w1.airTemp.value + w2.airTemp.value) / 2;
+                                w1.airTemp.count += w2.airTemp.count;
+
+                                w1.humidity.value = (w1.humidity.value + w2.humidity.value) / 2;
+
+                                w1.windSpeed.value = (w1.windSpeed.value + w2.windSpeed.value) / 2;
+                                w1.windSpeed.count += w2.windSpeed.count;
+
+                                w1.windDir.value = (w1.windDir.value + w2.windDir.value) / 2;
+                                w1.windDir.count += w2.windDir.count;
+
+                                w1.windGust.value = (w1.windGust.value + w2.windGust.value) / 2;
+                                w1.windGust.count += w2.windGust.count;
+                                //writer.writeNext(w1.combineValues(), false);
+                            }
+                        }
+                        writer.writeNext(w1.combineValues(), false);
+                    } /*else {
+                        if (w1.checkQuality()) writer.writeNext(w1.combineValues(), false);
+                    }*/
+
+
+
                 }
-
-
-/*
-                WeatherData w1 = new WeatherData(weatherReadings);
-                if (w1.mins == 0) {
-                    weatherReadings = reader.readNext();
-                    WeatherData w2 = new WeatherData(weatherReadings);
-
-                    // Filters out the qualities which should not be included in the dataset
-                    if (w1.checkQuality()) writer.writeNext(weatherReadings);
-
-                } else {
-                    continue; // do something with this one value??
-                }
-*/
-
+                reader.close();
+                writer.close();
 
             }
 
-        //}
-
-        stationsReader.close();
-            reader.close();
-            writer.close();
+            stationsReader.close();
         //}
 
     }
