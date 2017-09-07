@@ -1,12 +1,10 @@
 import java.text.DecimalFormat;
 
-import static org.apache.commons.lang3.ArrayUtils.addAll;
-
 public class WeatherData {
 
     String recordIdentifier, stationId;
     int year, month, day, hrs, mins, yearStd, monthStd, dayStd, hrsStd, minsStd;
-    Reading airTemp, humidity, windSpeed, windGust, windDir;
+    AveragedReading airTemp, humidity, windSpeed, windGust, windDir;
 
     private String[] dataString;
 
@@ -32,11 +30,11 @@ public class WeatherData {
         hrsStd = Integer.parseInt(data[10]);
         minsStd = Integer.parseInt(data[11]);
 
-        airTemp = new Reading((!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
-        humidity = new Reading((!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
-        windSpeed = new Reading((!data[17].equals("")) ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]));
-        windGust = new Reading((!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
-        windDir = new Reading((!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
+        airTemp = new AveragedReading((!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
+        humidity = new AveragedReading((!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
+        windSpeed = new AveragedReading((!data[17].equals("")) ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]));
+        windGust = new AveragedReading((!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
+        windDir = new AveragedReading((!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
 
         this.dataString = data;
     }
@@ -51,6 +49,22 @@ public class WeatherData {
 
     private String rightAlign(String str, int intendedLength) {
         return String.format("%1$" + intendedLength + "s", str);
+    }
+
+    public void averageValues(WeatherData toCombine) {
+        this.airTemp.value = (this.airTemp.value + toCombine.airTemp.value) / 2;
+        this.airTemp.count += toCombine.airTemp.count;
+
+        this.humidity.value = (this.humidity.value + toCombine.humidity.value) / 2; // humidity doesn't have count
+
+        this.windSpeed.value = (this.windSpeed.value + toCombine.windSpeed.value) / 2;
+        this.windSpeed.count += toCombine.windSpeed.count;
+
+        this.windDir.value = (this.windDir.value + toCombine.windDir.value) / 2;
+        this.windDir.count += toCombine.windDir.count;
+
+        this.windGust.value = (this.windGust.value + toCombine.windGust.value) / 2;
+        this.windGust.count += toCombine.windGust.count;
     }
 
     public String[] combineValues() {
