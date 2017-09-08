@@ -7,6 +7,8 @@ A tool to work out Typical Meteorological Year (TMY) from ground weather station
 
 This code is licensed under the open source Apache License Version 2.0. For full details please see the [LICENSE](LICENSE) file in the root of this repository.
 
+Everything in here is &copy; CSIRO Data61 2017.
+
 
 ## Instructions
 
@@ -69,10 +71,8 @@ Run the software automatically for all stations by passing the site details file
 `data/IDCJAD00114_site_details_file.txt`
 
 
-
 ## AREMI
 TODO
 
 
-## NICTA
-TODO
+&copy; CSIRO Data61 2017.
