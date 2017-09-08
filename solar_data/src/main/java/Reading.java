@@ -1,16 +1,16 @@
-public class AveragedReading {
+public class Reading {
 
     double value;
     String quality;
     int count;
 
-    public AveragedReading(double value, String quality, int count) {
+    public Reading(double value, String quality, int count) {
         this.value = value;
         this.quality = quality;
         this.count = count;
     }
 
-    public AveragedReading(double value, String quality) {
+    public Reading(double value, String quality) {
         this.value = value;
         this.quality = quality;
         count = -1;

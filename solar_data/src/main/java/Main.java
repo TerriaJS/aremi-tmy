@@ -12,10 +12,12 @@ import java.util.regex.Pattern;
 public class Main {
 
     private final static String WRITE_TO_AVERAGED = "BoM_observations/Hourly-averaged-data/";
+    private final static String WRITE_TO_ACTUAL = "BoM_observations/Hourly-data/";
     private final static String WRITE_TO_SOLAR = "BoM_observations/Hourly-solar-data/";
 
     private static String filenamePref, filenameSuff;
-    private static String parentDir, parentDirName, stateName;
+    private static String parentDir;
+    private static String stateName;
 
     private final static String DNI = "http://services.aremi.d61.io/solar-satellite/v1/DNI/";
     private final static String GHI = "http://services.aremi.d61.io/solar-satellite/v1/GHI/";
@@ -23,13 +25,11 @@ public class Main {
     public static void main(String[] args) throws IOException {
 
         File f = new File(args[0]);
-        parentDir = f.getParent();
+        parentDir = f.getParent(); // get path of the parent to read the station files
 
-        parentDirName = f.getParentFile().getName();
-
+        // find out which state we are working with to know which directory to write into
+        String parentDirName = f.getParentFile().getName();
         stateName = parentDirName.split("_")[0];
-
-        String fileName = f.getName();
 
         CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader(args[0])));
 
@@ -40,14 +40,18 @@ public class Main {
             String latitude = line[6].trim();
             String longitude = line[7].trim();
 
+            // need the exact format of the way the files are named,
+            String fileName = f.getName();
             String[] splitName = fileName.split(Pattern.quote("StnDet"));
             filenamePref = splitName[0];
             filenameSuff = splitName[1];
 
             averageHalfHourlyData(stnNum);
-            combineSolarValues(stnNum, latitude, longitude);
+            //halfHourlyData(stnNum);
+            //combineSolarValues(stnNum, latitude, longitude);
         }
 
+        stationsReader.close();
 
     }
 
@@ -56,7 +60,6 @@ public class Main {
         System.out.println("Working on " + station);
 
         CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
-
         CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_AVERAGED + "/" + stateName + "/" + station + "_averaged.csv"));
 
         String[] headers = reader.readNext(); // keep the headers as it is
@@ -64,10 +67,10 @@ public class Main {
 
         String[] weatherReadings;
         while ((weatherReadings = reader.readNext()) != null) {
-            WeatherData w1 = new WeatherData(weatherReadings);
+            WeatherData w1 = new AveragedWD(weatherReadings);
             if (w1.checkQuality()) {
                 if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
-                    WeatherData w2 = new WeatherData(weatherReadings);
+                    WeatherData w2 = new AveragedWD(weatherReadings);
                     if (w2.checkQuality()) w1.averageValues(w2);
                 }
                 writer.writeNext(w1.combineValues(), false);
@@ -78,6 +81,33 @@ public class Main {
         reader.close();
         writer.close();
 
+    }
+
+    private static void halfHourlyData(String station) throws IOException {
+
+        System.out.println("Working on " + station);
+
+        CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
+        CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
+
+        String[] headers = reader.readNext(); // keep the headers as it is
+        writer.writeNext(headers, false);
+
+        String[] weatherReadings;
+        while ((weatherReadings = reader.readNext()) != null) {
+            WeatherData w1 = new ActualWD(weatherReadings);
+            if (w1.checkQuality()) {
+                if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
+                    WeatherData w2 = new ActualWD(weatherReadings);
+                    if (w2.checkQuality()) w1.averageValues(w2);
+                }
+                writer.writeNext(w1.combineValues(), false);
+            }
+
+
+        }
+        reader.close();
+        writer.close();
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
