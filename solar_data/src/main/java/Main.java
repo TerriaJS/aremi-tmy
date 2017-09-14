@@ -6,6 +6,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 
@@ -66,17 +68,24 @@ public class Main {
         writer.writeNext(headers, false);
 
         String[] weatherReadings;
+        List<AveragedWD> wds = new ArrayList<AveragedWD>();
         while ((weatherReadings = reader.readNext()) != null) {
-            WeatherData w1 = new AveragedWD(weatherReadings);
-            if (w1.checkQuality()) {
-                if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
-                    WeatherData w2 = new AveragedWD(weatherReadings);
-                    if (w2.checkQuality()) w1.averageValues(w2);
-                }
-                writer.writeNext(w1.combineValues(), false);
-            }
 
+            wds.add(new AveragedWD(weatherReadings));
 
+//            WeatherData w1 = new AveragedWD(weatherReadings);
+//            if (w1.checkQuality()) {
+//                if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
+//                    WeatherData w2 = new AveragedWD(weatherReadings);
+//                    if (w2.checkQuality()) w1.averageValues(w2);
+//                }
+//                writer.writeNext(w1.combineValues(), false);
+//            }
+//
+        }
+
+        for (AveragedWD wd : wds) {
+            writer.writeNext(wd.combineValues(), false);
         }
         reader.close();
         writer.close();
@@ -151,7 +160,8 @@ public class Main {
                 System.err.println("Missing DNI value for station " + station);
                 ghiReader.readNext();
             } else {
-                writer.writeNext(new String[] {dniReadings[0], dniReadings[1], ghiReadings[1]}, false);
+                SolarData s = new SolarData(new String[] {dniReadings[0], dniReadings[1], ghiReadings[1]});
+                writer.writeNext(s.dataString, false);
             }
         }
 

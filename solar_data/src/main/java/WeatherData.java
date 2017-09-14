@@ -40,5 +40,15 @@ public abstract class WeatherData {
         return String.format("%1$" + intendedLength + "s", str);
     }
 
+    public boolean checkParsable(String str) {
+        if (str.equals("")) return false;
+        for (int i = 0; i < str.length(); i++) {
+            if (!Character.isDigit(str.charAt(i)) && !(str.charAt(i) == '.')) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
 }

@@ -62,4 +62,9 @@ public class AveragedWD extends WeatherData {
 
         return dataString;
     }
+
+    public boolean isValidData() {
+        return airTemp.isValidReading() && humidity.isValidReading() && windSpeed.isValidReading()
+                && windGust.isValidReading() && windDir.isValidReading();
+    }
 }

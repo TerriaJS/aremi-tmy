@@ -15,4 +15,8 @@ public class Reading {
         this.quality = quality;
         count = -1;
     }
+
+    public boolean isValidReading() {
+        return this.value != 0;
+    }
 }
