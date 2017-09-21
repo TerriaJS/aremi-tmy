@@ -7,9 +7,12 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
-
+import java.time.*;
+import java.time.ZoneOffset;
 
 public class Main {
 
@@ -24,14 +27,28 @@ public class Main {
     private final static String DNI = "http://services.aremi.d61.io/solar-satellite/v1/DNI/";
     private final static String GHI = "http://services.aremi.d61.io/solar-satellite/v1/GHI/";
 
+    private final static ZoneOffset AEST = ZoneOffset.ofHours(10);
+    private final static ZoneOffset ACST = ZoneOffset.ofHoursMinutes(9, 30);
+    private final static ZoneOffset AWST = ZoneOffset.ofHours(8);
+
+    private static Map<String, ZoneOffset> TIME_ZONE_LOOKUP;
+
     public static void main(String[] args) throws IOException {
+
+        // populate the lookup table with states and their corresponding offsets from UTC
+        TIME_ZONE_LOOKUP = new HashMap<>();
+        TIME_ZONE_LOOKUP.put("NSW", AEST);
+        TIME_ZONE_LOOKUP.put("VIC", AEST);
+        TIME_ZONE_LOOKUP.put("TAS", AEST);
+        TIME_ZONE_LOOKUP.put("QLD", AEST);
+        TIME_ZONE_LOOKUP.put("WA", AWST);
+        TIME_ZONE_LOOKUP.put("SA", ACST);
+        TIME_ZONE_LOOKUP.put("NT", ACST);
 
         File f = new File(args[0]);
         parentDir = f.getParent(); // get path of the parent to read the station files
 
         // find out which state we are working with to know which directory to write into
-        String parentDirName = f.getParentFile().getName();
-        stateName = parentDirName.split("_")[0];
 
         CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader(args[0])));
 
@@ -41,6 +58,7 @@ public class Main {
             String stnNum = line[1].trim();
             String latitude = line[6].trim();
             String longitude = line[7].trim();
+            stateName = line[9].trim();
 
             // need the exact format of the way the files are named,
             String fileName = f.getName();
@@ -48,9 +66,9 @@ public class Main {
             filenamePref = splitName[0];
             filenameSuff = splitName[1];
 
-            averageHalfHourlyData(stnNum);
+            //averageHalfHourlyData(stnNum);
             //halfHourlyData(stnNum);
-            //combineSolarValues(stnNum, latitude, longitude);
+            combineSolarValues(stnNum, latitude, longitude);
         }
 
         stationsReader.close();
