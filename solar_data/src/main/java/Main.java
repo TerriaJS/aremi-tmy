@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,19 +32,19 @@ public class Main {
     private final static ZoneOffset ACST = ZoneOffset.ofHoursMinutes(9, 30);
     private final static ZoneOffset AWST = ZoneOffset.ofHours(8);
 
-    private static Map<String, ZoneOffset> TIME_ZONE_LOOKUP;
+    private static Map<String, ZoneId> TIME_ZONE_LOOKUP;
 
     public static void main(String[] args) throws IOException {
 
         // populate the lookup table with states and their corresponding offsets from UTC
         TIME_ZONE_LOOKUP = new HashMap<>();
-        TIME_ZONE_LOOKUP.put("NSW", AEST);
-        TIME_ZONE_LOOKUP.put("VIC", AEST);
-        TIME_ZONE_LOOKUP.put("TAS", AEST);
-        TIME_ZONE_LOOKUP.put("QLD", AEST);
-        TIME_ZONE_LOOKUP.put("WA", AWST);
-        TIME_ZONE_LOOKUP.put("SA", ACST);
-        TIME_ZONE_LOOKUP.put("NT", ACST);
+        TIME_ZONE_LOOKUP.put("NSW", ZoneId.of("Australia/NSW"));
+        TIME_ZONE_LOOKUP.put("VIC", ZoneId.of("Australia/Victoria"));
+        TIME_ZONE_LOOKUP.put("TAS", ZoneId.of("Australia/Tasmania"));
+        TIME_ZONE_LOOKUP.put("QLD", ZoneId.of("Australia/Queensland"));
+        TIME_ZONE_LOOKUP.put("WA", ZoneId.of("Australia/West"));
+        TIME_ZONE_LOOKUP.put("SA", ZoneId.of("Australia/South"));
+        TIME_ZONE_LOOKUP.put("NT", ZoneId.of("Australia/North"));
 
         File f = new File(args[0]);
         parentDir = f.getParent(); // get path of the parent to read the station files
@@ -139,7 +140,7 @@ public class Main {
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
 
-        final String[] targetHeader = {"UTC time", "DNI value", "GHI value"};
+        final String[] targetHeader = {"Local time", "DNI value", "GHI value"};
 
         System.out.println("Working on station " + station);
 
@@ -178,7 +179,9 @@ public class Main {
                 System.err.println("Missing DNI value for station " + station);
                 ghiReader.readNext();
             } else {
-                SolarData s = new SolarData(new String[] {dniReadings[0], dniReadings[1], ghiReadings[1]});
+                ZonedDateTime datetime = ZonedDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
+                datetime = datetime.withZoneSameInstant(TIME_ZONE_LOOKUP.get(stateName));
+                SolarData s = new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm").format(datetime), dniReadings[1], ghiReadings[1]});
                 writer.writeNext(s.dataString, false);
             }
         }
