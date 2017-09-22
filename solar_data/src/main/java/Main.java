@@ -4,6 +4,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.joda.time.format.DateTimeFormat;
 
 import java.io.*;
 import java.time.format.DateTimeFormatter;
@@ -140,7 +141,7 @@ public class Main {
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
 
-        final String[] targetHeader = {"Local time", "DNI value", "GHI value"};
+        final String[] targetHeader = {"Local standard time", "DNI value", "GHI value"};
 
         System.out.println("Working on station " + station);
 
@@ -179,8 +180,10 @@ public class Main {
                 System.err.println("Missing DNI value for station " + station);
                 ghiReader.readNext();
             } else {
-                ZonedDateTime datetime = ZonedDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
-                datetime = datetime.withZoneSameInstant(TIME_ZONE_LOOKUP.get(stateName));
+                LocalDateTime datetime = LocalDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
+                datetime = datetime.plusHours(10);
+//                ZonedDateTime datetime = ZonedDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
+//                datetime = datetime.withZoneSameInstant(TIME_ZONE_LOOKUP.get(stateName));
                 SolarData s = new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm").format(datetime), dniReadings[1], ghiReadings[1]});
                 writer.writeNext(s.dataString, false);
             }
