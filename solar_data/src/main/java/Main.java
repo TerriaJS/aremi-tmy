@@ -4,7 +4,9 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.joda.time.format.DateTimeFormat;
+
+import static org.apache.commons.lang3.ArrayUtils.addAll;
+import java.util.Arrays;
 
 import java.io.*;
 import java.time.format.DateTimeFormatter;
@@ -29,23 +31,23 @@ public class Main {
     private final static String DNI = "http://services.aremi.d61.io/solar-satellite/v1/DNI/";
     private final static String GHI = "http://services.aremi.d61.io/solar-satellite/v1/GHI/";
 
-    private final static ZoneOffset AEST = ZoneOffset.ofHours(10);
-    private final static ZoneOffset ACST = ZoneOffset.ofHoursMinutes(9, 30);
-    private final static ZoneOffset AWST = ZoneOffset.ofHours(8);
+    private final static long AEST = 600; // offset by 600 minutes (10 hours)
+    private final static long ACST = 570; // offset by 570 minutes (9 hours 30 minutes)
+    private final static long AWST = 480; // offset by 480 minutes (8 hours)
 
-    private static Map<String, ZoneId> TIME_ZONE_LOOKUP;
+    private static Map<String, Long> TIME_ZONE_LOOKUP;
 
     public static void main(String[] args) throws IOException {
 
         // populate the lookup table with states and their corresponding offsets from UTC
         TIME_ZONE_LOOKUP = new HashMap<>();
-        TIME_ZONE_LOOKUP.put("NSW", ZoneId.of("Australia/NSW"));
-        TIME_ZONE_LOOKUP.put("VIC", ZoneId.of("Australia/Victoria"));
-        TIME_ZONE_LOOKUP.put("TAS", ZoneId.of("Australia/Tasmania"));
-        TIME_ZONE_LOOKUP.put("QLD", ZoneId.of("Australia/Queensland"));
-        TIME_ZONE_LOOKUP.put("WA", ZoneId.of("Australia/West"));
-        TIME_ZONE_LOOKUP.put("SA", ZoneId.of("Australia/South"));
-        TIME_ZONE_LOOKUP.put("NT", ZoneId.of("Australia/North"));
+        TIME_ZONE_LOOKUP.put("NSW", AEST);
+        TIME_ZONE_LOOKUP.put("VIC", AEST);
+        TIME_ZONE_LOOKUP.put("TAS", AEST);
+        TIME_ZONE_LOOKUP.put("QLD", AEST);
+        TIME_ZONE_LOOKUP.put("WA", AWST);
+        TIME_ZONE_LOOKUP.put("SA", ACST);
+        TIME_ZONE_LOOKUP.put("NT", ACST);
 
         File f = new File(args[0]);
         parentDir = f.getParent(); // get path of the parent to read the station files
@@ -69,8 +71,8 @@ public class Main {
             filenameSuff = splitName[1];
 
             //averageHalfHourlyData(stnNum);
-            //halfHourlyData(stnNum);
-            combineSolarValues(stnNum, latitude, longitude);
+            halfHourlyData(stnNum);
+            //combineSolarValues(stnNum, latitude, longitude);
         }
 
         stationsReader.close();
@@ -119,15 +121,32 @@ public class Main {
         CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
         CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
 
-        String[] headers = reader.readNext(); // keep the headers as it is
+        String[] headers = reader.readNext();
+        //headers = modifyHeaders(headers);
         writer.writeNext(headers, false);
 
         String[] weatherReadings;
         while ((weatherReadings = reader.readNext()) != null) {
-            WeatherData w1 = new ActualWD(weatherReadings);
+            WeatherData w1;
+
+            // initialise w1 depending on which state we are dealing with
+            if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
+                w1 = new ActualWD(weatherReadings);
+            } else {
+                w1 = new ActualWDBrief((weatherReadings));
+            }
+
             if (w1.checkQuality()) {
                 if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
-                    WeatherData w2 = new ActualWD(weatherReadings);
+                    WeatherData w2;
+
+                    // initialise w2 depending on which state we are dealing with
+                    if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
+                        w2 = new ActualWD(weatherReadings);
+                    } else {
+                        w2 = new ActualWDBrief((weatherReadings));
+                    }
+
                     if (w2.checkQuality()) w1.averageValues(w2);
                 }
                 writer.writeNext(w1.combineValues(), false);
@@ -137,6 +156,12 @@ public class Main {
         }
         reader.close();
         writer.close();
+    }
+
+    private static String[] modifyHeaders(String[] origHeader) {
+        int varIndexStart = origHeader.length - 18; // variables start from this index
+        int varIndexEnd = origHeader.length - 1;    // until the last index
+        return addAll(new String[] {"hm","Station Number","Local standard time"}, (String[]) Arrays.copyOfRange(origHeader, varIndexStart, varIndexEnd));
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
@@ -181,10 +206,8 @@ public class Main {
                 ghiReader.readNext();
             } else {
                 LocalDateTime datetime = LocalDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
-                datetime = datetime.plusHours(10);
-//                ZonedDateTime datetime = ZonedDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
-//                datetime = datetime.withZoneSameInstant(TIME_ZONE_LOOKUP.get(stateName));
-                SolarData s = new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm").format(datetime), dniReadings[1], ghiReadings[1]});
+                datetime = datetime.plusMinutes(TIME_ZONE_LOOKUP.get(stateName));
+                SolarData s = new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(datetime), dniReadings[1], ghiReadings[1]});
                 writer.writeNext(s.dataString, false);
             }
         }

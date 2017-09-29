@@ -46,7 +46,7 @@ public class ActualWD extends WeatherData {
                 (ALLOWEDQUALITY.contains(windGust.quality)) &&
                 (ALLOWEDQUALITY.contains(windDir.quality)) &&
                 (ALLOWEDQUALITY.contains(precip.quality)) &&
-                (ALLOWEDQUALITY.contains(windDir.quality)) &&
+                (ALLOWEDQUALITY.contains(seaLvlPressure.quality)) &&
                 (ALLOWEDQUALITY.contains(vapPressure.quality)) &&
                 (ALLOWEDQUALITY.contains(satVapPressure.quality)) &&
                 (ALLOWEDQUALITY.contains(wbTemp.quality)) &&
