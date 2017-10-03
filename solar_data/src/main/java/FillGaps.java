@@ -11,7 +11,8 @@ public class FillGaps {
         double gradient = (to - from) / (gapsCount + 1);
 
         for (int i = 1; i < res.length - 1; i++) {
-            res[i] = gradient * (i + 1); // add one because index starts from 0
+            res[i] = res[i-1] + gradient;
+
         }
 
         return res;
