@@ -1,9 +1,10 @@
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 
 public class ActualWD extends WeatherData {
 
-    public ActualWD(String[] data) {
-        super(data);
+    public ActualWD(LocalDateTime dt, String[] data) {
+        super(dt, data);
 
         // Precipitation since 9am local time in mm
         precip = new Reading(checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);

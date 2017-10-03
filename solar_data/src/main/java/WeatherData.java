@@ -1,8 +1,11 @@
+import java.time.LocalDateTime;
+
 public abstract class WeatherData {
 
     public static final String ALLOWEDQUALITY = "YNSF";
 
     String recordIdentifier, stationId;
+    LocalDateTime dateTime;
     int year, month, day, hrs, mins, yearStd, monthStd, dayStd, hrsStd, minsStd;
     Reading precip, airTemp, wbTemp, dpTemp,
             humidity, vapPressure, satVapPressure, windSpeed,
@@ -10,11 +13,13 @@ public abstract class WeatherData {
 
     public String[] dataString;
 
-    public WeatherData(String[] data) {
+    public WeatherData(LocalDateTime dateTime, String[] data) {
         // get rid of leading whitespaces
         for (int i = 0; i < data.length; i++) {
             data[i] = data[i].trim();
         }
+
+        this.dateTime = dateTime;
         this.dataString = data;
 
         recordIdentifier = data[0];

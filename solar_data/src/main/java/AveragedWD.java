@@ -1,11 +1,12 @@
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 
 public class AveragedWD extends WeatherData {
 
 
-    public AveragedWD(String[] data) {
+    public AveragedWD(LocalDateTime dt, String[] data) {
 
-        super(data);
+        super(dt, data);
 
         airTemp = new Reading((!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
         humidity = new Reading((!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
