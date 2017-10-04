@@ -1,22 +1,24 @@
 public class Reading {
 
+    String varName;
     double value;
     String quality;
     int count;
+    boolean isValid;
 
-    public Reading(double value, String quality, int count) {
+    public Reading(String varName, double value, String quality, int count) {
+        this.varName = varName;
         this.value = value;
         this.quality = quality;
         this.count = count;
+        this.isValid = this.value > 0;
     }
 
-    public Reading(double value, String quality) {
+    public Reading(String varName, double value, String quality) {
+        this.varName = varName;
         this.value = value;
         this.quality = quality;
-        count = -1;
-    }
-
-    public boolean isValidReading() {
-        return this.value != 0;
+        this.count = -1;
+        this.isValid = this.value > 0;
     }
 }

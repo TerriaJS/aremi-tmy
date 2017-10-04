@@ -7,37 +7,37 @@ public class ActualWD extends WeatherData {
         super(dt, data);
 
         // Precipitation since 9am local time in mm
-        precip = new Reading(checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
+        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
 
         // Air Temperature in degrees C
-        airTemp = new Reading(checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
+        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
 
         // Wet bulb temperature in degrees C
-        wbTemp = new Reading(checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
+        wbTemp = new Reading("Wet bulb temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
 
         // Dew point temperature in degrees C
-        dpTemp = new Reading(checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
+        dpTemp = new Reading("Dew point temperature", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
 
         // Relative humidity in percentage %
-        humidity = new Reading(checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
+        humidity = new Reading("Humidity", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
 
         // Vapour pressure in hPa
-        vapPressure = new Reading(checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
+        vapPressure = new Reading("Vapour pressure", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
 
         // Saturated vapour pressure in hPa
-        satVapPressure = new Reading(checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
+        satVapPressure = new Reading("Saturated vapour pressure", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
 
         // Wind speed in km/h
-        windSpeed = new Reading(checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
+        windSpeed = new Reading("Wind speed", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
 
         // Wind direction in degrees
-        windDir = new Reading(checkParsable(data[28]) ? Double.parseDouble(data[28]) : 0, data[29]);
+        windDir = new Reading("Wind direction", checkParsable(data[28]) ? Double.parseDouble(data[28]) : 0, data[29]);
 
-        // Speed of maximum windgust in last 10 minutes in  km/h
-        windGust = new Reading(checkParsable(data[30]) ? Double.parseDouble(data[30]) : 0, data[31]);
+        // Speed of maximum wind gust in last 10 minutes in  km/h
+        windGust = new Reading("Wind gust", checkParsable(data[30]) ? Double.parseDouble(data[30]) : 0, data[31]);
 
         // Mean sea level pressure in hPa
-        seaLvlPressure = new Reading(checkParsable(data[32]) ? Double.parseDouble(data[32]) : 0, data[33]);
+        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[32]) ? Double.parseDouble(data[32]) : 0, data[33]);
     }
 
     public boolean checkQuality() {

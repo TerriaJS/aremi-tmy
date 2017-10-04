@@ -122,14 +122,13 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-        if (station.equals("014031")) {
+        if (station.equals("061412")) {
             System.out.println("Working on " + station);
 
             CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
             CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
 
             String[] headers = reader.readNext();
-            //headers = modifyHeaders(headers);
             writer.writeNext(headers, false);
 
             String[] weatherReadings;
@@ -173,7 +172,8 @@ public class Main {
 //                }
             }
             System.out.println("Check if any we have gaps in terms of missing timestamp");
-            FillGaps.fillMissingTimeStamp(wds);
+            FillGaps.fillMissingTimeStamp(station, wds);
+            FillGaps.findGaps(wds);
 
 
             System.out.println("Now writing the datasets to file");
@@ -186,12 +186,6 @@ public class Main {
             reader.close();
             writer.close();
         }
-    }
-
-    private static String[] modifyHeaders(String[] origHeader) {
-        int varIndexStart = origHeader.length - 18; // variables start from this index
-        int varIndexEnd = origHeader.length - 1;    // until the last index
-        return addAll(new String[] {"hm","Station Number","Local standard time"}, (String[]) Arrays.copyOfRange(origHeader, varIndexStart, varIndexEnd));
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
@@ -231,7 +225,7 @@ public class Main {
 
             LocalDateTime datetime = LocalDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
             datetime = datetime.plusMinutes(TIME_ZONE_LOOKUP.get(stateName));
-            sds.add(new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(datetime), dniReadings[1], ghiReadings[1]}));
+            sds.add(new SolarData(datetime, new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(datetime), dniReadings[1], ghiReadings[1]}));
 
 //            // see if the timestamps are equal and if not, see which one missed a timestamp
 //            int comparison = dniReadings[0].compareTo(ghiReadings[0]);

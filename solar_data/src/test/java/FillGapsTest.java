@@ -20,5 +20,6 @@ public class FillGapsTest {
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(1,7,5), new double[] {1,2,3,4,5,6,7}));
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(5.7, 25.5, 5), new double[] {5.7, 9, 12.3, 15.6, 18.9, 22.2, 25.5}));
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(6.9, 19.3, 2), new double[] {6.9, 11.033, 15.166, 19.3}));
+        assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(5, 15, 1), new double[] {5, 10, 15}));
     }
 }

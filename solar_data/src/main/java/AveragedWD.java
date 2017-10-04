@@ -8,11 +8,11 @@ public class AveragedWD extends WeatherData {
 
         super(dt, data);
 
-        airTemp = new Reading((!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
-        humidity = new Reading((!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
-        windSpeed = new Reading((!data[17].equals("")) ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]));
-        windGust = new Reading((!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
-        windDir = new Reading((!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
+        airTemp = new Reading("Air temperature", (!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
+        humidity = new Reading("Humidity", (!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
+        windSpeed = new Reading("Wind speed", (!data[17].equals("")) ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]));
+        windGust = new Reading("Wind gust", (!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
+        windDir = new Reading("Wind direction", (!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
 
     }
 
@@ -62,10 +62,5 @@ public class AveragedWD extends WeatherData {
         dataString[25] = rightAlign(Integer.toString(windDir.count), 3);
 
         return dataString;
-    }
-
-    public boolean isValidData() {
-        return airTemp.isValidReading() && humidity.isValidReading() && windSpeed.isValidReading()
-                && windGust.isValidReading() && windDir.isValidReading();
     }
 }

@@ -16,25 +16,25 @@ public abstract class WeatherData {
     public WeatherData(LocalDateTime dateTime, String[] data) {
         // get rid of leading whitespaces
         for (int i = 0; i < data.length; i++) {
-            data[i] = data[i].trim();
+            data[i] = (data[i] == null) ? "" : data[i].trim();
         }
 
         this.dateTime = dateTime;
         this.dataString = data;
 
-        recordIdentifier = data[0];
-        stationId = data[1];
+        this.recordIdentifier = data[0];
+        this.stationId = data[1];
 
-        year = Integer.parseInt(data[2]);
-        month = Integer.parseInt(data[3]);
-        day = Integer.parseInt(data[4]);
-        hrs = Integer.parseInt(data[5]);
-        mins = Integer.parseInt(data[6]);
-        yearStd = Integer.parseInt(data[7]);
-        monthStd = Integer.parseInt(data[8]);
-        dayStd = Integer.parseInt(data[9]);
-        hrsStd = Integer.parseInt(data[10]);
-        minsStd = Integer.parseInt(data[11]);
+        this.year = Integer.parseInt(data[2]);
+        this.month = Integer.parseInt(data[3]);
+        this.day = Integer.parseInt(data[4]);
+        this.hrs = Integer.parseInt(data[5]);
+        this.mins = Integer.parseInt(data[6]);
+        this.yearStd = Integer.parseInt(data[7]);
+        this.monthStd = Integer.parseInt(data[8]);
+        this.dayStd = Integer.parseInt(data[9]);
+        this.hrsStd = Integer.parseInt(data[10]);
+        this.minsStd = Integer.parseInt(data[11]);
     }
 
     public abstract boolean checkQuality();
@@ -46,7 +46,7 @@ public abstract class WeatherData {
     }
 
     public boolean checkParsable(String str) {
-        if (str.equals("")) return false;
+        if (str == null || str.equals("")) return false;
         for (int i = 0; i < str.length(); i++) {
             if (!Character.isDigit(str.charAt(i)) && !(str.charAt(i) == '.')) {
                 return false;

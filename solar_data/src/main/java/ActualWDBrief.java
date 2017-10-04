@@ -7,28 +7,28 @@ public class ActualWDBrief extends WeatherData {
         super(dt, data);
 
         // Precipitation since 9am local time in mm
-        precip = new Reading(checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
+        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
 
         // Air Temperature in degrees C
-        airTemp = new Reading(checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
+        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
 
         // Dew point temperature in degrees C
-        dpTemp = new Reading(checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
+        dpTemp = new Reading("Dew point temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
 
         // Relative humidity in percentage %
-        humidity = new Reading(checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
+        humidity = new Reading("Humidity", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
 
         // Wind speed in km/h
-        windSpeed = new Reading(checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
+        windSpeed = new Reading("Wind speed", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
 
         // Wind direction in degrees
-        windDir = new Reading(checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
+        windDir = new Reading("Wind direction", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
 
-        // Speed of maximum windgust in last 10 minutes in  km/h
-        windGust = new Reading(checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
+        // Speed of maximum wind gust in last 10 minutes in  km/h
+        windGust = new Reading("Wind gust", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
 
         // Mean sea level pressure in hPa
-        seaLvlPressure = new Reading(checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
+        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
     }
 
     public boolean checkQuality() {

@@ -4,14 +4,12 @@ import java.time.format.DateTimeFormatter;
 public class SolarData {
 
     int dni, ghi;
-
+    LocalDateTime dateTime;
     String[] dataString;
 
-    public SolarData(String[] data) {
-
+    public SolarData(LocalDateTime dt, String[] data) {
+        this.dateTime = dt;
         this.dataString = data;
-
-//        System.out.println(ldt.toString());
 
         this.dni = (checkParsable(data[1]) ? Integer.parseInt(data[1]) : 0);
         this.ghi = (checkParsable(data[2]) ? Integer.parseInt(data[2]) : 0);
