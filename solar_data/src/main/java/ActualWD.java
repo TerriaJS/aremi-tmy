@@ -6,38 +6,51 @@ public class ActualWD extends WeatherData {
     public ActualWD(LocalDateTime dt, String[] data) {
         super(dt, data);
 
+        boolean isGap;
+
         // Precipitation since 9am local time in mm
-        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
+        isGap = checkParsable(data[12]);
+        precip = new Reading("Precipitation", isGap ? Double.parseDouble(data[12]) : 0, data[13], isGap);
 
         // Air Temperature in degrees C
-        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
+        isGap = checkParsable(data[14]);
+        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(data[14]) : 0, data[15], isGap);
 
         // Wet bulb temperature in degrees C
-        wbTemp = new Reading("Wet bulb temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
+        isGap = checkParsable(data[16]);
+        wbTemp = new Reading("Wet bulb temperature", isGap ? Double.parseDouble(data[16]) : 0, data[17], isGap);
 
         // Dew point temperature in degrees C
-        dpTemp = new Reading("Dew point temperature", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
+        isGap = checkParsable(data[18]);
+        dpTemp = new Reading("Dew point temperature", isGap ? Double.parseDouble(data[18]) : 0, data[19], isGap);
 
         // Relative humidity in percentage %
-        humidity = new Reading("Humidity", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
+        isGap = checkParsable(data[20]);
+        humidity = new Reading("Humidity", isGap ? Double.parseDouble(data[20]) : 0, data[21], isGap);
 
         // Vapour pressure in hPa
-        vapPressure = new Reading("Vapour pressure", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
+        isGap = checkParsable(data[22]);
+        vapPressure = new Reading("Vapour pressure", isGap ? Double.parseDouble(data[22]) : 0, data[23], isGap);
 
         // Saturated vapour pressure in hPa
-        satVapPressure = new Reading("Saturated vapour pressure", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
+        isGap = checkParsable(data[24]);
+        satVapPressure = new Reading("Saturated vapour pressure", isGap ? Double.parseDouble(data[24]) : 0, data[25],isGap);
 
         // Wind speed in km/h
-        windSpeed = new Reading("Wind speed", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
+        isGap = checkParsable(data[26]);
+        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(data[26]) : 0, data[27], isGap);
 
         // Wind direction in degrees
-        windDir = new Reading("Wind direction", checkParsable(data[28]) ? Double.parseDouble(data[28]) : 0, data[29]);
+        isGap = checkParsable(data[28]);
+        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(data[28]) : 0, data[29], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        windGust = new Reading("Wind gust", checkParsable(data[30]) ? Double.parseDouble(data[30]) : 0, data[31]);
+        isGap = checkParsable(data[30]);
+        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(data[30]) : 0, data[31], isGap);
 
         // Mean sea level pressure in hPa
-        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[32]) ? Double.parseDouble(data[32]) : 0, data[33]);
+        isGap = checkParsable(data[32]);
+        seaLvlPressure = new Reading("Sea level pressure", isGap ? Double.parseDouble(data[32]) : 0, data[33], isGap);
     }
 
     public boolean checkQuality() {

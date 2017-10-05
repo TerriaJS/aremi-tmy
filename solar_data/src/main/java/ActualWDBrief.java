@@ -6,29 +6,39 @@ public class ActualWDBrief extends WeatherData {
     public ActualWDBrief(LocalDateTime dt, String[] data) {
         super(dt, data);
 
+        boolean isGap;
+
         // Precipitation since 9am local time in mm
-        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13]);
+        isGap = checkParsable(data[12]);
+        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13], isGap);
 
         // Air Temperature in degrees C
-        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15]);
+        isGap = checkParsable(data[14]);
+        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15], isGap);
 
         // Dew point temperature in degrees C
-        dpTemp = new Reading("Dew point temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17]);
+        isGap = checkParsable(data[16]);
+        dpTemp = new Reading("Dew point temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17], isGap);
 
         // Relative humidity in percentage %
-        humidity = new Reading("Humidity", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19]);
+        isGap = checkParsable(data[18]);
+        humidity = new Reading("Humidity", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19], isGap);
 
         // Wind speed in km/h
-        windSpeed = new Reading("Wind speed", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21]);
+        isGap = checkParsable(data[20]);
+        windSpeed = new Reading("Wind speed", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21], isGap);
 
         // Wind direction in degrees
-        windDir = new Reading("Wind direction", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23]);
+        isGap = checkParsable(data[22]);
+        windDir = new Reading("Wind direction", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        windGust = new Reading("Wind gust", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25]);
+        isGap = checkParsable(data[24]);
+        windGust = new Reading("Wind gust", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25], isGap);
 
         // Mean sea level pressure in hPa
-        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27]);
+        isGap = checkParsable(data[26]);
+        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27], isGap);
     }
 
     public boolean checkQuality() {

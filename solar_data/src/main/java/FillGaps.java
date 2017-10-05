@@ -61,6 +61,7 @@ public class FillGaps {
                 weatherReadings[29] = "#";
 
                 list.add(i, new ActualWD(currDateTIme, weatherReadings));
+
                 System.out.println("At index " + i + ", we found a timestamp gap");
             }
         }
@@ -68,13 +69,33 @@ public class FillGaps {
 
     static int[] counter = new int[11];
 
-    public static void fillAnyGaps(int arrayIndex, Reading whichVariable) {
+    public static void fillShortGap() {
+
+    }
+
+    public static void fillLongGap() {
+
+    }
+
+    public static void handleGap(int gapIndex, int arrayIndex, Reading whichVariable) {
         if (!whichVariable.isValid) {
             counter[arrayIndex]++;
         } else {
             if (counter[arrayIndex] > 0) {
-                // do linear interpolation
-                System.out.println("Took care of " + counter[arrayIndex] + " gaps for " + whichVariable.varName);
+                // do linear interpolation if gap less than 5 hours
+                if (counter[arrayIndex] <= 10) {
+                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex] / 2.0) + " for " + whichVariable.varName);
+                }
+
+                // take average from previous and next day if gap less than 24 hours
+                else if (counter[arrayIndex] <= 48) {
+                    System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex] / 2.0) + " for " + whichVariable.varName);
+                }
+
+                // no rule specified in sandia method for gaps this big
+                else {
+                    System.out.println("At index " + gapIndex + " we can't take care of this gap of length " + (counter[arrayIndex] / 2.0) + " for " + whichVariable.varName);
+                }
                 counter[arrayIndex] = 0;
             }
         }
@@ -92,118 +113,19 @@ public class FillGaps {
             // otherwise, leave it empty and reset counter back to 0
 
         for (int i = 0; i < list.size(); i++) {
-            fillAnyGaps(PRECIP, list.get(i).precip);
-            fillAnyGaps(WBTEMP, list.get(i).wbTemp);
-            fillAnyGaps(DPTEMP, list.get(i).dpTemp);
-            fillAnyGaps(AIRTEMP, list.get(i).airTemp);
-            fillAnyGaps(HUMIDITY, list.get(i).humidity);
-            fillAnyGaps(VAP, list.get(i).vapPressure);
-            fillAnyGaps(SATVAP, list.get(i).satVapPressure);
-            fillAnyGaps(WINDSPD, list.get(i).windSpeed);
-            fillAnyGaps(WINDDIR, list.get(i).windDir);
-            fillAnyGaps(WINDGUST, list.get(i).windGust);
-            fillAnyGaps(SEALVL, list.get(i).seaLvlPressure);
+            handleGap(i, PRECIP, list.get(i).precip);
+            handleGap(i, WBTEMP, list.get(i).wbTemp);
+            handleGap(i, DPTEMP, list.get(i).dpTemp);
+            handleGap(i, AIRTEMP, list.get(i).airTemp);
+            handleGap(i, HUMIDITY, list.get(i).humidity);
+            handleGap(i, VAP, list.get(i).vapPressure);
+            handleGap(i, SATVAP, list.get(i).satVapPressure);
+            handleGap(i, WINDSPD, list.get(i).windSpeed);
+            handleGap(i, WINDDIR, list.get(i).windDir);
+            handleGap(i, WINDGUST, list.get(i).windGust);
+            handleGap(i, SEALVL, list.get(i).seaLvlPressure);
         }
-        /*for (int i = 0; i < list.size(); i++) {
-            if (!list.get(i).precip.isValid) {
-                counter[PRECIP]++;
-            } else {
-                if (counter[PRECIP] > 0) {
-                    // do linear interpolation
-                    System.out.println("Took care of " + counter[PRECIP]);
-                    counter[PRECIP] = 0;
-                }
-            }
 
-            if (!list.get(i).wbTemp.isValid) {
-                counter[WBTEMP]++;
-            } else {
-                if (counter[WBTEMP] > 0) {
-                    // do linear interpolation
-                    counter[WBTEMP] = 0;
-                }
-            }
 
-            if (!list.get(i).dpTemp.isValid) {
-                counter[DPTEMP]++;
-            } else {
-                if (counter[DPTEMP] > 0) {
-                    // do linear interpolation
-                    counter[DPTEMP] = 0;
-                }
-            }
-
-            if (!list.get(i).airTemp.isValid) {
-                counter[AIRTEMP]++;
-            } else {
-                if (counter[AIRTEMP] > 0) {
-                    // do linear interpolation
-                    counter[AIRTEMP] = 0;
-                }
-            }
-
-            if (!list.get(i).humidity.isValid) {
-                counter[HUMIDITY]++;
-            } else {
-                if (counter[HUMIDITY] > 0) {
-                    // do linear interpolation
-                    counter[HUMIDITY] = 0;
-                }
-            }
-
-            if (!list.get(i).vapPressure.isValid) {
-                counter[VAP]++;
-            } else {
-                if (counter[VAP] > 0) {
-                    // do linear interpolation
-                    counter[VAP] = 0;
-                }
-            }
-
-            if (!list.get(i).satVapPressure.isValid) {
-                counter[SATVAP]++;
-            } else {
-                if (counter[SATVAP] > 0) {
-                    // do linear interpolation
-                    counter[SATVAP] = 0;
-                }
-            }
-
-            if (!list.get(i).windSpeed.isValid) {
-                counter[WINDSPD]++;
-            } else {
-                if (counter[WINDSPD] > 0) {
-                    // do linear interpolation
-                    counter[WINDSPD] = 0;
-                }
-            }
-
-            if (!list.get(i).windDir.isValid) {
-                counter[WINDDIR]++;
-            } else {
-                if (counter[WINDDIR] > 0) {
-                    // do linear interpolation
-                    counter[WINDDIR] = 0;
-                }
-            }
-
-            if (!list.get(i).windGust.isValid) {
-                counter[WINDGUST]++;
-            } else {
-                if (counter[WINDGUST] > 0) {
-                    // do linear interpolation
-                    counter[WINDGUST] = 0;
-                }
-            }
-
-            if (!list.get(i).seaLvlPressure.isValid) {
-                counter[SEALVL]++;
-            } else {
-                if (counter[SEALVL] > 0) {
-                    // do linear interpolation
-                    counter[SEALVL] = 0;
-                }
-            }
-        }*/
     }
 }

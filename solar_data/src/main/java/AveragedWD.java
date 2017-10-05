@@ -8,11 +8,22 @@ public class AveragedWD extends WeatherData {
 
         super(dt, data);
 
-        airTemp = new Reading("Air temperature", (!data[12].equals("")) ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]));
-        humidity = new Reading("Humidity", (!data[15].equals("")) ? Double.parseDouble(data[15]) : 0, data[16]);
-        windSpeed = new Reading("Wind speed", (!data[17].equals("")) ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]));
-        windGust = new Reading("Wind gust", (!data[20].equals("")) ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]));
-        windDir = new Reading("Wind direction", (!data[23].equals("")) ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]));
+        boolean isGap;
+
+        isGap = checkParsable(data[12]);
+        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]), isGap);
+
+        isGap = checkParsable(data[15]);
+        humidity = new Reading("Humidity", isGap ? Double.parseDouble(data[15]) : 0, data[16], isGap);
+
+        isGap = checkParsable(data[17]);
+        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]), isGap);
+
+        isGap = checkParsable(data[20]);
+        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]), isGap);
+
+        isGap = checkParsable(data[23]);
+        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]), isGap);
 
     }
 
