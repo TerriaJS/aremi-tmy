@@ -1,3 +1,4 @@
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 
 public abstract class WeatherData {
@@ -71,6 +72,12 @@ public abstract class WeatherData {
         dataString[10] = rightAlign(Integer.toString(hrsStd), 2);
         dataString[11] = rightAlign(Integer.toString(minsStd), 2);
 
+    }
+
+    public String parseValue(Reading reading) {
+        DecimalFormat df = new DecimalFormat("#.#");
+        String toParse = (reading.isValid) ? (df.format(reading.value)) : "";
+        return rightAlign(toParse, 6);
 
     }
 

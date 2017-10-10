@@ -1,4 +1,3 @@
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 
 public class ActualWD extends WeatherData {
@@ -84,39 +83,71 @@ public class ActualWD extends WeatherData {
     }
 
     public String[] combineValues() {
-        DecimalFormat df = new DecimalFormat("#.#");
-        dataString[12] = rightAlign(df.format(precip.value), 6);
+        //DecimalFormat df = new DecimalFormat("#.#");
+        dataString[12] = parseValue(precip);
         dataString[13] = rightAlign(precip.quality, 1);
 
-        dataString[14] = rightAlign(df.format(airTemp.value), 6);
+        dataString[14] = parseValue(airTemp);
         dataString[15] = rightAlign(airTemp.quality, 1);
 
-        dataString[16] = rightAlign(df.format(wbTemp.value), 6);
+        dataString[16] = parseValue(wbTemp);
         dataString[17] = rightAlign(wbTemp.quality, 1);
 
-        dataString[18] = rightAlign(df.format(dpTemp.value), 6);
+        dataString[18] = parseValue(dpTemp);
         dataString[19] = rightAlign(dpTemp.quality, 1);
 
-        dataString[20] = rightAlign(df.format(humidity.value), 6);
+        dataString[20] = parseValue(humidity);
         dataString[21] = rightAlign(humidity.quality, 1);
 
-        dataString[22] = rightAlign(df.format(vapPressure.value), 6);
+        dataString[22] = parseValue(vapPressure);
         dataString[23] = rightAlign(vapPressure.quality, 1);
 
-        dataString[24] = rightAlign(df.format(satVapPressure.value), 6);
+        dataString[24] = parseValue(satVapPressure);
         dataString[25] = rightAlign(satVapPressure.quality, 1);
 
-        dataString[26] = rightAlign(df.format(windSpeed.value), 6);
+        dataString[26] = parseValue(windSpeed);
         dataString[27] = rightAlign(windSpeed.quality, 1);
 
-        dataString[28] = rightAlign(df.format(windDir.value), 6);
+        dataString[28] = parseValue(windDir);
         dataString[29] = rightAlign(windDir.quality, 1);
 
-        dataString[30] = rightAlign(df.format(windGust.value), 6);
+        dataString[30] = parseValue(windGust);
         dataString[31] = rightAlign(windGust.quality, 1);
 
-        dataString[32] = rightAlign(df.format(seaLvlPressure.value), 6);
+        dataString[32] = parseValue(seaLvlPressure);
         dataString[33] = rightAlign(seaLvlPressure.quality, 1);
+//        dataString[12] = rightAlign(df.format(precip.value), 6);
+//        dataString[13] = rightAlign(precip.quality, 1);
+//
+//        dataString[14] = rightAlign(df.format(airTemp.value), 6);
+//        dataString[15] = rightAlign(airTemp.quality, 1);
+//
+//        dataString[16] = rightAlign(df.format(wbTemp.value), 6);
+//        dataString[17] = rightAlign(wbTemp.quality, 1);
+//
+//        dataString[18] = rightAlign(df.format(dpTemp.value), 6);
+//        dataString[19] = rightAlign(dpTemp.quality, 1);
+//
+//        dataString[20] = rightAlign(df.format(humidity.value), 6);
+//        dataString[21] = rightAlign(humidity.quality, 1);
+//
+//        dataString[22] = rightAlign(df.format(vapPressure.value), 6);
+//        dataString[23] = rightAlign(vapPressure.quality, 1);
+//
+//        dataString[24] = rightAlign(df.format(satVapPressure.value), 6);
+//        dataString[25] = rightAlign(satVapPressure.quality, 1);
+//
+//        dataString[26] = rightAlign(df.format(windSpeed.value), 6);
+//        dataString[27] = rightAlign(windSpeed.quality, 1);
+//
+//        dataString[28] = rightAlign(df.format(windDir.value), 6);
+//        dataString[29] = rightAlign(windDir.quality, 1);
+//
+//        dataString[30] = rightAlign(df.format(windGust.value), 6);
+//        dataString[31] = rightAlign(windGust.quality, 1);
+//
+//        dataString[32] = rightAlign(df.format(seaLvlPressure.value), 6);
+//        dataString[33] = rightAlign(seaLvlPressure.quality, 1);
 
         dataString[34] = rightAlign(dataString[34], 1);
 

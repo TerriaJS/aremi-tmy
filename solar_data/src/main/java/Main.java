@@ -36,6 +36,9 @@ public class Main {
 
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
+    static List<WeatherData> wds;
+    static List<SolarData> sds;
+
     public static void main(String[] args) throws IOException {
 
         // populate the lookup table with states and their corresponding offsets from UTC
@@ -132,7 +135,9 @@ public class Main {
             writer.writeNext(headers, false);
 
             String[] weatherReadings;
-            List<WeatherData> wds = new ArrayList<>();
+            //List<WeatherData> wds = new ArrayList<>();
+
+            wds = new ArrayList<>();
 
             System.out.println("Working on the while loop to populate the array");
             while ((weatherReadings = reader.readNext()) != null) {
@@ -172,7 +177,7 @@ public class Main {
 //                }
             }
             System.out.println("Check if any we have gaps in terms of missing timestamp");
-            FillGaps.fillMissingTimeStamp(station, wds);
+            FillGaps.fillMissingTimeStamp(station);
             FillGaps.findGaps(wds);
 
 
@@ -219,7 +224,8 @@ public class Main {
         writer.writeNext(targetHeader, false);
 
 
-        List<SolarData> sds = new ArrayList<>();
+        //List<SolarData> sds = new ArrayList<>();
+        sds = new ArrayList<>();
 
         while ((dniReadings = dniReader.readNext()) != null && (ghiReadings = ghiReader.readNext()) != null) {
 
