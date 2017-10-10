@@ -16,6 +16,7 @@ public class FillGaps {
     public static final int WINDGUST = 9;
     public static final int SEALVL = 10;
 
+    private static int[] counter = new int[11];
 
     public static double[] linearInterpolate(double from, double to, int gapsCount) {
         double[] res = new double[gapsCount + 2];
@@ -67,8 +68,6 @@ public class FillGaps {
             }
         }
     }
-
-    static int[] counter = new int[11];
 
     public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
         double[] values;
@@ -163,7 +162,50 @@ public class FillGaps {
         }
     }
 
-    public static void fillLongGap() {
+    // map which variable to the attributes in WeatherData
+    public static Reading getReading(int index, int whichVariable) {
+        switch (whichVariable) {
+            case PRECIP:
+                return Main.wds.get(index).precip;
+            case WBTEMP:
+                return Main.wds.get(index).wbTemp;
+            case DPTEMP:
+                return Main.wds.get(index).dpTemp;
+            case AIRTEMP:
+                return Main.wds.get(index).airTemp;
+            case HUMIDITY:
+                return Main.wds.get(index).humidity;
+            case VAP:
+                return Main.wds.get(index).vapPressure;
+            case SATVAP:
+                return Main.wds.get(index).satVapPressure;
+            case WINDSPD:
+                return Main.wds.get(index).windSpeed;
+            case WINDDIR:
+                return Main.wds.get(index).windDir;
+            case WINDGUST:
+                return Main.wds.get(index).windGust;
+            case SEALVL:
+                return Main.wds.get(index).seaLvlPressure;
+            default:
+                return null;
+        }
+    }
+
+    public static void fillLongGap(int gapIndex, int gapSize, int whichVariable) {
+        // gapIndex - gapSize is the start of the gap
+        // gapIndex - 1 is the end of the gap
+        for (int i = gapIndex - gapSize; i < gapIndex; i++) {
+            Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
+            Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
+            if (prev.isValid && next.isValid) {
+                Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
+                curr.value = (prev.value + next.value) / 2;
+                curr.isValid = true;
+                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
+            }
+        }
+
 
     }
 
@@ -184,7 +226,8 @@ public class FillGaps {
 
                 // take average from previous and next day if gap less than 24 hours
                 else if (counter[arrayIndex] <= 48) {
-                    System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                    fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
+                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
                 // no rule specified in sandia method for gaps this big
