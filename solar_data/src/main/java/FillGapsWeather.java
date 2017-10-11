@@ -2,7 +2,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 // only works for weather data for now
-public class FillGaps {
+public class FillGapsWeather {
 
     public static final int PRECIP = 0;
     public static final int WBTEMP = 1;
@@ -70,95 +70,22 @@ public class FillGaps {
     }
 
     public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
-        double[] values;
-        switch (whichVariable) {
-            case PRECIP:
-                values = linearInterpolate(Main.wds.get(from).precip.value, Main.wds.get(to).precip.value, gapSize);
-                break;
-            case WBTEMP:
-                values = linearInterpolate(Main.wds.get(from).wbTemp.value, Main.wds.get(to).wbTemp.value, gapSize);
-                break;
-            case DPTEMP:
-                values = linearInterpolate(Main.wds.get(from).dpTemp.value, Main.wds.get(to).dpTemp.value, gapSize);
-                break;
-            case AIRTEMP:
-                values = linearInterpolate(Main.wds.get(from).airTemp.value, Main.wds.get(to).airTemp.value, gapSize);
-                break;
-            case HUMIDITY:
-                values = linearInterpolate(Main.wds.get(from).humidity.value, Main.wds.get(to).humidity.value, gapSize);
-                break;
-            case VAP:
-                values = linearInterpolate(Main.wds.get(from).vapPressure.value, Main.wds.get(to).vapPressure.value, gapSize);
-                break;
-            case SATVAP:
-                values = linearInterpolate(Main.wds.get(from).satVapPressure.value, Main.wds.get(to).satVapPressure.value, gapSize);
-                break;
-            case WINDSPD:
-                values = linearInterpolate(Main.wds.get(from).windSpeed.value, Main.wds.get(to).windSpeed.value, gapSize);
-                break;
-            case WINDDIR:
-                values = linearInterpolate(Main.wds.get(from).windDir.value, Main.wds.get(to).windDir.value, gapSize);
-                break;
-            case WINDGUST:
-                values = linearInterpolate(Main.wds.get(from).windGust.value, Main.wds.get(to).windGust.value, gapSize);
-                break;
-            case SEALVL:
-                values = linearInterpolate(Main.wds.get(from).seaLvlPressure.value, Main.wds.get(to).seaLvlPressure.value, gapSize);
-                break;
-            default:
-                values = new double[11];
-        }
+        if (from < 0) return; // this gap is at the beginning of the file and there's no way of interpolating the data
+
+        Reading prevReading = getReading(from, whichVariable);
+        Reading nextReading = getReading(to, whichVariable);
+
+        double[] values = linearInterpolate(prevReading.value, nextReading.value, gapSize);
+
         //double[] values = linearInterpolate(from, to, gapSize);
         // how to fill in the gaps:
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
         for (int i = 1; i <= gapSize; i++) {
-            switch (whichVariable) {
-                case PRECIP:
-                    Main.wds.get(from + i).precip.value = values[i];
-                    Main.wds.get(from + i).precip.isValid = true;
-                    break;
-                case WBTEMP:
-                    Main.wds.get(from + i).wbTemp.value = values[i];
-                    Main.wds.get(from + i).wbTemp.isValid = true;
-                    break;
-                case DPTEMP:
-                    Main.wds.get(from + i).dpTemp.value = values[i];
-                    Main.wds.get(from + i).dpTemp.isValid = true;
-                    break;
-                case AIRTEMP:
-                    Main.wds.get(from + i).airTemp.value = values[i];
-                    Main.wds.get(from + i).airTemp.isValid = true;
-                    break;
-                case HUMIDITY:
-                    Main.wds.get(from + i).humidity.value = values[i];
-                    Main.wds.get(from + i).humidity.isValid = true;
-                    break;
-                case VAP:
-                    Main.wds.get(from + i).vapPressure.value = values[i];
-                    Main.wds.get(from + i).vapPressure.isValid = true;
-                    break;
-                case SATVAP:
-                    Main.wds.get(from + i).satVapPressure.value = values[i];
-                    Main.wds.get(from + i).satVapPressure.isValid = true;
-                    break;
-                case WINDSPD:
-                    Main.wds.get(from + i).windSpeed.value = values[i];
-                    Main.wds.get(from + i).windSpeed.isValid = true;
-                    break;
-                case WINDDIR:
-                    Main.wds.get(from + i).windDir.value = values[i];
-                    Main.wds.get(from + i).windDir.isValid = true;
-                    break;
-                case WINDGUST:
-                    Main.wds.get(from + i).windGust.value = values[i];
-                    Main.wds.get(from + i).windGust.isValid = true;
-                    break;
-                case SEALVL:
-                    Main.wds.get(from + i).seaLvlPressure.value = values[i];
-                    Main.wds.get(from + i).seaLvlPressure.isValid = true;
-                    break;
-            }
+            Reading currReading = getReading(from + i, whichVariable);
+            currReading.value = values[i];
+            currReading.isValid = true;
+
         }
     }
 
@@ -195,15 +122,21 @@ public class FillGaps {
     public static void fillLongGap(int gapIndex, int gapSize, int whichVariable) {
         // gapIndex - gapSize is the start of the gap
         // gapIndex - 1 is the end of the gap
-        for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-            Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
-            Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
-            if (prev.isValid && next.isValid) {
-                Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
-                curr.value = (prev.value + next.value) / 2;
-                curr.isValid = true;
-                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
+
+        // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
+        try {
+            for (int i = gapIndex - gapSize; i < gapIndex; i++) {
+                Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
+                Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
+                if (prev.isValid && next.isValid) {
+                    Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
+                    curr.value = (prev.value + next.value) / 2;
+                    curr.isValid = true;
+//                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
+                }
             }
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
         }
 
 
@@ -221,7 +154,7 @@ public class FillGaps {
                     // to = gapIndex
                     // gapSize = counter[arrayIndex]
                     fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
-                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
                 // take average from previous and next day if gap less than 24 hours
@@ -232,7 +165,7 @@ public class FillGaps {
 
                 // no rule specified in sandia method for gaps this big
                 else {
-                    System.out.println("At index " + gapIndex + " we can't take care of this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+//                    System.out.println("At index " + gapIndex + " we can't take care of this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
                 counter[arrayIndex] = 0;
             }

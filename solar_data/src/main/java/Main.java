@@ -6,7 +6,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import static org.apache.commons.lang3.ArrayUtils.addAll;
-import java.util.Arrays;
 
 import java.io.*;
 import java.time.format.DateTimeFormatter;
@@ -125,7 +124,7 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-        if (station.equals("061412")) {
+//        if (station.equals("061412")) {
             System.out.println("Working on " + station);
 
             CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
@@ -177,8 +176,8 @@ public class Main {
 //                }
             }
             System.out.println("Check if any we have gaps in terms of missing timestamp");
-            FillGaps.fillMissingTimeStamp(station);
-            FillGaps.findGaps(wds);
+            FillGapsWeather.fillMissingTimeStamp(station);
+            FillGapsWeather.findGaps(wds);
 
 
             System.out.println("Now writing the datasets to file");
@@ -190,7 +189,7 @@ public class Main {
 
             reader.close();
             writer.close();
-        }
+//        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
