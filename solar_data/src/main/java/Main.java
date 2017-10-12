@@ -21,6 +21,7 @@ public class Main {
     private final static String WRITE_TO_AVERAGED = "BoM_observations/Hourly-averaged-data/";
     private final static String WRITE_TO_ACTUAL = "BoM_observations/Hourly-data/";
     private final static String WRITE_TO_SOLAR = "BoM_observations/Hourly-solar-data/";
+    private final static String WRITE_TO_SOLAR_PROCESSED = "BoM_observations/Hourly-solar-data-processed/";
 
     private static String filenamePref, filenameSuff;
     private static String parentDir;
@@ -71,13 +72,46 @@ public class Main {
             filenamePref = splitName[0];
             filenameSuff = splitName[1];
 
-            //averageHalfHourlyData(stnNum);
-            halfHourlyData(stnNum);
-            //combineSolarValues(stnNum, latitude, longitude);
+            try {
+                //averageHalfHourlyData(stnNum);
+                //halfHourlyData(stnNum);
+
+                // this only combines dni and ghi values
+                //combineSolarValues(stnNum, latitude, longitude);
+
+                // this fills in the gaps in the combined dni and ghi file
+                processSolarValues(stnNum);
+            } catch (FileNotFoundException e) {
+                System.out.println("Data from station " + stnNum + " does not exist");
+            }
         }
 
         stationsReader.close();
 
+    }
+
+    private static void processSolarValues(String station) throws IOException {
+        //if (station.equals("046012")) {
+            System.out.println("Working on " + station);
+
+            CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
+            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + "/" + stateName + "/" + station + "_dni_ghi_processed.csv"));
+
+            String[] headers = reader.readNext(); // keep the headers as it is
+            writer.writeNext(headers, false);
+
+            String[] solarReadings;
+            sds = new ArrayList<>();
+            while ((solarReadings = reader.readNext()) != null) {
+                sds.add(new SolarData(solarReadings));
+            }
+
+            FillGapsSolar.fillMissingTimeStamp();
+
+            for (SolarData sd : sds) {
+                writer.writeNext(sd.dataString, false);
+            }
+        //}
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
@@ -91,7 +125,7 @@ public class Main {
         writer.writeNext(headers, false);
 
         String[] weatherReadings;
-        List<AveragedWD> wds = new ArrayList<AveragedWD>();
+        wds = new ArrayList<>();
         while ((weatherReadings = reader.readNext()) != null) {
 
             // use the standard time
@@ -114,7 +148,7 @@ public class Main {
 //
         }
 
-        for (AveragedWD wd : wds) {
+        for (WeatherData wd : wds) {
             writer.writeNext(wd.combineValues(), false);
         }
         reader.close();
