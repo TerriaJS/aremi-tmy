@@ -91,7 +91,7 @@ public class Main {
     }
 
     private static void processSolarValues(String station) throws IOException {
-        //if (station.equals("046012")) {
+        if (station.equals("046012")) {
             System.out.println("Working on " + station);
 
             CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
@@ -107,11 +107,11 @@ public class Main {
             }
 
             FillGapsSolar.fillMissingTimeStamp();
-
+            FillGapsSolar.findGaps(sds);
             for (SolarData sd : sds) {
-                writer.writeNext(sd.dataString, false);
+                writer.writeNext(sd.combineValues(), false);
             }
-        //}
+        }
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {

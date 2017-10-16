@@ -3,23 +3,34 @@ import java.time.format.DateTimeFormatter;
 
 public class SolarData {
 
-    int dni, ghi;
+    Reading dni, ghi;
     LocalDateTime dateTime;
     String[] dataString;
 
     public SolarData(String[] data) {
         this.dataString = data;
         this.dateTime = LocalDateTime.parse(data[0], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        this.dni = (checkParsable(data[1]) ? Integer.parseInt(data[1]) : 0);
-        this.ghi = (checkParsable(data[2]) ? Integer.parseInt(data[2]) : 0);
+
+        boolean isGap;
+
+        isGap = checkParsable(data[1]);
+        this.dni = new Reading("Direct normal irradiance", (isGap) ? Integer.parseInt(data[1]) : 0, isGap);
+
+        isGap = checkParsable(data[2]);
+        this.ghi = new Reading("Global horizontal irradiance", (isGap) ? Integer.parseInt(data[2]) : 0, isGap);
     }
 
     public SolarData(LocalDateTime dt, String[] data) {
         this.dateTime = dt;
         this.dataString = data;
 
-        this.dni = (checkParsable(data[1]) ? Integer.parseInt(data[1]) : 0);
-        this.ghi = (checkParsable(data[2]) ? Integer.parseInt(data[2]) : 0);
+        boolean isGap;
+
+        isGap = checkParsable(data[1]);
+        this.dni = new Reading("Direct normal irradiance", (isGap) ? Integer.parseInt(data[1]) : 0, isGap);
+
+        isGap = checkParsable(data[2]);
+        this.ghi = new Reading("Global horizontal irradiance", (isGap) ? Integer.parseInt(data[2]) : 0, isGap);
     }
 
     public boolean checkParsable(String str) {
@@ -30,5 +41,13 @@ public class SolarData {
             }
         }
         return true;
+    }
+
+    public String[] combineValues() {
+        dataString[1] = (dni.isValid) ? Integer.toString((int) dni.value) : "-";
+        dataString[2] = (ghi.isValid) ? Integer.toString((int) ghi.value) : "-";
+
+        return dataString;
+
     }
 }

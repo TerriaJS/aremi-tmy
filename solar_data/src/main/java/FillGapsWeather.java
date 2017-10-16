@@ -18,24 +18,6 @@ public class FillGapsWeather {
 
     private static int[] counter = new int[11];
 
-    public static double[] linearInterpolate(double from, double to, int gapsCount) {
-        double[] res = new double[gapsCount + 2];
-
-        // the first and last value should be from and to
-        res[0] = from;
-        res[res.length - 1] = to;
-
-        // calculate the gradient over the two points
-        double gradient = (to - from) / (gapsCount + 1);
-
-        for (int i = 1; i < res.length - 1; i++) {
-            res[i] = res[i-1] + gradient;
-
-        }
-
-        return res;
-    }
-
     // only works for ActualWD for now
     public static void fillMissingTimeStamp(String station) {
         LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
@@ -75,7 +57,7 @@ public class FillGapsWeather {
         Reading prevReading = getReading(from, whichVariable);
         Reading nextReading = getReading(to, whichVariable);
 
-        double[] values = linearInterpolate(prevReading.value, nextReading.value, gapSize);
+        double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
         //double[] values = linearInterpolate(from, to, gapSize);
         // how to fill in the gaps:

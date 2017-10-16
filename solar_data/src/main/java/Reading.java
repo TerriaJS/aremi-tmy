@@ -21,4 +21,10 @@ public class Reading {
         this.count = -1;
         this.isValid = isValid;
     }
+
+    public Reading(String varName, double value, boolean isValid) {
+        this.varName = varName;
+        this.value = value;
+        this.isValid = isValid;
+    }
 }
