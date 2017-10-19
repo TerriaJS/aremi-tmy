@@ -15,9 +15,34 @@ public abstract class WeatherData {
     public String[] dataString;
 
     public WeatherData(LocalDateTime dateTime, String[] data) {
-        // get rid of leading whitespaces
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (data[i] == null) ? "" : data[i].trim();
+
+        if (data == null) {
+            // create a String[] and fill in the values we know from the LocalDateTime object
+            data = new String[36];
+            data[0] = "hm";
+            data[1] = Integer.toString(Integer.parseInt(Main.stnNum));
+            data[2] = Integer.toString(dateTime.getYear());
+            data[3] = Integer.toString(dateTime.getMonthValue());
+            data[4] = Integer.toString(dateTime.getDayOfMonth());
+            data[5] = Integer.toString(dateTime.getHour());
+            data[6] = Integer.toString(dateTime.getMinute());
+            // std time
+            data[7] = Integer.toString(dateTime.getYear());
+            data[8] = Integer.toString(dateTime.getMonthValue());
+            data[9] = Integer.toString(dateTime.getDayOfMonth());
+            data[10] = Integer.toString(dateTime.getHour());
+            data[11] = Integer.toString(dateTime.getMinute());
+
+            for (int i = 12; i < 35; i++) {
+                data[i] = "";
+            }
+
+            data[35] = "#";
+        } else {
+            // get rid of leading whitespaces
+            for (int i = 0; i < data.length; i++) {
+                data[i] = (data[i] == null) ? "" : data[i].trim();
+            }
         }
 
         this.dateTime = dateTime;
@@ -41,6 +66,7 @@ public abstract class WeatherData {
     public abstract boolean checkQuality();
     public abstract String[] combineValues();
     public abstract void averageValues(WeatherData toCombine);
+    public abstract Reading getReading(int whichVariable);
 
     public String rightAlign(String str, int intendedLength) {
         return String.format("%1$" + intendedLength + "s", str);
@@ -61,16 +87,16 @@ public abstract class WeatherData {
         dataString[1] = rightAlign(stationId, 6);
 
         dataString[2] = rightAlign(Integer.toString(year), 4);
-        dataString[3] = rightAlign(Integer.toString(month), 2);
-        dataString[4] = rightAlign(Integer.toString(day), 2);
-        dataString[5] = rightAlign(Integer.toString(hrs), 2);
-        dataString[6] = rightAlign(Integer.toString(mins), 2);
+        dataString[3] = String.format("%02d", month);
+        dataString[4] = String.format("%02d", day);
+        dataString[5] = String.format("%02d", hrs);
+        dataString[6] = String.format("%02d", mins);
 
         dataString[7] = rightAlign(Integer.toString(yearStd), 4);
-        dataString[8] = rightAlign(Integer.toString(monthStd), 2);
-        dataString[9] = rightAlign(Integer.toString(dayStd), 2);
-        dataString[10] = rightAlign(Integer.toString(hrsStd), 2);
-        dataString[11] = rightAlign(Integer.toString(minsStd), 2);
+        dataString[8] = String.format("%02d", monthStd);
+        dataString[9] = String.format("%02d", dayStd);
+        dataString[10] = String.format("%02d", hrsStd);
+        dataString[11] = String.format("%02d", minsStd);
 
     }
 

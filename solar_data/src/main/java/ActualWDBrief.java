@@ -9,36 +9,36 @@ public class ActualWDBrief extends WeatherData {
         boolean isGap;
 
         // Precipitation since 9am local time in mm
-        isGap = checkParsable(data[12]);
-        precip = new Reading("Precipitation", checkParsable(data[12]) ? Double.parseDouble(data[12]) : 0, data[13], isGap);
+        isGap = checkParsable(dataString[12]);
+        precip = new Reading("Precipitation", checkParsable(dataString[12]) ? Double.parseDouble(dataString[12]) : 0, dataString[13], isGap);
 
         // Air Temperature in degrees C
-        isGap = checkParsable(data[14]);
-        airTemp = new Reading("Air temperature", checkParsable(data[14]) ? Double.parseDouble(data[14]) : 0, data[15], isGap);
+        isGap = checkParsable(dataString[14]);
+        airTemp = new Reading("Air temperature", checkParsable(dataString[14]) ? Double.parseDouble(dataString[14]) : 0, dataString[15], isGap);
 
         // Dew point temperature in degrees C
-        isGap = checkParsable(data[16]);
-        dpTemp = new Reading("Dew point temperature", checkParsable(data[16]) ? Double.parseDouble(data[16]) : 0, data[17], isGap);
+        isGap = checkParsable(dataString[16]);
+        dpTemp = new Reading("Dew point temperature", checkParsable(dataString[16]) ? Double.parseDouble(dataString[16]) : 0, dataString[17], isGap);
 
         // Relative humidity in percentage %
-        isGap = checkParsable(data[18]);
-        humidity = new Reading("Humidity", checkParsable(data[18]) ? Double.parseDouble(data[18]) : 0, data[19], isGap);
+        isGap = checkParsable(dataString[18]);
+        humidity = new Reading("Humidity", checkParsable(dataString[18]) ? Double.parseDouble(dataString[18]) : 0, dataString[19], isGap);
 
         // Wind speed in km/h
-        isGap = checkParsable(data[20]);
-        windSpeed = new Reading("Wind speed", checkParsable(data[20]) ? Double.parseDouble(data[20]) : 0, data[21], isGap);
+        isGap = checkParsable(dataString[20]);
+        windSpeed = new Reading("Wind speed", checkParsable(dataString[20]) ? Double.parseDouble(dataString[20]) : 0, dataString[21], isGap);
 
         // Wind direction in degrees
-        isGap = checkParsable(data[22]);
-        windDir = new Reading("Wind direction", checkParsable(data[22]) ? Double.parseDouble(data[22]) : 0, data[23], isGap);
+        isGap = checkParsable(dataString[22]);
+        windDir = new Reading("Wind direction", checkParsable(dataString[22]) ? Double.parseDouble(dataString[22]) : 0, dataString[23], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        isGap = checkParsable(data[24]);
-        windGust = new Reading("Wind gust", checkParsable(data[24]) ? Double.parseDouble(data[24]) : 0, data[25], isGap);
+        isGap = checkParsable(dataString[24]);
+        windGust = new Reading("Wind gust", checkParsable(dataString[24]) ? Double.parseDouble(dataString[24]) : 0, dataString[25], isGap);
 
         // Mean sea level pressure in hPa
-        isGap = checkParsable(data[26]);
-        seaLvlPressure = new Reading("Sea level pressure", checkParsable(data[26]) ? Double.parseDouble(data[26]) : 0, data[27], isGap);
+        isGap = checkParsable(dataString[26]);
+        seaLvlPressure = new Reading("Sea level pressure", checkParsable(dataString[26]) ? Double.parseDouble(dataString[26]) : 0, dataString[27], isGap);
     }
 
     public boolean checkQuality() {
@@ -65,7 +65,31 @@ public class ActualWDBrief extends WeatherData {
         }
     }
 
+    public Reading getReading(int whichVariable) {
+        switch (whichVariable) {
+            case 0:
+                return this.precip;
+            case 1:
+                return this.dpTemp;
+            case 2:
+                return this.airTemp;
+            case 3:
+                return this.humidity;
+            case 4:
+                return this.windSpeed;
+            case 5:
+                return this.windDir;
+            case 6:
+                return this.windGust;
+            case 7:
+                return this.seaLvlPressure;
+            default:
+                return null;
+        }
+    }
+
     public String[] combineValues() {
+        alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");
         dataString[12] = rightAlign(df.format(precip.value), 6);
         dataString[13] = rightAlign(precip.quality, 1);

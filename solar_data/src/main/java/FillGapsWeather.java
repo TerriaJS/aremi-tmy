@@ -1,4 +1,5 @@
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 // only works for weather data for now
@@ -27,24 +28,7 @@ public class FillGapsWeather {
                 // we found a gap, meaning we skipped one half-hourly reading
 
                 // create a weather data object and add it to the list
-                String[] weatherReadings = new String[30];
-                weatherReadings[0] = "hm";
-                weatherReadings[1] = Integer.toString(Integer.parseInt(station));
-                weatherReadings[2] = Integer.toString(currDateTIme.getYear());
-                weatherReadings[3] = Integer.toString(currDateTIme.getMonthValue());
-                weatherReadings[4] = Integer.toString(currDateTIme.getDayOfMonth());
-                weatherReadings[5] = Integer.toString(currDateTIme.getHour());
-                weatherReadings[6] = Integer.toString(currDateTIme.getMinute());
-                // std time
-                weatherReadings[7] = Integer.toString(currDateTIme.getYear());
-                weatherReadings[8] = Integer.toString(currDateTIme.getMonthValue());
-                weatherReadings[9] = Integer.toString(currDateTIme.getDayOfMonth());
-                weatherReadings[10] = Integer.toString(currDateTIme.getHour());
-                weatherReadings[11] = Integer.toString(currDateTIme.getMinute());
-
-                weatherReadings[29] = "#";
-
-                Main.wds.add(i, new ActualWD(currDateTIme, weatherReadings));
+                Main.wds.add(i, new ActualWD(currDateTIme, null));
 
                 System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
             }
@@ -141,7 +125,9 @@ public class FillGapsWeather {
 
                 // take average from previous and next day if gap less than 24 hours
                 else if (counter[arrayIndex] <= 48) {
-                    fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
+                    // just leave precipitation as it is
+                    if (arrayIndex != PRECIP)
+                        fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
                     // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
@@ -180,5 +166,49 @@ public class FillGapsWeather {
         }
 
 
+    }
+
+    public static List<WeatherData> averageValues(String station) {
+        System.out.println("Now averaging the data");
+        LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
+        List<WeatherData> res = new ArrayList<>();
+        double[] sums = new double[11];
+        int[] readingsCount = new int[11];
+        boolean[] validAverages = new boolean[11];
+        for (int i = 0; i < Main.wds.size(); i++) {
+            WeatherData w = Main.wds.get(i);
+
+            // check for all the time values in that hour, once we move to the next hour, average them
+            if (currDateTIme.getHour() != w.hrsStd) {
+                // create a new WeatherData object with the averaged value, with the current dateTime
+                // add to the list res
+                // refresh the sums array back to 0
+                // set readings count back to 0
+                WeatherData wd = new ActualWD(currDateTIme, null);
+//                System.out.println(wd);
+                for (int j = 0; j < 11; j++) {
+                    Reading reading = wd.getReading(j);
+                    // if it's precipitation, then add the values
+                    reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j]);
+                    reading.isValid = true;
+                    sums[j] = 0;
+                    readingsCount[j] = 0;
+                    validAverages[j] = false;
+                }
+                res.add(wd);
+                currDateTIme = currDateTIme.plusHours(1);
+            }
+
+            for (int j = 0; j < 11; j++) {
+                Reading r = getReading(i, j);
+                if (r.isValid) {
+                    validAverages[j] = true;
+                    sums[j] += r.value;
+                    readingsCount[j]++;
+                }
+            }
+        }
+
+        return res;
     }
 }

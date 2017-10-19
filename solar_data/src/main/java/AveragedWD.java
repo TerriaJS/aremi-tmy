@@ -3,27 +3,26 @@ import java.time.LocalDateTime;
 
 public class AveragedWD extends WeatherData {
 
-
     public AveragedWD(LocalDateTime dt, String[] data) {
 
         super(dt, data);
 
         boolean isGap;
 
-        isGap = checkParsable(data[12]);
-        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(data[12]) : 0, data[13], Integer.parseInt(data[14]), isGap);
+        isGap = checkParsable(dataString[12]);
+        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(dataString[12]) : 0, dataString[13], Integer.parseInt(dataString[14]), isGap);
 
-        isGap = checkParsable(data[15]);
-        humidity = new Reading("Humidity", isGap ? Double.parseDouble(data[15]) : 0, data[16], isGap);
+        isGap = checkParsable(dataString[15]);
+        humidity = new Reading("Humidity", isGap ? Double.parseDouble(dataString[15]) : 0, dataString[16], isGap);
 
-        isGap = checkParsable(data[17]);
-        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(data[17]) : 0, data[18], Integer.parseInt(data[19]), isGap);
+        isGap = checkParsable(dataString[17]);
+        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(dataString[17]) : 0, dataString[18], Integer.parseInt(dataString[19]), isGap);
 
-        isGap = checkParsable(data[20]);
-        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(data[20]) : 0, data[21], Integer.parseInt(data[22]), isGap);
+        isGap = checkParsable(dataString[20]);
+        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(dataString[20]) : 0, dataString[21], Integer.parseInt(dataString[22]), isGap);
 
-        isGap = checkParsable(data[23]);
-        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(data[23]) : 0, data[24], Integer.parseInt(data[25]), isGap);
+        isGap = checkParsable(dataString[23]);
+        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(dataString[23]) : 0, dataString[24], Integer.parseInt(dataString[25]), isGap);
 
     }
 
@@ -51,7 +50,25 @@ public class AveragedWD extends WeatherData {
         this.windGust.count += toCombine.windGust.count;
     }
 
+    public Reading getReading(int whichVariable) {
+        switch (whichVariable) {
+            case 0:
+                return this.airTemp;
+            case 1:
+                return this.humidity;
+            case 2:
+                return this.windSpeed;
+            case 3:
+                return this.windDir;
+            case 4:
+                return this.windGust;
+            default:
+                return null;
+        }
+    }
+
     public String[] combineValues() {
+        alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");
         dataString[12] = rightAlign(df.format(airTemp.value), 6);
         dataString[13] = rightAlign(airTemp.quality, 1);

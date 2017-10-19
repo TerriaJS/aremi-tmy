@@ -26,6 +26,7 @@ public class Main {
     private static String filenamePref, filenameSuff;
     private static String parentDir;
     private static String stateName;
+    static String stnNum;
 
     private final static String DNI = "http://services.aremi.d61.io/solar-satellite/v1/DNI/";
     private final static String GHI = "http://services.aremi.d61.io/solar-satellite/v1/GHI/";
@@ -61,7 +62,7 @@ public class Main {
         String[] line;
 
         while ((line = stationsReader.readNext()) != null) {
-            String stnNum = line[1].trim();
+            stnNum = line[1].trim();
             String latitude = line[6].trim();
             String longitude = line[7].trim();
             stateName = line[9].trim();
@@ -72,15 +73,16 @@ public class Main {
             filenamePref = splitName[0];
             filenameSuff = splitName[1];
 
+
             try {
                 //averageHalfHourlyData(stnNum);
-                //halfHourlyData(stnNum);
+                halfHourlyData(stnNum);
 
                 // this only combines dni and ghi values
                 //combineSolarValues(stnNum, latitude, longitude);
 
                 // this fills in the gaps in the combined dni and ghi file
-                processSolarValues(stnNum);
+                //processSolarValues(stnNum);
             } catch (FileNotFoundException e) {
                 System.out.println("Data from station " + stnNum + " does not exist");
             }
@@ -158,7 +160,7 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-//        if (station.equals("061412")) {
+        if (station.equals("061412")) {
             System.out.println("Working on " + station);
 
             CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
@@ -185,34 +187,16 @@ public class Main {
 
                 // initialise w1 depending on which state we are dealing with
                 if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
-                    //w1 = new ActualWD(weatherReadings);
                     wds.add(new ActualWD(dt, weatherReadings));
                 } else {
-                    //w1 = new ActualWDBrief((weatherReadings));
                     wds.add(new ActualWDBrief(dt, weatherReadings));
                 }
 
-//                // averaging the two half hour readings into hourly
-//                if (w1.checkQuality()) {
-//                    if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
-//                        WeatherData w2;
-//
-//                        // initialise w2 depending on which state we are dealing with
-//                        if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
-//                            w2 = new ActualWD(weatherReadings);
-//                        } else {
-//                            w2 = new ActualWDBrief((weatherReadings));
-//                        }
-//
-//                        if (w2.checkQuality()) w1.averageValues(w2);
-//                    }
-//                    writer.writeNext(w1.combineValues(), false);
-//                }
             }
             System.out.println("Check if any we have gaps in terms of missing timestamp");
             FillGapsWeather.fillMissingTimeStamp(station);
             FillGapsWeather.findGaps(wds);
-
+            Main.wds = FillGapsWeather.averageValues(station);
 
             System.out.println("Now writing the datasets to file");
             for (WeatherData wd : wds) {
@@ -223,7 +207,7 @@ public class Main {
 
             reader.close();
             writer.close();
-//        }
+        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {

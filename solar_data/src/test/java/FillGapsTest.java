@@ -1,6 +1,5 @@
 import org.junit.*;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class FillGapsTest {
@@ -20,5 +19,12 @@ public class FillGapsTest {
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(6.9, 19.3, 2), new double[] {6.9, 11.033, 15.166, 19.3}));
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(5, 15, 1), new double[] {5, 10, 15}));
         assertTrue(checkDoubleArrayEquality(FillGaps.linearInterpolate(3, -5, 7), new double[] {3, 2, 1, 0, -1, -2, -3, -4, -5}));
+    }
+
+    @Test
+    public void testAverage() {
+        assertTrue(Math.abs(FillGaps.average(0, 5) - 0) < 0.001);
+        assertTrue(Math.abs(FillGaps.average(12, 6) - 2) < 0.001);
+        assertTrue(Math.abs(FillGaps.average(1, 1) - 1) < 0.001);
     }
 }

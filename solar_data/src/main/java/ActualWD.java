@@ -8,48 +8,48 @@ public class ActualWD extends WeatherData {
         boolean isGap;
 
         // Precipitation since 9am local time in mm
-        isGap = checkParsable(data[12]);
-        precip = new Reading("Precipitation", isGap ? Double.parseDouble(data[12]) : 0, data[13], isGap);
+        isGap = checkParsable(dataString[12]);
+        precip = new Reading("Precipitation", isGap ? Double.parseDouble(dataString[12]) : 0, dataString[13], isGap);
 
         // Air Temperature in degrees C
-        isGap = checkParsable(data[14]);
-        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(data[14]) : 0, data[15], isGap);
+        isGap = checkParsable(dataString[14]);
+        airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(dataString[14]) : 0, dataString[15], isGap);
 
         // Wet bulb temperature in degrees C
-        isGap = checkParsable(data[16]);
-        wbTemp = new Reading("Wet bulb temperature", isGap ? Double.parseDouble(data[16]) : 0, data[17], isGap);
+        isGap = checkParsable(dataString[16]);
+        wbTemp = new Reading("Wet bulb temperature", isGap ? Double.parseDouble(dataString[16]) : 0, dataString[17], isGap);
 
         // Dew point temperature in degrees C
-        isGap = checkParsable(data[18]);
-        dpTemp = new Reading("Dew point temperature", isGap ? Double.parseDouble(data[18]) : 0, data[19], isGap);
+        isGap = checkParsable(dataString[18]);
+        dpTemp = new Reading("Dew point temperature", isGap ? Double.parseDouble(dataString[18]) : 0, dataString[19], isGap);
 
         // Relative humidity in percentage %
-        isGap = checkParsable(data[20]);
-        humidity = new Reading("Humidity", isGap ? Double.parseDouble(data[20]) : 0, data[21], isGap);
+        isGap = checkParsable(dataString[20]);
+        humidity = new Reading("Humidity", isGap ? Double.parseDouble(dataString[20]) : 0, dataString[21], isGap);
 
         // Vapour pressure in hPa
-        isGap = checkParsable(data[22]);
-        vapPressure = new Reading("Vapour pressure", isGap ? Double.parseDouble(data[22]) : 0, data[23], isGap);
+        isGap = checkParsable(dataString[22]);
+        vapPressure = new Reading("Vapour pressure", isGap ? Double.parseDouble(dataString[22]) : 0, dataString[23], isGap);
 
         // Saturated vapour pressure in hPa
-        isGap = checkParsable(data[24]);
-        satVapPressure = new Reading("Saturated vapour pressure", isGap ? Double.parseDouble(data[24]) : 0, data[25],isGap);
+        isGap = checkParsable(dataString[24]);
+        satVapPressure = new Reading("Saturated vapour pressure", isGap ? Double.parseDouble(dataString[24]) : 0, dataString[25],isGap);
 
         // Wind speed in km/h
-        isGap = checkParsable(data[26]);
-        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(data[26]) : 0, data[27], isGap);
+        isGap = checkParsable(dataString[26]);
+        windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(dataString[26]) : 0, dataString[27], isGap);
 
         // Wind direction in degrees
-        isGap = checkParsable(data[28]);
-        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(data[28]) : 0, data[29], isGap);
+        isGap = checkParsable(dataString[28]);
+        windDir = new Reading("Wind direction", isGap ? Double.parseDouble(dataString[28]) : 0, dataString[29], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        isGap = checkParsable(data[30]);
-        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(data[30]) : 0, data[31], isGap);
+        isGap = checkParsable(dataString[30]);
+        windGust = new Reading("Wind gust", isGap ? Double.parseDouble(dataString[30]) : 0, dataString[31], isGap);
 
         // Mean sea level pressure in hPa
-        isGap = checkParsable(data[32]);
-        seaLvlPressure = new Reading("Sea level pressure", isGap ? Double.parseDouble(data[32]) : 0, data[33], isGap);
+        isGap = checkParsable(dataString[32]);
+        seaLvlPressure = new Reading("Sea level pressure", isGap ? Double.parseDouble(dataString[32]) : 0, dataString[33], isGap);
     }
 
     public boolean checkQuality() {
@@ -82,7 +82,38 @@ public class ActualWD extends WeatherData {
         }
     }
 
+    // map which variable to the attributes in WeatherData
+    public Reading getReading(int whichVariable) {
+        switch (whichVariable) {
+            case 0:
+                return this.precip;
+            case 1:
+                return this.wbTemp;
+            case 2:
+                return this.dpTemp;
+            case 3:
+                return this.airTemp;
+            case 4:
+                return this.humidity;
+            case 5:
+                return this.vapPressure;
+            case 6:
+                return this.satVapPressure;
+            case 7:
+                return this.windSpeed;
+            case 8:
+                return this.windDir;
+            case 9:
+                return this.windGust;
+            case 10:
+                return this.seaLvlPressure;
+            default:
+                return null;
+        }
+    }
+
     public String[] combineValues() {
+        alignCommonVariables();
         //DecimalFormat df = new DecimalFormat("#.#");
         dataString[12] = parseValue(precip);
         dataString[13] = rightAlign(precip.quality, 1);
@@ -116,38 +147,6 @@ public class ActualWD extends WeatherData {
 
         dataString[32] = parseValue(seaLvlPressure);
         dataString[33] = rightAlign(seaLvlPressure.quality, 1);
-//        dataString[12] = rightAlign(df.format(precip.value), 6);
-//        dataString[13] = rightAlign(precip.quality, 1);
-//
-//        dataString[14] = rightAlign(df.format(airTemp.value), 6);
-//        dataString[15] = rightAlign(airTemp.quality, 1);
-//
-//        dataString[16] = rightAlign(df.format(wbTemp.value), 6);
-//        dataString[17] = rightAlign(wbTemp.quality, 1);
-//
-//        dataString[18] = rightAlign(df.format(dpTemp.value), 6);
-//        dataString[19] = rightAlign(dpTemp.quality, 1);
-//
-//        dataString[20] = rightAlign(df.format(humidity.value), 6);
-//        dataString[21] = rightAlign(humidity.quality, 1);
-//
-//        dataString[22] = rightAlign(df.format(vapPressure.value), 6);
-//        dataString[23] = rightAlign(vapPressure.quality, 1);
-//
-//        dataString[24] = rightAlign(df.format(satVapPressure.value), 6);
-//        dataString[25] = rightAlign(satVapPressure.quality, 1);
-//
-//        dataString[26] = rightAlign(df.format(windSpeed.value), 6);
-//        dataString[27] = rightAlign(windSpeed.quality, 1);
-//
-//        dataString[28] = rightAlign(df.format(windDir.value), 6);
-//        dataString[29] = rightAlign(windDir.quality, 1);
-//
-//        dataString[30] = rightAlign(df.format(windGust.value), 6);
-//        dataString[31] = rightAlign(windGust.quality, 1);
-//
-//        dataString[32] = rightAlign(df.format(seaLvlPressure.value), 6);
-//        dataString[33] = rightAlign(seaLvlPressure.quality, 1);
 
         dataString[34] = rightAlign(dataString[34], 1);
 

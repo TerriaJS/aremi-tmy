@@ -19,5 +19,8 @@ public class FillGaps {
     }
 
 
+    public static double average(double sum, int count) {
+        return sum / count;
+    }
 
 }
