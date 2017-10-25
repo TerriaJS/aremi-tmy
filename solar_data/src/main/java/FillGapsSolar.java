@@ -22,7 +22,7 @@ public class FillGapsSolar {
 
                 Main.sds.add(i, new SolarData(currDateTIme, solarReadings));
 
-                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
+//                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
             }
         }
     }
@@ -77,7 +77,7 @@ public class FillGapsSolar {
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
+//            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
         }
 
 
@@ -95,7 +95,7 @@ public class FillGapsSolar {
                     // to = gapIndex
                     // gapSize = counter[arrayIndex]
                     fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
-                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
                 // take average from previous and next day if gap less than 24 hours

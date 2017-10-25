@@ -9,29 +9,21 @@ public class AveragedWD extends WeatherData {
 
         boolean isGap;
 
-        isGap = checkParsable(dataString[12]);
+        isGap = checkParsable(dataString[12]) && checkQuality(dataString[13]);
         airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(dataString[12]) : 0, dataString[13], Integer.parseInt(dataString[14]), isGap);
 
-        isGap = checkParsable(dataString[15]);
+        isGap = checkParsable(dataString[15]) && checkQuality(dataString[16]);
         humidity = new Reading("Humidity", isGap ? Double.parseDouble(dataString[15]) : 0, dataString[16], isGap);
 
-        isGap = checkParsable(dataString[17]);
+        isGap = checkParsable(dataString[17]) && checkQuality(dataString[18]);
         windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(dataString[17]) : 0, dataString[18], Integer.parseInt(dataString[19]), isGap);
 
-        isGap = checkParsable(dataString[20]);
+        isGap = checkParsable(dataString[20]) && checkQuality(dataString[21]);
         windGust = new Reading("Wind gust", isGap ? Double.parseDouble(dataString[20]) : 0, dataString[21], Integer.parseInt(dataString[22]), isGap);
 
-        isGap = checkParsable(dataString[23]);
+        isGap = checkParsable(dataString[23]) && checkQuality(dataString[24]);
         windDir = new Reading("Wind direction", isGap ? Double.parseDouble(dataString[23]) : 0, dataString[24], Integer.parseInt(dataString[25]), isGap);
 
-    }
-
-    public boolean checkQuality() {
-        return (ALLOWEDQUALITY.contains(airTemp.quality)) &&
-                (ALLOWEDQUALITY.contains(humidity.quality)) &&
-                (ALLOWEDQUALITY.contains(windSpeed.quality)) &&
-                (ALLOWEDQUALITY.contains(windGust.quality)) &&
-                (ALLOWEDQUALITY.contains(windDir.quality));
     }
 
     public void averageValues(WeatherData toCombine) {

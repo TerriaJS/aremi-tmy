@@ -30,7 +30,7 @@ public class FillGapsWeather {
                 // create a weather data object and add it to the list
                 Main.wds.add(i, new ActualWD(currDateTIme, null));
 
-                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
+//                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
             }
         }
     }
@@ -102,7 +102,7 @@ public class FillGapsWeather {
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
+//            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
         }
 
 
@@ -164,12 +164,10 @@ public class FillGapsWeather {
             handleGap(i, WINDGUST, list.get(i).windGust);
             handleGap(i, SEALVL, list.get(i).seaLvlPressure);
         }
-
-
     }
 
     public static List<WeatherData> averageValues(String station) {
-        System.out.println("Now averaging the data");
+//        System.out.println("Now averaging the data");
         LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
         List<WeatherData> res = new ArrayList<>();
         double[] sums = new double[11];
@@ -189,6 +187,7 @@ public class FillGapsWeather {
                 for (int j = 0; j < 11; j++) {
                     Reading reading = wd.getReading(j);
                     // if it's precipitation, then add the values
+                    // TODO: check for other variables that may need to be added rather than averaged
                     reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j]);
                     reading.isValid = true;
                     sums[j] = 0;

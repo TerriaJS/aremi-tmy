@@ -22,6 +22,7 @@ public class Main {
     private final static String WRITE_TO_ACTUAL = "BoM_observations/Hourly-data/";
     private final static String WRITE_TO_SOLAR = "BoM_observations/Hourly-solar-data/";
     private final static String WRITE_TO_SOLAR_PROCESSED = "BoM_observations/Hourly-solar-data-processed/";
+    private final static String WRITE_TO_MERGED = "BoM_observations/Hourly-merged/";
 
     private static String filenamePref, filenameSuff;
     private static String parentDir;
@@ -35,12 +36,15 @@ public class Main {
     private final static long ACST = 570; // UTC offset by 570 minutes (9 hours 30 minutes)
     private final static long AWST = 480; // UTC offset by 480 minutes (8 hours)
 
+    private final static String TEST_STATION = "046012";
+
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
     static List<WeatherData> wds;
     static List<SolarData> sds;
 
     public static void main(String[] args) throws IOException {
+
 
         // populate the lookup table with states and their corresponding offsets from UTC
         TIME_ZONE_LOOKUP = new HashMap<>();
@@ -82,9 +86,11 @@ public class Main {
                 //combineSolarValues(stnNum, latitude, longitude);
 
                 // this fills in the gaps in the combined dni and ghi file
-                //processSolarValues(stnNum);
+                processSolarValues(stnNum);
+
+                mergeDatasets(stnNum);
             } catch (FileNotFoundException e) {
-                System.out.println("Data from station " + stnNum + " does not exist");
+//                System.out.println("Data from station " + stnNum + " does not exist");
             }
         }
 
@@ -92,28 +98,75 @@ public class Main {
 
     }
 
+
+
+    public static void mergeDatasets(String station) throws IOException {
+//        if (station.equals(TEST_STATION)) {
+            if (sds != null && wds != null) {
+                int i = 0; // iterator for SolarData array
+                int j = 0; // iterator for WeatherData array
+
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + "/" + stateName + "/" + station + "_merged.csv"));
+
+                String[] header = new String[]{"station", "local standard time", "dni", "ghi",
+                        "precipitation", "air temperature", "wet bulb temperature", "dew point temperature",
+                        "humidity", "vapour pressure", "saturated vapour pressure", "wind speed",
+                        "wind direction", "wind gust", "sea level pressure"};
+
+                writer.writeNext(header, false);
+
+                while (i < sds.size() && j < wds.size()) {
+
+                    LocalDateTime solarDateTime = sds.get(i).dateTime;
+                    LocalDateTime weatherDateTime = wds.get(j).dateTime;
+
+                    if (solarDateTime.isAfter(weatherDateTime)) {
+                        // ignore the current weather reading because there are no solar reading to merge with
+                        j++;
+                    } else if (solarDateTime.isBefore(weatherDateTime)) {
+                        // ignore the current solar reading because there are no weather reading to merge with
+                        i++;
+                    } else if (solarDateTime.isEqual(weatherDateTime)) {
+                        CombinedData cd = new CombinedData(sds.get(i), wds.get(j));
+                        writer.writeNext(cd.dataString, false);
+                        //res.add(new CombinedData(Main.sds.get(i), Main.wds.get(j)));
+                        i++;
+                        j++;
+                    }
+                }
+
+                writer.close();
+            }
+//        }
+
+    }
+
     private static void processSolarValues(String station) throws IOException {
-        if (station.equals("046012")) {
-            System.out.println("Working on " + station);
+//        if (station.equals(TEST_STATION)) {
+//            System.out.println("Working on " + station);
+            try {
+                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + "/" + stateName + "/" + station + "_dni_ghi_processed.csv"));
 
-            CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
-            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + "/" + stateName + "/" + station + "_dni_ghi_processed.csv"));
+                String[] headers = reader.readNext(); // keep the headers as it is
+                writer.writeNext(headers, false);
 
-            String[] headers = reader.readNext(); // keep the headers as it is
-            writer.writeNext(headers, false);
+                String[] solarReadings;
+                sds = new ArrayList<>();
+                while ((solarReadings = reader.readNext()) != null) {
+                    sds.add(new SolarData(solarReadings));
+                }
 
-            String[] solarReadings;
-            sds = new ArrayList<>();
-            while ((solarReadings = reader.readNext()) != null) {
-                sds.add(new SolarData(solarReadings));
+                FillGapsSolar.fillMissingTimeStamp();
+                FillGapsSolar.findGaps(sds);
+                for (SolarData sd : sds) {
+                    writer.writeNext(sd.combineValues(), false);
+                }
+            } catch (FileNotFoundException e) {
+                sds = null;
+                System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-
-            FillGapsSolar.fillMissingTimeStamp();
-            FillGapsSolar.findGaps(sds);
-            for (SolarData sd : sds) {
-                writer.writeNext(sd.combineValues(), false);
-            }
-        }
+//        }
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
@@ -160,54 +213,59 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-        if (station.equals("061412")) {
-            System.out.println("Working on " + station);
+//        if (station.equals(TEST_STATION)) {
+            try {
+                System.out.println("Working on " + station);
 
-            CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
-            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
+                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
 
-            String[] headers = reader.readNext();
-            writer.writeNext(headers, false);
+                String[] headers = reader.readNext();
+                writer.writeNext(headers, false);
 
-            String[] weatherReadings;
-            //List<WeatherData> wds = new ArrayList<>();
+                String[] weatherReadings;
+                //List<WeatherData> wds = new ArrayList<>();
 
-            wds = new ArrayList<>();
+                wds = new ArrayList<>();
 
-            System.out.println("Working on the while loop to populate the array");
-            while ((weatherReadings = reader.readNext()) != null) {
+//            System.out.println("Working on the while loop to populate the array");
+                while ((weatherReadings = reader.readNext()) != null) {
 //                WeatherData w1;
 
-                // use the standard time
-                LocalDateTime dt = LocalDateTime.of(Integer.parseInt(weatherReadings[7]), // year
-                        Integer.parseInt(weatherReadings[8]),                             // month
-                        Integer.parseInt(weatherReadings[9]),                             // date
-                        Integer.parseInt(weatherReadings[10]),                            // hours
-                        Integer.parseInt(weatherReadings[11]));                           // minutes
+                    // use the standard time
+                    LocalDateTime dt = LocalDateTime.of(Integer.parseInt(weatherReadings[7]), // year
+                            Integer.parseInt(weatherReadings[8]),                             // month
+                            Integer.parseInt(weatherReadings[9]),                             // date
+                            Integer.parseInt(weatherReadings[10]),                            // hours
+                            Integer.parseInt(weatherReadings[11]));                           // minutes
 
-                // initialise w1 depending on which state we are dealing with
-                if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
-                    wds.add(new ActualWD(dt, weatherReadings));
-                } else {
-                    wds.add(new ActualWDBrief(dt, weatherReadings));
+                    // initialise w1 depending on which state we are dealing with
+                    if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
+                        wds.add(new ActualWD(dt, weatherReadings));
+                    } else {
+                        wds.add(new ActualWDBrief(dt, weatherReadings));
+                    }
+
+                }
+//            System.out.println("Check if any we have gaps in terms of missing timestamp");
+                FillGapsWeather.fillMissingTimeStamp(station);
+                FillGapsWeather.findGaps(wds);
+                Main.wds = FillGapsWeather.averageValues(station);
+
+//            System.out.println("Now writing the datasets to file");
+                for (WeatherData wd : wds) {
+                    writer.writeNext(wd.combineValues(), false);
                 }
 
+//            System.out.println("Done with writing to file, done with this station");
+
+                reader.close();
+                writer.close();
+            } catch (FileNotFoundException e) {
+                wds = null;
+                System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-            System.out.println("Check if any we have gaps in terms of missing timestamp");
-            FillGapsWeather.fillMissingTimeStamp(station);
-            FillGapsWeather.findGaps(wds);
-            Main.wds = FillGapsWeather.averageValues(station);
-
-            System.out.println("Now writing the datasets to file");
-            for (WeatherData wd : wds) {
-                writer.writeNext(wd.combineValues(), false);
-            }
-
-            System.out.println("Done with writing to file, done with this station");
-
-            reader.close();
-            writer.close();
-        }
+//        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
@@ -250,21 +308,6 @@ public class Main {
             datetime = datetime.plusMinutes(TIME_ZONE_LOOKUP.get(stateName));
             sds.add(new SolarData(datetime, new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(datetime), dniReadings[1], ghiReadings[1]}));
 
-//            // see if the timestamps are equal and if not, see which one missed a timestamp
-//            int comparison = dniReadings[0].compareTo(ghiReadings[0]);
-//
-//            if (comparison < 0) { // GHI value is missing
-//                System.err.println("Missing GHI value for station " + station);
-//                dniReader.readNext();
-//            } else if (comparison > 0) { // DNI value is missing
-//                System.err.println("Missing DNI value for station " + station);
-//                ghiReader.readNext();
-//            } else {
-//                LocalDateTime datetime = LocalDateTime.parse(dniReadings[0], DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ"));
-//                datetime = datetime.plusMinutes(TIME_ZONE_LOOKUP.get(stateName));
-//                SolarData s = new SolarData(new String[] {DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(datetime), dniReadings[1], ghiReadings[1]});
-//                writer.writeNext(s.dataString, false);
-//            }
         }
 
         for (SolarData sd : sds) {

@@ -1,3 +1,7 @@
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 public class FillGaps {
 
     public static double[] linearInterpolate(double from, double to, int gapsCount) {

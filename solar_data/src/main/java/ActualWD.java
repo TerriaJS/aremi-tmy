@@ -8,62 +8,48 @@ public class ActualWD extends WeatherData {
         boolean isGap;
 
         // Precipitation since 9am local time in mm
-        isGap = checkParsable(dataString[12]);
+        isGap = checkParsable(dataString[12]) && checkQuality(dataString[13]);
         precip = new Reading("Precipitation", isGap ? Double.parseDouble(dataString[12]) : 0, dataString[13], isGap);
 
         // Air Temperature in degrees C
-        isGap = checkParsable(dataString[14]);
+        isGap = checkParsable(dataString[14]) && checkQuality(dataString[15]);
         airTemp = new Reading("Air temperature", isGap ? Double.parseDouble(dataString[14]) : 0, dataString[15], isGap);
 
         // Wet bulb temperature in degrees C
-        isGap = checkParsable(dataString[16]);
+        isGap = checkParsable(dataString[16]) && checkQuality(dataString[17]);
         wbTemp = new Reading("Wet bulb temperature", isGap ? Double.parseDouble(dataString[16]) : 0, dataString[17], isGap);
 
         // Dew point temperature in degrees C
-        isGap = checkParsable(dataString[18]);
+        isGap = checkParsable(dataString[18]) && checkQuality(dataString[19]);
         dpTemp = new Reading("Dew point temperature", isGap ? Double.parseDouble(dataString[18]) : 0, dataString[19], isGap);
 
         // Relative humidity in percentage %
-        isGap = checkParsable(dataString[20]);
+        isGap = checkParsable(dataString[20]) && checkQuality(dataString[21]);
         humidity = new Reading("Humidity", isGap ? Double.parseDouble(dataString[20]) : 0, dataString[21], isGap);
 
         // Vapour pressure in hPa
-        isGap = checkParsable(dataString[22]);
+        isGap = checkParsable(dataString[22]) && checkQuality(dataString[23]);
         vapPressure = new Reading("Vapour pressure", isGap ? Double.parseDouble(dataString[22]) : 0, dataString[23], isGap);
 
         // Saturated vapour pressure in hPa
-        isGap = checkParsable(dataString[24]);
+        isGap = checkParsable(dataString[24]) && checkQuality(dataString[25]);
         satVapPressure = new Reading("Saturated vapour pressure", isGap ? Double.parseDouble(dataString[24]) : 0, dataString[25],isGap);
 
         // Wind speed in km/h
-        isGap = checkParsable(dataString[26]);
+        isGap = checkParsable(dataString[26]) && checkQuality(dataString[27]);
         windSpeed = new Reading("Wind speed", isGap ? Double.parseDouble(dataString[26]) : 0, dataString[27], isGap);
 
         // Wind direction in degrees
-        isGap = checkParsable(dataString[28]);
+        isGap = checkParsable(dataString[28]) && checkQuality(dataString[29]);
         windDir = new Reading("Wind direction", isGap ? Double.parseDouble(dataString[28]) : 0, dataString[29], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        isGap = checkParsable(dataString[30]);
+        isGap = checkParsable(dataString[30]) && checkQuality(dataString[31]);
         windGust = new Reading("Wind gust", isGap ? Double.parseDouble(dataString[30]) : 0, dataString[31], isGap);
 
         // Mean sea level pressure in hPa
-        isGap = checkParsable(dataString[32]);
+        isGap = checkParsable(dataString[32]) && checkQuality(dataString[33]);
         seaLvlPressure = new Reading("Sea level pressure", isGap ? Double.parseDouble(dataString[32]) : 0, dataString[33], isGap);
-    }
-
-    public boolean checkQuality() {
-        return (ALLOWEDQUALITY.contains(airTemp.quality)) &&
-                (ALLOWEDQUALITY.contains(humidity.quality)) &&
-                (ALLOWEDQUALITY.contains(windSpeed.quality)) &&
-                (ALLOWEDQUALITY.contains(windGust.quality)) &&
-                (ALLOWEDQUALITY.contains(windDir.quality)) &&
-                (ALLOWEDQUALITY.contains(precip.quality)) &&
-                (ALLOWEDQUALITY.contains(seaLvlPressure.quality)) &&
-                (ALLOWEDQUALITY.contains(vapPressure.quality)) &&
-                (ALLOWEDQUALITY.contains(satVapPressure.quality)) &&
-                (ALLOWEDQUALITY.contains(wbTemp.quality)) &&
-                (ALLOWEDQUALITY.contains(dpTemp.quality));
     }
 
     public void averageValues(WeatherData toCombine) {

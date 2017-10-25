@@ -63,13 +63,16 @@ public abstract class WeatherData {
         this.minsStd = Integer.parseInt(data[11]);
     }
 
-    public abstract boolean checkQuality();
     public abstract String[] combineValues();
     public abstract void averageValues(WeatherData toCombine);
     public abstract Reading getReading(int whichVariable);
 
     public String rightAlign(String str, int intendedLength) {
         return String.format("%1$" + intendedLength + "s", str);
+    }
+
+    public boolean checkQuality(String quality) {
+        return (ALLOWEDQUALITY.contains(quality));
     }
 
     public boolean checkParsable(String str) {

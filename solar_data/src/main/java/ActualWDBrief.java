@@ -9,47 +9,36 @@ public class ActualWDBrief extends WeatherData {
         boolean isGap;
 
         // Precipitation since 9am local time in mm
-        isGap = checkParsable(dataString[12]);
+        isGap = checkParsable(dataString[12]) && checkQuality(dataString[13]);
         precip = new Reading("Precipitation", checkParsable(dataString[12]) ? Double.parseDouble(dataString[12]) : 0, dataString[13], isGap);
 
         // Air Temperature in degrees C
-        isGap = checkParsable(dataString[14]);
+        isGap = checkParsable(dataString[14]) && checkQuality(dataString[15]);
         airTemp = new Reading("Air temperature", checkParsable(dataString[14]) ? Double.parseDouble(dataString[14]) : 0, dataString[15], isGap);
 
         // Dew point temperature in degrees C
-        isGap = checkParsable(dataString[16]);
+        isGap = checkParsable(dataString[16]) && checkQuality(dataString[17]);
         dpTemp = new Reading("Dew point temperature", checkParsable(dataString[16]) ? Double.parseDouble(dataString[16]) : 0, dataString[17], isGap);
 
         // Relative humidity in percentage %
-        isGap = checkParsable(dataString[18]);
+        isGap = checkParsable(dataString[18]) && checkQuality(dataString[19]);
         humidity = new Reading("Humidity", checkParsable(dataString[18]) ? Double.parseDouble(dataString[18]) : 0, dataString[19], isGap);
 
         // Wind speed in km/h
-        isGap = checkParsable(dataString[20]);
+        isGap = checkParsable(dataString[20]) && checkQuality(dataString[21]);
         windSpeed = new Reading("Wind speed", checkParsable(dataString[20]) ? Double.parseDouble(dataString[20]) : 0, dataString[21], isGap);
 
         // Wind direction in degrees
-        isGap = checkParsable(dataString[22]);
+        isGap = checkParsable(dataString[22]) && checkQuality(dataString[23]);
         windDir = new Reading("Wind direction", checkParsable(dataString[22]) ? Double.parseDouble(dataString[22]) : 0, dataString[23], isGap);
 
         // Speed of maximum wind gust in last 10 minutes in  km/h
-        isGap = checkParsable(dataString[24]);
+        isGap = checkParsable(dataString[24]) && checkQuality(dataString[25]);
         windGust = new Reading("Wind gust", checkParsable(dataString[24]) ? Double.parseDouble(dataString[24]) : 0, dataString[25], isGap);
 
         // Mean sea level pressure in hPa
-        isGap = checkParsable(dataString[26]);
+        isGap = checkParsable(dataString[26]) && checkQuality(dataString[27]);
         seaLvlPressure = new Reading("Sea level pressure", checkParsable(dataString[26]) ? Double.parseDouble(dataString[26]) : 0, dataString[27], isGap);
-    }
-
-    public boolean checkQuality() {
-        return (ALLOWEDQUALITY.contains(airTemp.quality)) &&
-                (ALLOWEDQUALITY.contains(humidity.quality)) &&
-                (ALLOWEDQUALITY.contains(windSpeed.quality)) &&
-                (ALLOWEDQUALITY.contains(windGust.quality)) &&
-                (ALLOWEDQUALITY.contains(windDir.quality)) &&
-                (ALLOWEDQUALITY.contains(precip.quality)) &&
-                (ALLOWEDQUALITY.contains(seaLvlPressure.quality)) &&
-                (ALLOWEDQUALITY.contains(dpTemp.quality));
     }
 
     public void averageValues(WeatherData toCombine) {
