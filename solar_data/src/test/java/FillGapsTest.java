@@ -1,5 +1,10 @@
 import org.junit.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+
 import static org.junit.Assert.assertTrue;
 
 public class FillGapsTest {
@@ -26,5 +31,45 @@ public class FillGapsTest {
         assertTrue(Math.abs(FillGaps.average(0, 5) - 0) < 0.001);
         assertTrue(Math.abs(FillGaps.average(12, 6) - 2) < 0.001);
         assertTrue(Math.abs(FillGaps.average(1, 1) - 1) < 0.001);
+    }
+
+    @Test
+    public void testFillMissingTimestampWeather() {
+        Main.stnNum = "99999";
+        Main.wds = new ArrayList<>();
+        LocalDateTime test1 = LocalDateTime.of(LocalDate.now(), LocalTime.now());
+        Main.wds.add(new ActualWD(test1, null));
+        LocalDateTime test2 = test1.plusHours(1);
+        Main.wds.add(new ActualWD(test2, null));
+
+        FillGapsWeather.fillMissingTimeStamp();
+
+        // one object should have been added to the list at index 2 because of the hour gap
+        assertTrue(Main.wds.size() == 3);
+        // check if the object that was added has the desired timestamp
+        assertTrue(Main.wds.get(1).dateTime.isEqual(test1.plusMinutes(30)));
+
+        LocalDateTime test3 = test2.plusMinutes(30);
+        Main.wds.add(new ActualWD(test3, null));
+
+        FillGapsWeather.fillMissingTimeStamp();
+
+        // the function should not have added any objects to the list so it should stay at size 4
+        assertTrue(Main.wds.size() == 4);
+        // check if the last Weather object has the correct date and time based on the number of objects in the list
+        // i.e. 5 objects in the list means that the last one should have a difference of (30 * 4) from the first one
+        assertTrue(Main.wds.get(Main.wds.size() - 1).dateTime.isEqual(test1.plusMinutes((Main.wds.size() - 1) * 30)));
+
+        LocalDateTime test4 = test3.plusHours(5);
+        Main.wds.add(new ActualWD(test4, null));
+
+        FillGapsWeather.fillMissingTimeStamp();
+
+        // the function should have added 10 new objects because of the 5 hour timestamp gap
+        assertTrue(Main.wds.size() == 14);
+        // check if the last Weather object has the correct date and time based on the number of objects in the list
+        // i.e. 5 objects in the list means that the last one should have a difference of (30 * 4) from the first one
+        assertTrue(Main.wds.get(Main.wds.size() - 1).dateTime.isEqual(test1.plusMinutes((Main.wds.size() - 1) * 30)));
+
     }
 }

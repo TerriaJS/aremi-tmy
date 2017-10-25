@@ -248,7 +248,7 @@ public class Main {
 
                 }
 //            System.out.println("Check if any we have gaps in terms of missing timestamp");
-                FillGapsWeather.fillMissingTimeStamp(station);
+                FillGapsWeather.fillMissingTimeStamp();
                 FillGapsWeather.findGaps(wds);
                 Main.wds = FillGapsWeather.averageValues(station);
 

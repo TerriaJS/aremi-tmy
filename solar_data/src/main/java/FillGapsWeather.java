@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // only works for weather data for now
+// TODO: make it work for other datasets
 public class FillGapsWeather {
 
     public static final int PRECIP = 0;
@@ -20,7 +21,7 @@ public class FillGapsWeather {
     private static int[] counter = new int[11];
 
     // only works for ActualWD for now
-    public static void fillMissingTimeStamp(String station) {
+    public static void fillMissingTimeStamp() {
         LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
         for (int i = 1; i < Main.wds.size(); i++) {
             currDateTIme = currDateTIme.plusMinutes(30);
