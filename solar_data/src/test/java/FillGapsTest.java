@@ -72,4 +72,33 @@ public class FillGapsTest {
         assertTrue(Main.wds.get(Main.wds.size() - 1).dateTime.isEqual(test1.plusMinutes((Main.wds.size() - 1) * 30)));
 
     }
+
+    @Test
+    public void testGetReadingWeather() {
+        Main.stnNum = "99999";
+        Main.wds = new ArrayList<>();
+
+        LocalDateTime test1 = LocalDateTime.of(LocalDate.now(), LocalTime.now());
+        Main.wds.add(new ActualWD(test1, null));
+        LocalDateTime test2 = test1.plusHours(1);
+        Main.wds.add(new ActualWD(test2, null));
+        LocalDateTime test3 = test2.plusMinutes(30);
+        Main.wds.add(new ActualWD(test3, null));
+
+        for (int i = 0; i < Main.wds.size(); i++) {
+            assertTrue(FillGapsWeather.getReading(0, 0).varName.equals("Precipitation"));
+            assertTrue(FillGapsWeather.getReading(0, 1).varName.equals("Air temperature"));
+            assertTrue(FillGapsWeather.getReading(0, 2).varName.equals("Wet bulb temperature"));
+            assertTrue(FillGapsWeather.getReading(0, 3).varName.equals("Dew point temperature"));
+            assertTrue(FillGapsWeather.getReading(0, 4).varName.equals("Humidity"));
+            assertTrue(FillGapsWeather.getReading(0, 5).varName.equals("Vapour pressure"));
+            assertTrue(FillGapsWeather.getReading(0, 6).varName.equals("Saturated vapour pressure"));
+            assertTrue(FillGapsWeather.getReading(0, 7).varName.equals("Wind speed"));
+            assertTrue(FillGapsWeather.getReading(0, 8).varName.equals("Wind direction"));
+            assertTrue(FillGapsWeather.getReading(0, 9).varName.equals("Wind gust"));
+            assertTrue(FillGapsWeather.getReading(0, 10).varName.equals("Sea level pressure"));
+
+        }
+
+    }
 }

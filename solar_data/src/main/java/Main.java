@@ -43,6 +43,8 @@ public class Main {
     static List<WeatherData> wds;
     static List<SolarData> sds;
 
+    // TODO: make sure the software can handle files not found in a robust way and not throw errors
+
     public static void main(String[] args) throws IOException {
 
 
@@ -249,7 +251,7 @@ public class Main {
                 }
 //            System.out.println("Check if any we have gaps in terms of missing timestamp");
                 FillGapsWeather.fillMissingTimeStamp();
-                FillGapsWeather.findGaps(wds);
+                FillGapsWeather.checkForGaps(wds);
                 Main.wds = FillGapsWeather.averageValues(station);
 
 //            System.out.println("Now writing the datasets to file");

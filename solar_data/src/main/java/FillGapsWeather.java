@@ -7,9 +7,9 @@ import java.util.List;
 public class FillGapsWeather {
 
     public static final int PRECIP = 0;
-    public static final int WBTEMP = 1;
-    public static final int DPTEMP = 2;
-    public static final int AIRTEMP = 3;
+    public static final int AIRTEMP = 1;
+    public static final int WBTEMP = 2;
+    public static final int DPTEMP = 3;
     public static final int HUMIDITY = 4;
     public static final int VAP = 5;
     public static final int SATVAP = 6;
@@ -141,7 +141,7 @@ public class FillGapsWeather {
         }
     }
 
-    public static void findGaps(List<WeatherData> list) {
+    public static void checkForGaps(List<WeatherData> list) {
         // initialise an array as counter, size is the number of variables
         // if we find a gap for a variable, add one to the array
         // otherwise (no gaps), if the array value > 0
