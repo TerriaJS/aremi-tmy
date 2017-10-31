@@ -105,7 +105,7 @@ public abstract class WeatherData {
 
     public String parseValue(Reading reading) {
         DecimalFormat df = new DecimalFormat("#.#");
-        String toParse = (reading.isValid) ? (df.format(reading.value)) : "";
+        String toParse = (reading.isValid()) ? (df.format(reading.value)) : "";
         return rightAlign(toParse, 6);
 
     }

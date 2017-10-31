@@ -55,7 +55,8 @@ public class FillGapsSolar {
         for (int i = 1; i <= gapSize; i++) {
             Reading currReading = getReading(from + i, whichVariable);
             currReading.value = values[i];
-            currReading.isValid = true;
+            currReading.v = Value.Filled;
+            currReading.fillCount++;
 
         }
     }
@@ -69,10 +70,11 @@ public class FillGapsSolar {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
                 Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
                 Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
-                if (prev.isValid && next.isValid) {
+                if (prev.isValid() && next.isValid()) {
                     Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
                     curr.value = (prev.value + next.value) / 2;
-                    curr.isValid = true;
+                    curr.v = Value.Filled;
+                    curr.fillCount++;
 //                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
                 }
             }
@@ -83,19 +85,31 @@ public class FillGapsSolar {
 
     }
 
-    public static void handleGap(int gapIndex, int arrayIndex, Reading whichVariable) {
-        if (!whichVariable.isValid) {
+    public static void handleSmallGaps(int gapIndex, int arrayIndex) {
+        Reading r = getReading(gapIndex, arrayIndex);
+        if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
             if (counter[arrayIndex] > 0) {
                 // do linear interpolation if gap less than 5 hours
                 if (counter[arrayIndex] <= 10) {
-
-                    // from = gapIndex - gapSize - 1
-                    // to = gapIndex
-                    // gapSize = counter[arrayIndex]
                     fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
 //                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                }
+                counter[arrayIndex] = 0;
+            }
+        }
+    }
+
+    public static void handleBigGaps(int gapIndex, int arrayIndex) {
+        Reading r = getReading(gapIndex, arrayIndex);
+        if (!r.isValid()) {
+            counter[arrayIndex]++;
+        } else {
+            if (counter[arrayIndex] > 0) {
+                // do linear interpolation if gap less than 5 hours
+                if (counter[arrayIndex] <= 10) {
+                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
@@ -104,8 +118,7 @@ public class FillGapsSolar {
                     // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
-                // no rule specified in sandia method for gaps this big
-
+                // don't do anything to gaps over 24 hours and just refresh the gap count
                 counter[arrayIndex] = 0;
             }
         }
@@ -123,8 +136,13 @@ public class FillGapsSolar {
         // otherwise, leave it empty and reset counter back to 0
 
         for (int i = 0; i < list.size(); i++) {
-            handleGap(i, DNI, list.get(i).dni);
-            handleGap(i, GHI, list.get(i).ghi);
+            handleSmallGaps(i, DNI);
+            handleSmallGaps(i, GHI);
+        }
+
+        for (int i = 0; i < list.size(); i++) {
+            handleBigGaps(i, DNI);
+            handleBigGaps(i, GHI);
         }
     }
 }

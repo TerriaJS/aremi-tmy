@@ -43,14 +43,25 @@ public class SolarData {
         return true;
     }
 
+    public Reading getReading(int whichVariable) {
+        switch (whichVariable) {
+            case 0:
+                return this.dni;
+            case 1:
+                return this.ghi;
+            default:
+                return null;
+        }
+    }
+
     public String rightAlign(String str, int intendedLength) {
         return String.format("%1$" + intendedLength + "s", str);
     }
 
 
     public String[] combineValues() {
-        dataString[1] = (dni.isValid) ? rightAlign(Integer.toString((int) dni.value), 4) : "   -";
-        dataString[2] = (ghi.isValid) ? rightAlign(Integer.toString((int) ghi.value), 4) : "   -";
+        dataString[1] = (dni.isValid()) ? rightAlign(Integer.toString((int) dni.value), 4) : "   -";
+        dataString[2] = (ghi.isValid()) ? rightAlign(Integer.toString((int) ghi.value), 4) : "   -";
 
         return dataString;
 

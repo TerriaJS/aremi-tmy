@@ -51,8 +51,8 @@ public class FillGapsWeather {
         for (int i = 1; i <= gapSize; i++) {
             Reading currReading = getReading(from + i, whichVariable);
             currReading.value = values[i];
-            currReading.isValid = true;
-
+            currReading.v = Value.Filled;
+            currReading.fillCount++;
         }
     }
 
@@ -93,35 +93,49 @@ public class FillGapsWeather {
         // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-                Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
-                Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
-                if (prev.isValid && next.isValid) {
-                    Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
+                Reading prev = getReading(i - 48, whichVariable);
+                Reading next = getReading(i + 48, whichVariable);
+                if (prev.isValid() && next.isValid()) {
+                    Reading curr = getReading(i, whichVariable);
                     curr.value = (prev.value + next.value) / 2;
-                    curr.isValid = true;
+                    curr.v = Value.Filled;
+                    curr.fillCount++;
 //                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
+
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-//            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
+            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
         }
 
 
     }
 
-    public static void handleGap(int gapIndex, int arrayIndex, Reading whichVariable) {
-        if (!whichVariable.isValid) {
+    public static void handleSmallGaps(int gapIndex, int arrayIndex) {
+        Reading r = getReading(gapIndex, arrayIndex);
+        if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
             if (counter[arrayIndex] > 0) {
                 // do linear interpolation if gap less than 5 hours
                 if (counter[arrayIndex] <= 10) {
-
-                    // from = gapIndex - gapSize - 1
-                    // to = gapIndex
-                    // gapSize = counter[arrayIndex]
                     fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
 //                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                }
+                counter[arrayIndex] = 0;
+            }
+        }
+    }
+
+    public static void handleBigGaps(int gapIndex, int arrayIndex) {
+        Reading r = getReading(gapIndex, arrayIndex);
+        if (!r.isValid()) {
+            counter[arrayIndex]++;
+        } else {
+            if (counter[arrayIndex] > 0) {
+                // do linear interpolation if gap less than 5 hours
+                if (counter[arrayIndex] <= 10) {
+                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
@@ -132,10 +146,7 @@ public class FillGapsWeather {
                     // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
 
-                // no rule specified in sandia method for gaps this big
-                else {
-//                    System.out.println("At index " + gapIndex + " we can't take care of this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
-                }
+                // don't do anything to gaps over 24 hours and just refresh the gap count
                 counter[arrayIndex] = 0;
             }
         }
@@ -152,18 +163,24 @@ public class FillGapsWeather {
         // if array value <= 48: take the averages of the previous 24 hours and next 24 hours
         // otherwise, leave it empty and reset counter back to 0
 
+        // check every WeatherData object in the list
+        // check every variable of the WeatherData object
+        // record the ones that are valid and invalid data
+        // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
-            handleGap(i, PRECIP, list.get(i).precip);
-            handleGap(i, WBTEMP, list.get(i).wbTemp);
-            handleGap(i, DPTEMP, list.get(i).dpTemp);
-            handleGap(i, AIRTEMP, list.get(i).airTemp);
-            handleGap(i, HUMIDITY, list.get(i).humidity);
-            handleGap(i, VAP, list.get(i).vapPressure);
-            handleGap(i, SATVAP, list.get(i).satVapPressure);
-            handleGap(i, WINDSPD, list.get(i).windSpeed);
-            handleGap(i, WINDDIR, list.get(i).windDir);
-            handleGap(i, WINDGUST, list.get(i).windGust);
-            handleGap(i, SEALVL, list.get(i).seaLvlPressure);
+            for (int j = 0; j < 11; j++) {
+                handleSmallGaps(i, j);
+            }
+        }
+
+        // check every WeatherData object in the list
+        // check every variable of the WeatherData object
+        // record the ones that are valid and invalid data
+        // linear interpolate for gaps that are less than 5 hours
+        for (int i = 0; i < list.size(); i++) {
+            for (int j = 0; j < 11; j++) {
+                handleBigGaps(i, j);
+            }
         }
     }
 
@@ -173,7 +190,7 @@ public class FillGapsWeather {
         List<WeatherData> res = new ArrayList<>();
         double[] sums = new double[11];
         int[] readingsCount = new int[11];
-        boolean[] validAverages = new boolean[11];
+        int[] gapsCount = new int[11];
         for (int i = 0; i < Main.wds.size(); i++) {
             WeatherData w = Main.wds.get(i);
 
@@ -184,16 +201,19 @@ public class FillGapsWeather {
                 // refresh the sums array back to 0
                 // set readings count back to 0
                 WeatherData wd = new ActualWD(currDateTIme, null);
-//                System.out.println(wd);
+
                 for (int j = 0; j < 11; j++) {
                     Reading reading = wd.getReading(j);
                     // if it's precipitation, then add the values
-                    // TODO: check for other variables that may need to be added rather than averaged
-                    reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j]);
-                    reading.isValid = true;
+                    reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j] + gapsCount[j]);
+                    if (readingsCount[j] == 0 && gapsCount[j] == 0) reading.v = Value.Invalid;
+                    else reading.v = Value.Valid;
+                    reading.count = readingsCount[j];
+                    reading.fillCount = gapsCount[j];
                     sums[j] = 0;
                     readingsCount[j] = 0;
-                    validAverages[j] = false;
+                    gapsCount[j] = 0;
+
                 }
                 res.add(wd);
                 currDateTIme = currDateTIme.plusHours(1);
@@ -201,10 +221,22 @@ public class FillGapsWeather {
 
             for (int j = 0; j < 11; j++) {
                 Reading r = getReading(i, j);
-                if (r.isValid) {
-                    validAverages[j] = true;
+                if (r.isValid()) {
                     sums[j] += r.value;
-                    readingsCount[j]++;
+
+                    // if the value is an actual value recorded by BoM, then add to the given reading count
+                    // if the value is a filled value, then add to the gap count
+
+                    switch (r.v) {
+                        case Valid:
+                            readingsCount[j]++;
+                            break;
+                        case Filled:
+                            gapsCount[j]++;
+                            break;
+                        case Invalid:
+                            break;
+                    }
                 }
             }
         }

@@ -103,17 +103,27 @@ public class Main {
 
 
     public static void mergeDatasets(String station) throws IOException {
-//        if (station.equals(TEST_STATION)) {
+        if (station.equals(TEST_STATION)) {
             if (sds != null && wds != null) {
                 int i = 0; // iterator for SolarData array
                 int j = 0; // iterator for WeatherData array
 
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + "/" + stateName + "/" + station + "_merged.csv"));
 
-                String[] header = new String[]{"station", "local standard time", "dni", "ghi",
-                        "precipitation", "air temperature", "wet bulb temperature", "dew point temperature",
-                        "humidity", "vapour pressure", "saturated vapour pressure", "wind speed",
-                        "wind direction", "wind gust", "sea level pressure"};
+                String[] header = new String[]{"station", "local standard time",
+                        "dni", "dni count", "dni fill count",
+                        "ghi", "ghi count", "ghi fill count",
+                        "precipitation"            , "precipitation count"            , "precipitation fill count",
+                        "air temperature"          , "air temperature count"          , "air temperature fill count",
+                        "wet bulb temperature"     , "wet bulb temperature count"     , "wet bulb temperature fill count",
+                        "dew point temperature"    , "dew point temperature count"    , "dew point temperature fill count",
+                        "humidity"                 , "humidity count"                 , "humidity fill count",
+                        "vapour pressure"          , "vapour pressure count"          , "vapour pressure fill count",
+                        "saturated vapour pressure", "saturated vapour pressure count", "saturated vapour pressure fill count",
+                        "wind speed"               , "wind speed count"               , "wind speed fill count",
+                        "wind direction"           , "wind direction count"           , "wind direction fill count",
+                        "wind gust"                , "wind gust count"                , "wind gust fill count",
+                        "sea level pressure"       , "sea level pressure count"       , "sea level pressure fill count"};
 
                 writer.writeNext(header, false);
 
@@ -129,9 +139,10 @@ public class Main {
                         // ignore the current solar reading because there are no weather reading to merge with
                         i++;
                     } else if (solarDateTime.isEqual(weatherDateTime)) {
-                        CombinedData cd = new CombinedData(sds.get(i), wds.get(j));
+                        WeatherData wd = wds.get(j);
+                        CombinedData cd = new CombinedData(sds.get(i), wd);
+
                         writer.writeNext(cd.dataString, false);
-                        //res.add(new CombinedData(Main.sds.get(i), Main.wds.get(j)));
                         i++;
                         j++;
                     }
@@ -139,12 +150,12 @@ public class Main {
 
                 writer.close();
             }
-//        }
+        }
 
     }
 
     private static void processSolarValues(String station) throws IOException {
-//        if (station.equals(TEST_STATION)) {
+        if (station.equals(TEST_STATION)) {
 //            System.out.println("Working on " + station);
             try {
                 CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
@@ -168,7 +179,7 @@ public class Main {
                 sds = null;
                 System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-//        }
+        }
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
@@ -215,7 +226,7 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-//        if (station.equals(TEST_STATION)) {
+        if (station.equals(TEST_STATION)) {
             try {
                 System.out.println("Working on " + station);
 
@@ -267,7 +278,7 @@ public class Main {
                 wds = null;
                 System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-//        }
+        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {

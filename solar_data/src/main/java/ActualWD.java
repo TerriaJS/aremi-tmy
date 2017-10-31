@@ -74,11 +74,11 @@ public class ActualWD extends WeatherData {
             case 0:
                 return this.precip;
             case 1:
-                return this.wbTemp;
-            case 2:
-                return this.dpTemp;
-            case 3:
                 return this.airTemp;
+            case 2:
+                return this.wbTemp;
+            case 3:
+                return this.dpTemp;
             case 4:
                 return this.humidity;
             case 5:
