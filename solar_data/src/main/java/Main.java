@@ -36,7 +36,7 @@ public class Main {
     private final static long ACST = 570; // UTC offset by 570 minutes (9 hours 30 minutes)
     private final static long AWST = 480; // UTC offset by 480 minutes (8 hours)
 
-    private final static String TEST_STATION = "200839";
+    private final static String TEST_STATION = "046012";
 
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
@@ -263,7 +263,7 @@ public class Main {
 //            System.out.println("Check if any we have gaps in terms of missing timestamp");
                 FillGapsWeather.fillMissingTimeStamp();
                 FillGapsWeather.checkForGaps(wds);
-                Main.wds = FillGapsWeather.averageValues(station);
+                Main.wds = FillGapsWeather.averageValues();
 
 //            System.out.println("Now writing the datasets to file");
                 for (WeatherData wd : wds) {

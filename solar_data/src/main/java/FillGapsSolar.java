@@ -4,8 +4,8 @@ import java.util.List;
 
 public class FillGapsSolar {
 
-    private static final int DNI = 0;
-    private static final int GHI = 1;
+//    private static final int DNI = 0;
+//    private static final int GHI = 1;
 
     private static final int[] counter = new int[2];
 
@@ -27,24 +27,24 @@ public class FillGapsSolar {
         }
     }
 
-    // map which variable to the attributes in WeatherData
-    public static Reading getReading(int index, int whichVariable) {
-        switch (whichVariable) {
-            case DNI:
-                return Main.sds.get(index).dni;
-            case GHI:
-                return Main.sds.get(index).ghi;
-            default:
-                return null;
-        }
-    }
+//    // map which variable to the attributes in WeatherData
+//    public static Reading getReading(int index, int whichVariable) {
+//        switch (whichVariable) {
+//            case DNI:
+//                return Main.sds.get(index).dni;
+//            case GHI:
+//                return Main.sds.get(index).ghi;
+//            default:
+//                return null;
+//        }
+//    }
 
 
     public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
         if (from < 0) return; // this gap is at the beginning of the file and there's no way of interpolating the data
 
-        Reading prevReading = getReading(from, whichVariable);
-        Reading nextReading = getReading(to, whichVariable);
+        Reading prevReading = Main.sds.get(from).getReading(whichVariable);
+        Reading nextReading = Main.sds.get(to).getReading(whichVariable);
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
@@ -53,7 +53,7 @@ public class FillGapsSolar {
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
         for (int i = 1; i <= gapSize; i++) {
-            Reading currReading = getReading(from + i, whichVariable);
+            Reading currReading = Main.sds.get(from + i).getReading(whichVariable);
             currReading.value = values[i];
             currReading.v = Value.Filled;
             currReading.fillCount++;
@@ -68,10 +68,10 @@ public class FillGapsSolar {
         // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-                Reading prev = getReading(i - 48, whichVariable); //Main.wds.get(gapIndex - 48).precip;
-                Reading next = getReading(i + 48, whichVariable); //Main.wds.get(gapIndex + 48).precip;
+                Reading prev = Main.sds.get(i - 48).getReading(whichVariable); //Main.wds.get(gapIndex - 48).precip;
+                Reading next = Main.sds.get(i + 48).getReading(whichVariable); //Main.wds.get(gapIndex + 48).precip;
                 if (prev.isValid() && next.isValid()) {
-                    Reading curr = getReading(i, whichVariable); // Main.wds.get(i).precip;
+                    Reading curr = Main.sds.get(i).getReading(whichVariable); // Main.wds.get(i).precip;
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
@@ -86,7 +86,7 @@ public class FillGapsSolar {
     }
 
     public static void handleSmallGaps(int gapIndex, int arrayIndex) {
-        Reading r = getReading(gapIndex, arrayIndex);
+        Reading r = Main.sds.get(gapIndex).getReading(arrayIndex);
         if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
@@ -102,7 +102,7 @@ public class FillGapsSolar {
     }
 
     public static void handleBigGaps(int gapIndex, int arrayIndex) {
-        Reading r = getReading(gapIndex, arrayIndex);
+        Reading r = Main.sds.get(gapIndex).getReading(arrayIndex);
         if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
@@ -136,13 +136,13 @@ public class FillGapsSolar {
         // otherwise, leave it empty and reset counter back to 0
 
         for (int i = 0; i < list.size(); i++) {
-            handleSmallGaps(i, DNI);
-            handleSmallGaps(i, GHI);
+            handleSmallGaps(i, SolarVar.DNI.ordinal());
+            handleSmallGaps(i, SolarVar.GHI.ordinal());
         }
 
         for (int i = 0; i < list.size(); i++) {
-            handleBigGaps(i, DNI);
-            handleBigGaps(i, GHI);
+            handleBigGaps(i, SolarVar.DNI.ordinal());
+            handleBigGaps(i, SolarVar.GHI.ordinal());
         }
     }
 }

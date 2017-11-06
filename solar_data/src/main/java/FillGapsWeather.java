@@ -5,18 +5,18 @@ import java.util.List;
 // only works for weather data for now
 // TODO: make it work for other datasets
 public class FillGapsWeather {
-
-    public static final int PRECIP = 0;
-    public static final int AIRTEMP = 1;
-    public static final int WBTEMP = 2;
-    public static final int DPTEMP = 3;
-    public static final int HUMIDITY = 4;
-    public static final int VAP = 5;
-    public static final int SATVAP = 6;
-    public static final int WINDSPD = 7;
-    public static final int WINDDIR = 8;
-    public static final int WINDGUST = 9;
-    public static final int SEALVL = 10;
+//
+//    public static final int PRECIP = 0;
+//    public static final int AIRTEMP = 1;
+//    public static final int WBTEMP = 2;
+//    public static final int DPTEMP = 3;
+//    public static final int HUMIDITY = 4;
+//    public static final int VAP = 5;
+//    public static final int SATVAP = 6;
+//    public static final int WINDSPD = 7;
+//    public static final int WINDDIR = 8;
+//    public static final int WINDGUST = 9;
+//    public static final int SEALVL = 10;
 
     private static int[] counter = new int[11];
 
@@ -42,8 +42,8 @@ public class FillGapsWeather {
             return; // this gap is at the beginning of the file and there's no way of interpolating the data
         }
 
-        Reading prevReading = getReading(from, whichVariable);
-        Reading nextReading = getReading(to, whichVariable);
+        Reading prevReading = Main.wds.get(from).getReading(whichVariable);
+        Reading nextReading = Main.wds.get(to).getReading(whichVariable);
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
@@ -52,42 +52,42 @@ public class FillGapsWeather {
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
         for (int i = 1; i <= gapSize; i++) {
-            Reading currReading = getReading(from + i, whichVariable);
+            Reading currReading = Main.wds.get(from + i).getReading(whichVariable);
             currReading.value = values[i];
             currReading.v = Value.Filled;
             currReading.fillCount++;
         }
     }
 
-    // map which variable to the attributes in WeatherData
-    public static Reading getReading(int index, int whichVariable) {
-        switch (whichVariable) {
-            case PRECIP:
-                return Main.wds.get(index).precip;
-            case WBTEMP:
-                return Main.wds.get(index).wbTemp;
-            case DPTEMP:
-                return Main.wds.get(index).dpTemp;
-            case AIRTEMP:
-                return Main.wds.get(index).airTemp;
-            case HUMIDITY:
-                return Main.wds.get(index).humidity;
-            case VAP:
-                return Main.wds.get(index).vapPressure;
-            case SATVAP:
-                return Main.wds.get(index).satVapPressure;
-            case WINDSPD:
-                return Main.wds.get(index).windSpeed;
-            case WINDDIR:
-                return Main.wds.get(index).windDir;
-            case WINDGUST:
-                return Main.wds.get(index).windGust;
-            case SEALVL:
-                return Main.wds.get(index).seaLvlPressure;
-            default:
-                return null;
-        }
-    }
+//    // map which variable to the attributes in WeatherData
+//    public static Reading getReading(int index, int whichVariable) {
+//        switch (whichVariable) {
+//            case PRECIP:
+//                return Main.wds.get(index).precip;
+//            case WBTEMP:
+//                return Main.wds.get(index).wbTemp;
+//            case DPTEMP:
+//                return Main.wds.get(index).dpTemp;
+//            case AIRTEMP:
+//                return Main.wds.get(index).airTemp;
+//            case HUMIDITY:
+//                return Main.wds.get(index).humidity;
+//            case VAP:
+//                return Main.wds.get(index).vapPressure;
+//            case SATVAP:
+//                return Main.wds.get(index).satVapPressure;
+//            case WINDSPD:
+//                return Main.wds.get(index).windSpeed;
+//            case WINDDIR:
+//                return Main.wds.get(index).windDir;
+//            case WINDGUST:
+//                return Main.wds.get(index).windGust;
+//            case SEALVL:
+//                return Main.wds.get(index).seaLvlPressure;
+//            default:
+//                return null;
+//        }
+//    }
 
     public static void fillLongGap(int gapIndex, int gapSize, int whichVariable) {
         // gapIndex - gapSize is the start of the gap
@@ -96,10 +96,10 @@ public class FillGapsWeather {
         // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-                Reading prev = getReading(i - 48, whichVariable);
-                Reading next = getReading(i + 48, whichVariable);
+                Reading prev = Main.wds.get(i - 48).getReading(whichVariable);
+                Reading next = Main.wds.get(i + 48).getReading(whichVariable);
                 if (prev.isValid() && next.isValid()) {
-                    Reading curr = getReading(i, whichVariable);
+                    Reading curr = Main.wds.get(i).getReading(whichVariable);
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
@@ -115,7 +115,7 @@ public class FillGapsWeather {
     }
 
     public static void handleSmallGaps(int gapIndex, int arrayIndex) {
-        Reading r = getReading(gapIndex, arrayIndex);
+        Reading r = Main.wds.get(gapIndex).getReading(arrayIndex);
         if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
@@ -131,7 +131,7 @@ public class FillGapsWeather {
     }
 
     public static void handleBigGaps(int gapIndex, int arrayIndex) {
-        Reading r = getReading(gapIndex, arrayIndex);
+        Reading r = Main.wds.get(gapIndex).getReading(arrayIndex);
         if (!r.isValid()) {
             counter[arrayIndex]++;
         } else {
@@ -145,7 +145,7 @@ public class FillGapsWeather {
                 // take average from previous and next day if gap less than 24 hours
                 else if (counter[arrayIndex] <= 48) {
                     // just leave precipitation as it is
-                    if (arrayIndex != PRECIP)
+                    if (arrayIndex != WeatherVar.PRECIP.ordinal())
                         fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
                     // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
                 }
@@ -157,16 +157,6 @@ public class FillGapsWeather {
     }
 
     public static void checkForGaps(List<WeatherData> list) {
-        // initialise an array as counter, size is the number of variables
-        // if we find a gap for a variable, add one to the array
-        // otherwise (no gaps), if the array value > 0
-        // if array value <= 10: linear interpolate and fill in the gaps
-        // how to fill in the gaps:
-        // take the gap count and the array returned by linear interpolation
-        // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
-        // if array value <= 48: take the averages of the previous 24 hours and next 24 hours
-        // otherwise, leave it empty and reset counter back to 0
-
         // check every WeatherData object in the list
         // check every variable of the WeatherData object
         // record the ones that are valid and invalid data
@@ -188,7 +178,7 @@ public class FillGapsWeather {
         }
     }
 
-    public static List<WeatherData> averageValues(String station) {
+    public static List<WeatherData> averageValues() {
 //        System.out.println("Now averaging the data");
         LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
         List<WeatherData> res = new ArrayList<>();
@@ -234,7 +224,7 @@ public class FillGapsWeather {
             }
 
             for (int j = 0; j < 11; j++) {
-                Reading r = getReading(i, j);
+                Reading r = Main.wds.get(i).getReading(j);
                 if (r.isValid()) {
                     sums[j] += r.value;
 
