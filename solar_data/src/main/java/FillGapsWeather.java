@@ -37,7 +37,10 @@ public class FillGapsWeather {
     }
 
     public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
-        if (from < 0) return; // this gap is at the beginning of the file and there's no way of interpolating the data
+        if (from < 0) {
+            System.out.println("Can't do linear interpolation because the gap is at the beginning of the file");
+            return; // this gap is at the beginning of the file and there's no way of interpolating the data
+        }
 
         Reading prevReading = getReading(from, whichVariable);
         Reading nextReading = getReading(to, whichVariable);
@@ -105,7 +108,7 @@ public class FillGapsWeather {
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
+//            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
         }
 
 
@@ -133,9 +136,10 @@ public class FillGapsWeather {
             counter[arrayIndex]++;
         } else {
             if (counter[arrayIndex] > 0) {
-                // do linear interpolation if gap less than 5 hours
-                if (counter[arrayIndex] <= 10) {
-                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
+                // something is wrong if we find an uninterpolated gap of less than 5 hours in the middle of the file,
+                // but it is okay if it is at the beginning of the file because we cannot interpolate at the beginning
+                if (counter[arrayIndex] <= 10 && gapIndex < 10) {
+                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours in the middle of the file for " + r.varName + " at index " + gapIndex + "!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
@@ -200,7 +204,17 @@ public class FillGapsWeather {
                 // add to the list res
                 // refresh the sums array back to 0
                 // set readings count back to 0
-                WeatherData wd = new ActualWD(currDateTIme, null);
+
+
+                // if we are dealing with NT or SA states, we want to average them into hourly at the 30 minute mark so that it matches
+                // the solar data offset (since their timezone is offset by 9h30min)
+                LocalDateTime newdt;
+                if (Main.stateName.equals("NT") || Main.stateName.equals("SA"))
+                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 30, currDateTIme.getSecond());
+                // otherwise any other state can be averaged into hourly at the 00 minute mark
+                else
+                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 0, currDateTIme.getSecond());
+                WeatherData wd = new ActualWD(newdt, null);
 
                 for (int j = 0; j < 11; j++) {
                     Reading reading = wd.getReading(j);

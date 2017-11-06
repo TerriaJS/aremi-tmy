@@ -26,7 +26,7 @@ public class Main {
 
     private static String filenamePref, filenameSuff;
     private static String parentDir;
-    private static String stateName;
+    static String stateName;
     static String stnNum;
 
     private final static String DNI = "http://services.aremi.d61.io/solar-satellite/v1/DNI/";
@@ -36,7 +36,7 @@ public class Main {
     private final static long ACST = 570; // UTC offset by 570 minutes (9 hours 30 minutes)
     private final static long AWST = 480; // UTC offset by 480 minutes (8 hours)
 
-    private final static String TEST_STATION = "046012";
+    private final static String TEST_STATION = "200839";
 
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
@@ -156,7 +156,7 @@ public class Main {
 
     private static void processSolarValues(String station) throws IOException {
         if (station.equals(TEST_STATION)) {
-//            System.out.println("Working on " + station);
+            System.out.println("Working on " + station);
             try {
                 CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + "/" + stateName + "/" + station + "_dni_ghi_processed.csv"));
