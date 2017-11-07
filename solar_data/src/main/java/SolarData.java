@@ -43,11 +43,11 @@ public class SolarData {
         return true;
     }
 
-    public Reading getReading(int whichVariable) {
+    public Reading getReading(SolarVar whichVariable) {
         switch (whichVariable) {
-            case 0:
+            case DNI:
                 return this.dni;
-            case 1:
+            case GHI:
                 return this.ghi;
             default:
                 return null;

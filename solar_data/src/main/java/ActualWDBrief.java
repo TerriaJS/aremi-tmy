@@ -54,23 +54,23 @@ public class ActualWDBrief extends WeatherData {
         }
     }
 
-    public Reading getReading(int whichVariable) {
+    public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
-            case 0:
+            case PRECIP:
                 return this.precip;
-            case 1:
+            case DPTEMP:
                 return this.dpTemp;
-            case 2:
+            case AIRTEMP:
                 return this.airTemp;
-            case 3:
+            case HUMIDITY:
                 return this.humidity;
-            case 4:
+            case WINDSPD:
                 return this.windSpeed;
-            case 5:
+            case WINDDIR:
                 return this.windDir;
-            case 6:
+            case WINDGUST:
                 return this.windGust;
-            case 7:
+            case SEALVL:
                 return this.seaLvlPressure;
             default:
                 return null;

@@ -42,17 +42,17 @@ public class AveragedWD extends WeatherData {
         this.windGust.count += toCombine.windGust.count;
     }
 
-    public Reading getReading(int whichVariable) {
+    public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
-            case 0:
+            case AIRTEMP:
                 return this.airTemp;
-            case 1:
+            case HUMIDITY:
                 return this.humidity;
-            case 2:
+            case WINDSPD:
                 return this.windSpeed;
-            case 3:
+            case WINDDIR:
                 return this.windDir;
-            case 4:
+            case WINDGUST:
                 return this.windGust;
             default:
                 return null;

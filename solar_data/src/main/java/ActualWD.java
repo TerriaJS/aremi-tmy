@@ -69,29 +69,29 @@ public class ActualWD extends WeatherData {
     }
 
     // map which variable to the attributes in WeatherData
-    public Reading getReading(int whichVariable) {
+    public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
-            case 0:
+            case PRECIP:
                 return this.precip;
-            case 1:
+            case AIRTEMP:
                 return this.airTemp;
-            case 2:
+            case WBTEMP:
                 return this.wbTemp;
-            case 3:
+            case DPTEMP:
                 return this.dpTemp;
-            case 4:
+            case HUMIDITY:
                 return this.humidity;
-            case 5:
+            case VAP:
                 return this.vapPressure;
-            case 6:
+            case SATVAP:
                 return this.satVapPressure;
-            case 7:
+            case WINDSPD:
                 return this.windSpeed;
-            case 8:
+            case WINDDIR:
                 return this.windDir;
-            case 9:
+            case WINDGUST:
                 return this.windGust;
-            case 10:
+            case SEALVL:
                 return this.seaLvlPressure;
             default:
                 return null;

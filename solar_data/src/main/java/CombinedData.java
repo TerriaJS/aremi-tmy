@@ -23,8 +23,8 @@ public class CombinedData {
         // keep track of the counts and fill counts
         for (int i = 0; i < 2; i++) {
             dataString[3 * i + 2] = sd.dataString[i + 1];
-            dataString[3 * i + 3] = Integer.toString(sd.getReading(i).count);
-            dataString[3 * i + 4] = Integer.toString(sd.getReading(i).fillCount);
+            dataString[3 * i + 3] = Integer.toString(sd.getReading(SolarVar.values()[i]).count);
+            dataString[3 * i + 4] = Integer.toString(sd.getReading(SolarVar.values()[i]).fillCount);
         }
 //        dataString[2] = sd.dataString[1];
 //        dataString[3] = Integer.toString(sd.getReading(0).count);
@@ -35,8 +35,8 @@ public class CombinedData {
         // keep track of the counts and fill counts
         for (int i = 0; i < 11; i++) {
             dataString[3 * i + 8] = wd.dataString[(i * 2) + 12];
-            dataString[3 * i + 9] = Integer.toString(wd.getReading(i).count);
-            dataString[3 * i + 10] = Integer.toString(wd.getReading(i).fillCount);
+            dataString[3 * i + 9] = Integer.toString(wd.getReading(WeatherVar.values()[i]).count);
+            dataString[3 * i + 10] = Integer.toString(wd.getReading(WeatherVar.values()[i]).fillCount);
         }
     }
 }

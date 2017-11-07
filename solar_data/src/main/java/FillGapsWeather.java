@@ -36,14 +36,14 @@ public class FillGapsWeather {
         }
     }
 
-    public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
+    public static void fillShortGap(int from, int to, int gapSize, WeatherVar wv) {
         if (from < 0) {
             System.out.println("Can't do linear interpolation because the gap is at the beginning of the file");
             return; // this gap is at the beginning of the file and there's no way of interpolating the data
         }
 
-        Reading prevReading = Main.wds.get(from).getReading(whichVariable);
-        Reading nextReading = Main.wds.get(to).getReading(whichVariable);
+        Reading prevReading = Main.wds.get(from).getReading(wv);
+        Reading nextReading = Main.wds.get(to).getReading(wv);
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
@@ -52,7 +52,7 @@ public class FillGapsWeather {
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
         for (int i = 1; i <= gapSize; i++) {
-            Reading currReading = Main.wds.get(from + i).getReading(whichVariable);
+            Reading currReading = Main.wds.get(from + i).getReading(wv);
             currReading.value = values[i];
             currReading.v = Value.Filled;
             currReading.fillCount++;
@@ -89,17 +89,17 @@ public class FillGapsWeather {
 //        }
 //    }
 
-    public static void fillLongGap(int gapIndex, int gapSize, int whichVariable) {
+    public static void fillLongGap(int gapIndex, int gapSize, WeatherVar wv) {
         // gapIndex - gapSize is the start of the gap
         // gapIndex - 1 is the end of the gap
 
         // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-                Reading prev = Main.wds.get(i - 48).getReading(whichVariable);
-                Reading next = Main.wds.get(i + 48).getReading(whichVariable);
+                Reading prev = Main.wds.get(i - 48).getReading(wv);
+                Reading next = Main.wds.get(i + 48).getReading(wv);
                 if (prev.isValid() && next.isValid()) {
-                    Reading curr = Main.wds.get(i).getReading(whichVariable);
+                    Reading curr = Main.wds.get(i).getReading(wv);
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
@@ -114,44 +114,44 @@ public class FillGapsWeather {
 
     }
 
-    public static void handleSmallGaps(int gapIndex, int arrayIndex) {
-        Reading r = Main.wds.get(gapIndex).getReading(arrayIndex);
+    public static void handleSmallGaps(int gapIndex, WeatherVar wv) {
+        Reading r = Main.wds.get(gapIndex).getReading(wv);
         if (!r.isValid()) {
-            counter[arrayIndex]++;
+            counter[wv.ordinal()]++;
         } else {
-            if (counter[arrayIndex] > 0) {
+            if (counter[wv.ordinal()] > 0) {
                 // do linear interpolation if gap less than 5 hours
-                if (counter[arrayIndex] <= 10) {
-                    fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
-//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                if (counter[wv.ordinal()] <= 10) {
+                    fillShortGap(gapIndex - counter[wv.ordinal()] - 1, gapIndex, counter[wv.ordinal()], wv);
+//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[wv]) + " for " + whichVariable.varName);
                 }
-                counter[arrayIndex] = 0;
+                counter[wv.ordinal()] = 0;
             }
         }
     }
 
-    public static void handleBigGaps(int gapIndex, int arrayIndex) {
-        Reading r = Main.wds.get(gapIndex).getReading(arrayIndex);
+    public static void handleBigGaps(int gapIndex, WeatherVar wv) {
+        Reading r = Main.wds.get(gapIndex).getReading(wv);
         if (!r.isValid()) {
-            counter[arrayIndex]++;
+            counter[wv.ordinal()]++;
         } else {
-            if (counter[arrayIndex] > 0) {
+            if (counter[wv.ordinal()] > 0) {
                 // something is wrong if we find an uninterpolated gap of less than 5 hours in the middle of the file,
                 // but it is okay if it is at the beginning of the file because we cannot interpolate at the beginning
-                if (counter[arrayIndex] <= 10 && gapIndex < 10) {
+                if (counter[wv.ordinal()] <= 10 && gapIndex < 10) {
                     System.out.println("Somehow we found an uninterpolated gap of less than 5 hours in the middle of the file for " + r.varName + " at index " + gapIndex + "!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
-                else if (counter[arrayIndex] <= 48) {
+                else if (counter[wv.ordinal()] <= 48) {
                     // just leave precipitation as it is
-                    if (arrayIndex != WeatherVar.PRECIP.ordinal())
-                        fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
-                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                    if (wv != WeatherVar.PRECIP)
+                        fillLongGap(gapIndex, counter[wv.ordinal()],wv);
+                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[wv]) + " for " + whichVariable.varName);
                 }
 
                 // don't do anything to gaps over 24 hours and just refresh the gap count
-                counter[arrayIndex] = 0;
+                counter[wv.ordinal()] = 0;
             }
         }
     }
@@ -162,8 +162,8 @@ public class FillGapsWeather {
         // record the ones that are valid and invalid data
         // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
-            for (int j = 0; j < 11; j++) {
-                handleSmallGaps(i, j);
+            for (WeatherVar wv : WeatherVar.values()) {
+                handleSmallGaps(i, wv);
             }
         }
 
@@ -172,8 +172,8 @@ public class FillGapsWeather {
         // record the ones that are valid and invalid data
         // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
-            for (int j = 0; j < 11; j++) {
-                handleBigGaps(i, j);
+            for (WeatherVar wv : WeatherVar.values()) {
+                handleBigGaps(i, wv);
             }
         }
     }
@@ -207,7 +207,7 @@ public class FillGapsWeather {
                 WeatherData wd = new ActualWD(newdt, null);
 
                 for (int j = 0; j < 11; j++) {
-                    Reading reading = wd.getReading(j);
+                    Reading reading = wd.getReading(WeatherVar.values()[j]);
                     // if it's precipitation, then add the values
                     reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j] + gapsCount[j]);
                     if (readingsCount[j] == 0 && gapsCount[j] == 0) reading.v = Value.Invalid;
@@ -224,7 +224,7 @@ public class FillGapsWeather {
             }
 
             for (int j = 0; j < 11; j++) {
-                Reading r = Main.wds.get(i).getReading(j);
+                Reading r = Main.wds.get(i).getReading(WeatherVar.values()[j]);
                 if (r.isValid()) {
                     sums[j] += r.value;
 

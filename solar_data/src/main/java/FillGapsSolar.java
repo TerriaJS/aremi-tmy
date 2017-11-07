@@ -7,7 +7,7 @@ public class FillGapsSolar {
 //    private static final int DNI = 0;
 //    private static final int GHI = 1;
 
-    private static final int[] counter = new int[2];
+    private static final int[] counter = new int[SolarVar.values().length];
 
     public static void fillMissingTimeStamp() {
         LocalDateTime currDateTIme = Main.sds.get(0).dateTime;
@@ -40,11 +40,11 @@ public class FillGapsSolar {
 //    }
 
 
-    public static void fillShortGap(int from, int to, int gapSize, int whichVariable) {
+    public static void fillShortGap(int from, int to, int gapSize, SolarVar sv) {
         if (from < 0) return; // this gap is at the beginning of the file and there's no way of interpolating the data
 
-        Reading prevReading = Main.sds.get(from).getReading(whichVariable);
-        Reading nextReading = Main.sds.get(to).getReading(whichVariable);
+        Reading prevReading = Main.sds.get(from).getReading(sv);
+        Reading nextReading = Main.sds.get(to).getReading(sv);
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
@@ -53,7 +53,7 @@ public class FillGapsSolar {
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
         for (int i = 1; i <= gapSize; i++) {
-            Reading currReading = Main.sds.get(from + i).getReading(whichVariable);
+            Reading currReading = Main.sds.get(from + i).getReading(sv);
             currReading.value = values[i];
             currReading.v = Value.Filled;
             currReading.fillCount++;
@@ -61,17 +61,17 @@ public class FillGapsSolar {
         }
     }
 
-    public static void fillLongGap(int gapIndex, int gapSize, int whichVariable) {
+    public static void fillLongGap(int gapIndex, int gapSize, SolarVar sv) {
         // gapIndex - gapSize is the start of the gap
         // gapIndex - 1 is the end of the gap
 
         // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
-                Reading prev = Main.sds.get(i - 48).getReading(whichVariable); //Main.wds.get(gapIndex - 48).precip;
-                Reading next = Main.sds.get(i + 48).getReading(whichVariable); //Main.wds.get(gapIndex + 48).precip;
+                Reading prev = Main.sds.get(i - 48).getReading(sv); //Main.wds.get(gapIndex - 48).precip;
+                Reading next = Main.sds.get(i + 48).getReading(sv); //Main.wds.get(gapIndex + 48).precip;
                 if (prev.isValid() && next.isValid()) {
-                    Reading curr = Main.sds.get(i).getReading(whichVariable); // Main.wds.get(i).precip;
+                    Reading curr = Main.sds.get(i).getReading(sv); // Main.wds.get(i).precip;
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
@@ -85,41 +85,41 @@ public class FillGapsSolar {
 
     }
 
-    public static void handleSmallGaps(int gapIndex, int arrayIndex) {
-        Reading r = Main.sds.get(gapIndex).getReading(arrayIndex);
+    public static void handleSmallGaps(int gapIndex, SolarVar sv) {
+        Reading r = Main.sds.get(gapIndex).getReading(sv);
         if (!r.isValid()) {
-            counter[arrayIndex]++;
+            counter[sv.ordinal()]++;
         } else {
-            if (counter[arrayIndex] > 0) {
+            if (counter[sv.ordinal()] > 0) {
                 // do linear interpolation if gap less than 5 hours
-                if (counter[arrayIndex] <= 10) {
-                    fillShortGap(gapIndex - counter[arrayIndex] - 1, gapIndex, counter[arrayIndex], arrayIndex);
-//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                if (counter[sv.ordinal()] <= 10) {
+                    fillShortGap(gapIndex - counter[sv.ordinal()] - 1, gapIndex, counter[sv.ordinal()], sv);
+//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[sv]) + " for " + whichVariable.varName);
                 }
-                counter[arrayIndex] = 0;
+                counter[sv.ordinal()] = 0;
             }
         }
     }
 
-    public static void handleBigGaps(int gapIndex, int arrayIndex) {
-        Reading r = Main.sds.get(gapIndex).getReading(arrayIndex);
+    public static void handleBigGaps(int gapIndex, SolarVar sv) {
+        Reading r = Main.sds.get(gapIndex).getReading(sv);
         if (!r.isValid()) {
-            counter[arrayIndex]++;
+            counter[sv.ordinal()]++;
         } else {
-            if (counter[arrayIndex] > 0) {
+            if (counter[sv.ordinal()] > 0) {
                 // do linear interpolation if gap less than 5 hours
-                if (counter[arrayIndex] <= 10) {
+                if (counter[sv.ordinal()] <= 10) {
                     System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
-                else if (counter[arrayIndex] <= 48) {
-                    fillLongGap(gapIndex, counter[arrayIndex],arrayIndex);
-                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[arrayIndex]) + " for " + whichVariable.varName);
+                else if (counter[sv.ordinal()] <= 48) {
+                    fillLongGap(gapIndex, counter[sv.ordinal()], sv);
+                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[sv]) + " for " + whichVariable.varName);
                 }
 
                 // don't do anything to gaps over 24 hours and just refresh the gap count
-                counter[arrayIndex] = 0;
+                counter[sv.ordinal()] = 0;
             }
         }
     }
@@ -136,13 +136,17 @@ public class FillGapsSolar {
         // otherwise, leave it empty and reset counter back to 0
 
         for (int i = 0; i < list.size(); i++) {
-            handleSmallGaps(i, SolarVar.DNI.ordinal());
-            handleSmallGaps(i, SolarVar.GHI.ordinal());
+            for (SolarVar sv : SolarVar.values())
+                handleSmallGaps(i, sv);
+//            handleSmallGaps(i, SolarVar.DNI.ordinal());
+//            handleSmallGaps(i, SolarVar.GHI.ordinal());
         }
 
         for (int i = 0; i < list.size(); i++) {
-            handleBigGaps(i, SolarVar.DNI.ordinal());
-            handleBigGaps(i, SolarVar.GHI.ordinal());
+            for (SolarVar sv : SolarVar.values())
+                handleBigGaps(i, sv);
+//            handleBigGaps(i, SolarVar.DNI.ordinal());
+//            handleBigGaps(i, SolarVar.GHI.ordinal());
         }
     }
 }
