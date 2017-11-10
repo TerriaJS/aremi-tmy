@@ -8,6 +8,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import static org.apache.commons.lang3.ArrayUtils.addAll;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,20 +82,19 @@ public class Main {
             filenameSuff = splitName[1];
 
 
-            try {
-                //averageHalfHourlyData(stnNum);
-                halfHourlyData(stnNum);
 
-                // this only combines dni and ghi values
-                //combineSolarValues(stnNum, latitude, longitude);
+            // this fills in the gaps in the weather data and averages the values into hours
+            boolean weatherSuccess = halfHourlyData();
 
-                // this fills in the gaps in the combined dni and ghi file
-                processSolarValues(stnNum);
+            // this only combines dni and ghi values
+            //combineSolarValues(stnNum, latitude, longitude);
 
-                mergeDatasets(stnNum);
-            } catch (FileNotFoundException e) {
-//                System.out.println("Data from station " + stnNum + " does not exist");
-            }
+            // this fills in the gaps in the combined dni and ghi file
+            boolean solarSuccess = processSolarValues();
+
+            // only merge the datasets if we can process both the weather and solar data for this station
+            if (weatherSuccess && solarSuccess) mergeDatasets();
+
         }
 
         stationsReader.close();
@@ -102,13 +103,14 @@ public class Main {
 
 
 
-    public static void mergeDatasets(String station) throws IOException {
-//        if (station.equals(TEST_STATION)) {
+    public static void mergeDatasets() throws IOException {
+        if (stnNum.equals(TEST_STATION)) {
+            System.out.println("Working on merging solar and weather values");
             if (sds != null && wds != null) {
                 int i = 0; // iterator for SolarData array
                 int j = 0; // iterator for WeatherData array
 
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + "/" + stateName + "/" + station + "_averaged.csv"));
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged.csv"));
 
                 String[] header = new String[]{"station", "local standard time",
                         "dni mean", "dni count", "dni fill count",
@@ -150,16 +152,27 @@ public class Main {
 
                 writer.close();
             }
-//        }
+        }
 
     }
 
-    private static void processSolarValues(String station) throws IOException {
-//        if (station.equals(TEST_STATION)) {
-            System.out.println("Working on " + station);
+    private static boolean processSolarValues() throws IOException {
+        if (stnNum.equals(TEST_STATION)) {
+            System.out.println("Processing solar values");
             try {
-                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + "/" + stateName + "/" + station + "_dni_ghi_processed.csv"));
+                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + stateName + "/" + stnNum + "_dni_ghi.csv")));
+
+                // if the directory doesn't exist, then write the create the directory first
+                // handles any potential file not found error
+                if (!new File(WRITE_TO_SOLAR_PROCESSED + stateName + "/").isDirectory()) {
+                    if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
+                        System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+                    else {
+                        System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+                        return false;
+                    }
+                }
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + stateName + "/" + stnNum + "_dni_ghi_processed.csv"));
 
                 String[] headers = reader.readNext(); // keep the headers as it is
                 writer.writeNext(headers, false);
@@ -175,11 +188,14 @@ public class Main {
                 for (SolarData sd : sds) {
                     writer.writeNext(sd.combineValues(), false);
                 }
-            } catch (FileNotFoundException e) {
+                return true;
+            } catch (IOException e) {
                 sds = null;
-                System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
+                System.out.println("Cannot process solar values for station " + stnNum + ", solar data file not found.");
+                return false;
             }
-//        }
+        }
+        return false;
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
@@ -205,15 +221,6 @@ public class Main {
 
             wds.add(new AveragedWD(dt, weatherReadings));
 
-//            WeatherData w1 = new AveragedWD(weatherReadings);
-//            if (w1.checkQuality()) {
-//                if (w1.mins == 0 && (weatherReadings = reader.readNext()) != null) {
-//                    WeatherData w2 = new AveragedWD(weatherReadings);
-//                    if (w2.checkQuality()) w1.averageValues(w2);
-//                }
-//                writer.writeNext(w1.combineValues(), false);
-//            }
-//
         }
 
         for (WeatherData wd : wds) {
@@ -224,26 +231,34 @@ public class Main {
 
     }
 
-    private static void halfHourlyData(String station) throws IOException {
+    private static boolean halfHourlyData() throws IOException {
 
-//        if (station.equals(TEST_STATION)) {
+        if (stnNum.equals(TEST_STATION)) {
             try {
-                System.out.println("Working on " + station);
+                System.out.println("Processing weather values");
 
-                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + "/" + stateName + "/" + station + "_averaged.csv"));
+                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + stnNum + filenameSuff)));
+
+                // if the directory doesn't exist, then write the create the directory first
+                // handles any potential file not found error
+                if (!new File(WRITE_TO_ACTUAL + stateName + "/").isDirectory()) {
+                    if (new File(WRITE_TO_ACTUAL + stateName).mkdir())
+                        System.out.println("Created a new directory at " + WRITE_TO_ACTUAL + stateName);
+                    else {
+                        System.out.println("Failed to create a directory at " + WRITE_TO_ACTUAL + stateName);
+                        return false;
+                    }
+                }
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + stateName + "/" + stnNum + "_averaged.csv"));
 
                 String[] headers = reader.readNext();
                 writer.writeNext(headers, false);
 
                 String[] weatherReadings;
-                //List<WeatherData> wds = new ArrayList<>();
 
                 wds = new ArrayList<>();
 
-//            System.out.println("Working on the while loop to populate the array");
                 while ((weatherReadings = reader.readNext()) != null) {
-//                WeatherData w1;
 
                     // use the standard time
                     LocalDateTime dt = LocalDateTime.of(Integer.parseInt(weatherReadings[7]), // year
@@ -260,25 +275,26 @@ public class Main {
                     }
 
                 }
-//            System.out.println("Check if any we have gaps in terms of missing timestamp");
+
                 FillGapsWeather.fillMissingTimeStamp();
                 FillGapsWeather.checkForGaps(wds);
                 Main.wds = FillGapsWeather.averageValues();
 
-//            System.out.println("Now writing the datasets to file");
                 for (WeatherData wd : wds) {
                     writer.writeNext(wd.combineValues(), false);
                 }
 
-//            System.out.println("Done with writing to file, done with this station");
-
                 reader.close();
                 writer.close();
-            } catch (FileNotFoundException e) {
+
+                return true;
+            } catch (IOException e) {
                 wds = null;
-                System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
+                System.out.println("Cannot process weather values for station " + stnNum + ", weather data file not found.");
+                return false;
             }
-//        }
+        }
+        return false;
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
@@ -308,11 +324,9 @@ public class Main {
         String[] dniReadings, ghiReadings;
 
         // Save data to a csv file with the name <station_number>_dni_ghi.csv
-        CSVWriter writer = new CSVWriter(new BufferedWriter(new FileWriter(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
+        CSVWriter writer = new CSVWriter(new BufferedWriter(new FileWriter(WRITE_TO_SOLAR + stateName + "/" + station + "_dni_ghi.csv")));
         writer.writeNext(targetHeader, false);
 
-
-        //List<SolarData> sds = new ArrayList<>();
         sds = new ArrayList<>();
 
         while ((dniReadings = dniReader.readNext()) != null && (ghiReadings = ghiReader.readNext()) != null) {
