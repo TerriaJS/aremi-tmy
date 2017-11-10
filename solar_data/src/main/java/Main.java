@@ -5,11 +5,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import static org.apache.commons.lang3.ArrayUtils.addAll;
-
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -164,14 +160,30 @@ public class Main {
 
                 // if the directory doesn't exist, then write the create the directory first
                 // handles any potential file not found error
-                if (!new File(WRITE_TO_SOLAR_PROCESSED + stateName + "/").isDirectory()) {
-                    if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
-                        System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-                    else {
-                        System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-                        return false;
-                    }
+                if (!checkValidDirectory(WRITE_TO_SOLAR_PROCESSED, stateName)) {
+                    return false;
                 }
+//                if (new File(WRITE_TO_SOLAR_PROCESSED).isDirectory()) {
+//                    if (!new File(WRITE_TO_SOLAR_PROCESSED + stateName + "/").isDirectory()) {
+//                        if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
+//                            System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+//                        else {
+//                            System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+//                            return false;
+//                        }
+//                    }
+//                } else {
+//                    if (new File(WRITE_TO_SOLAR_PROCESSED).mkdir()) {
+//                        if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
+//                            System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+//                        else
+//                            System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
+//
+//                    } else {
+//                        System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED);
+//                    }
+//                }
+
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + stateName + "/" + stnNum + "_dni_ghi_processed.csv"));
 
                 String[] headers = reader.readNext(); // keep the headers as it is
@@ -241,13 +253,8 @@ public class Main {
 
                 // if the directory doesn't exist, then write the create the directory first
                 // handles any potential file not found error
-                if (!new File(WRITE_TO_ACTUAL + stateName + "/").isDirectory()) {
-                    if (new File(WRITE_TO_ACTUAL + stateName).mkdir())
-                        System.out.println("Created a new directory at " + WRITE_TO_ACTUAL + stateName);
-                    else {
-                        System.out.println("Failed to create a directory at " + WRITE_TO_ACTUAL + stateName);
-                        return false;
-                    }
+                if (!checkValidDirectory(WRITE_TO_ACTUAL, stateName)) {
+                    return false;
                 }
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + stateName + "/" + stnNum + "_averaged.csv"));
 
@@ -354,5 +361,39 @@ public class Main {
         HttpGet getRequest = new HttpGet(url + latitude + "/" + longitude);
 
         return httpClient.execute(getRequest);
+    }
+
+    public static boolean checkValidDirectory(String whichDirectory, String state) {
+        // if the parent directory already exists
+        if (new File(whichDirectory).isDirectory()) {
+            // check if the state directory already exists
+            if (!new File(whichDirectory + state + "/").isDirectory()) {
+                // if the state directory doesn't already exist, create one
+                if (new File(whichDirectory + state).mkdir()) {
+                    System.out.println("Created a new directory at " + whichDirectory + state);
+                } else {
+                    System.out.println("Failed to create a directory at " + whichDirectory + state);
+                    return false;
+                }
+            }
+        }
+        // if the parent directory doesn't already exist
+        else {
+            // first create the parent directory
+            if (new File(whichDirectory).mkdir()) {
+                // then create the state directory
+                if (new File(whichDirectory + state).mkdir())
+                    System.out.println("Created a new directory at " + whichDirectory + state);
+                else {
+                    System.out.println("Failed to create a directory at " + whichDirectory + state);
+                    return false;
+                }
+
+            } else {
+                System.out.println("Failed to create a directory at " + whichDirectory);
+                return false;
+            }
+        }
+        return true;
     }
 }
