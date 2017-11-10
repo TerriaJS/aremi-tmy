@@ -36,7 +36,7 @@ public class Main {
     private final static long ACST = 570; // UTC offset by 570 minutes (9 hours 30 minutes)
     private final static long AWST = 480; // UTC offset by 480 minutes (8 hours)
 
-    private final static String TEST_STATION = "046012";
+    private final static String TEST_STATION = "046128";
 
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
@@ -103,29 +103,29 @@ public class Main {
 
 
     public static void mergeDatasets(String station) throws IOException {
-        if (station.equals(TEST_STATION)) {
+//        if (station.equals(TEST_STATION)) {
             if (sds != null && wds != null) {
                 int i = 0; // iterator for SolarData array
                 int j = 0; // iterator for WeatherData array
 
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + "/" + stateName + "/" + station + "_merged.csv"));
+                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + "/" + stateName + "/" + station + "_averaged.csv"));
 
                 String[] header = new String[]{"station", "local standard time",
-                        "dni", "dni count", "dni fill count",
-                        "ghi", "ghi count", "ghi fill count",
-                        "precipitation"            , "precipitation count"            , "precipitation fill count",
-                        "air temperature"          , "air temperature count"          , "air temperature fill count",
-                        "wet bulb temperature"     , "wet bulb temperature count"     , "wet bulb temperature fill count",
-                        "dew point temperature"    , "dew point temperature count"    , "dew point temperature fill count",
-                        "humidity"                 , "humidity count"                 , "humidity fill count",
-                        "vapour pressure"          , "vapour pressure count"          , "vapour pressure fill count",
-                        "saturated vapour pressure", "saturated vapour pressure count", "saturated vapour pressure fill count",
-                        "wind speed"               , "wind speed count"               , "wind speed fill count",
-                        "wind direction"           , "wind direction count"           , "wind direction fill count",
-                        "wind gust"                , "wind gust count"                , "wind gust fill count",
-                        "sea level pressure"       , "sea level pressure count"       , "sea level pressure fill count"};
+                        "dni mean", "dni count", "dni fill count",
+                        "ghi mean", "ghi count", "ghi fill count",
+                        "precipitation"                 , "precipitation count"            , "precipitation fill count",
+                        "air temperature mean"          , "air temperature count"          , "air temperature fill count",
+                        "wet bulb temperature mean"     , "wet bulb temperature count"     , "wet bulb temperature fill count",
+                        "dew point temperature mean"    , "dew point temperature count"    , "dew point temperature fill count",
+                        "humidity mean"                 , "humidity count"                 , "humidity fill count",
+                        "vapour pressure mean"          , "vapour pressure count"          , "vapour pressure fill count",
+                        "saturated vapour pressure mean", "saturated vapour pressure count", "saturated vapour pressure fill count",
+                        "wind speed mean"               , "wind speed count"               , "wind speed fill count",
+                        "wind direction mean"           , "wind direction count"           , "wind direction fill count",
+                        "wind gust mean"                , "wind gust count"                , "wind gust fill count",
+                        "sea level pressure mean"       , "sea level pressure count"       , "sea level pressure fill count"};
 
-                writer.writeNext(header, false);
+                writer.writeNext(header);
 
                 while (i < sds.size() && j < wds.size()) {
 
@@ -150,12 +150,12 @@ public class Main {
 
                 writer.close();
             }
-        }
+//        }
 
     }
 
     private static void processSolarValues(String station) throws IOException {
-        if (station.equals(TEST_STATION)) {
+//        if (station.equals(TEST_STATION)) {
             System.out.println("Working on " + station);
             try {
                 CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + "/" + stateName + "/" + station + "_dni_ghi.csv")));
@@ -179,7 +179,7 @@ public class Main {
                 sds = null;
                 System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-        }
+//        }
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
@@ -226,7 +226,7 @@ public class Main {
 
     private static void halfHourlyData(String station) throws IOException {
 
-        if (station.equals(TEST_STATION)) {
+//        if (station.equals(TEST_STATION)) {
             try {
                 System.out.println("Working on " + station);
 
@@ -278,7 +278,7 @@ public class Main {
                 wds = null;
                 System.out.println("Cannot merge station " + stnNum + ", solar data file not found.");
             }
-        }
+//        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {

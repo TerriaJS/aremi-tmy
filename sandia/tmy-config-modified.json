@@ -1,0 +1,24 @@
+{
+  "params": {
+    "station"                 : "station",
+    "time"                    : "local standard time",
+    "dry_bulb_tmp_mean"       : "air temperature mean",
+    "dew_point_tmp_mean"      : "dew point temperature mean",
+    "wind_velocity_mean"      : "wind speed mean",
+    "global_horiz_radiation"  : "ghi mean",
+    "direct_normal_radiation" : "dni mean"
+  },
+  "weights": {
+    "total": 15,
+    "dry_bulb_tmp_mean"       : 2,
+    "dew_point_tmp_mean"      : 2,
+    "wind_velocity_mean"      : 1,
+    "global_horiz_radiation"  : 5,
+    "direct_normal_radiation" : 5
+  },
+  "cdf_bins": 50,
+  "min_years_required": 9,
+  "solar_stations_url": "http://nationalmap.gov.au/renewables/datasets/SolarStationHistoricalObservations/SolarStations.csv",
+  "csv_datasets_url": "http://static.aremi.nicta.com.au/datasets/SolarStationHistoricalObservations-0.1.1.0/",
+  "ss_download_historical_obs": "Download historical observations (CSV)"
+}

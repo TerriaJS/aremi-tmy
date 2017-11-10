@@ -5,18 +5,6 @@ import java.util.List;
 // only works for weather data for now
 // TODO: make it work for other datasets
 public class FillGapsWeather {
-//
-//    public static final int PRECIP = 0;
-//    public static final int AIRTEMP = 1;
-//    public static final int WBTEMP = 2;
-//    public static final int DPTEMP = 3;
-//    public static final int HUMIDITY = 4;
-//    public static final int VAP = 5;
-//    public static final int SATVAP = 6;
-//    public static final int WINDSPD = 7;
-//    public static final int WINDDIR = 8;
-//    public static final int WINDGUST = 9;
-//    public static final int SEALVL = 10;
 
     private static int[] counter = new int[11];
 
