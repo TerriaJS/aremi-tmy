@@ -59,6 +59,14 @@ public class AveragedWD extends WeatherData {
         }
     }
 
+    public boolean containsVar(WeatherVar variable) {
+        return variable == WeatherVar.AIRTEMP ||
+                variable == WeatherVar.HUMIDITY ||
+                variable == WeatherVar.WINDSPD ||
+                variable == WeatherVar.WINDDIR ||
+                variable == WeatherVar.WINDGUST;
+    }
+
     public String[] combineValues() {
         alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");

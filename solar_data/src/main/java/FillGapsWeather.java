@@ -151,7 +151,8 @@ public class FillGapsWeather {
         // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
             for (WeatherVar wv : WeatherVar.values()) {
-                handleSmallGaps(i, wv);
+                if (list.get(i).containsVar(wv))
+                    handleSmallGaps(i, wv);
             }
         }
 
@@ -161,7 +162,8 @@ public class FillGapsWeather {
         // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
             for (WeatherVar wv : WeatherVar.values()) {
-                handleBigGaps(i, wv);
+                if (list.get(i).containsVar(wv))
+                    handleBigGaps(i, wv);
             }
         }
     }
@@ -213,7 +215,7 @@ public class FillGapsWeather {
 
             for (int j = 0; j < 11; j++) {
                 Reading r = Main.wds.get(i).getReading(WeatherVar.values()[j]);
-                if (r.isValid()) {
+                if (r != null && r.isValid()) {
                     sums[j] += r.value;
 
                     // if the value is an actual value recorded by BoM, then add to the given reading count

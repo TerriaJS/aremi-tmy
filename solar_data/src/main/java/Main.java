@@ -34,7 +34,7 @@ public class Main {
     private final static long ACST = 570; // UTC offset by 570 minutes (9 hours 30 minutes)
     private final static long AWST = 480; // UTC offset by 480 minutes (8 hours)
 
-    private final static String TEST_STATION = "046128";
+    private final static String TEST_STATION = "014015";
 
     private static Map<String, Long> TIME_ZONE_LOOKUP;
 
@@ -105,6 +105,11 @@ public class Main {
             if (sds != null && wds != null) {
                 int i = 0; // iterator for SolarData array
                 int j = 0; // iterator for WeatherData array
+
+                // create the directory first if it doesn't already exist
+                if (!checkValidDirectory(WRITE_TO_MERGED, stateName)) {
+                    return;
+                }
 
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged.csv"));
 

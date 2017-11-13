@@ -77,6 +77,17 @@ public class ActualWDBrief extends WeatherData {
         }
     }
 
+    public boolean containsVar(WeatherVar variable) {
+        return variable == WeatherVar.PRECIP ||
+                variable == WeatherVar.DPTEMP ||
+                variable == WeatherVar.AIRTEMP ||
+                variable == WeatherVar.HUMIDITY ||
+                variable == WeatherVar.WINDSPD ||
+                variable == WeatherVar.WINDDIR ||
+                variable == WeatherVar.WINDGUST ||
+                variable == WeatherVar.SEALVL;
+    }
+
     public String[] combineValues() {
         alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");

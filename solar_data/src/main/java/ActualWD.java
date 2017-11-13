@@ -68,6 +68,20 @@ public class ActualWD extends WeatherData {
         }
     }
 
+    public boolean containsVar(WeatherVar variable) {
+        return variable == WeatherVar.PRECIP ||
+                variable == WeatherVar.DPTEMP ||
+                variable == WeatherVar.AIRTEMP ||
+                variable == WeatherVar.HUMIDITY ||
+                variable == WeatherVar.WINDSPD ||
+                variable == WeatherVar.WINDDIR ||
+                variable == WeatherVar.WINDGUST ||
+                variable == WeatherVar.SEALVL ||
+                variable == WeatherVar.WBTEMP ||
+                variable == WeatherVar.VAP ||
+                variable == WeatherVar.SATVAP;
+    }
+
     // map which variable to the attributes in WeatherData
     public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {

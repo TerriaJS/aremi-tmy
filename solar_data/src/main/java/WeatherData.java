@@ -66,6 +66,7 @@ public abstract class WeatherData {
     public abstract String[] combineValues();
     public abstract void averageValues(WeatherData toCombine);
     public abstract Reading getReading(WeatherVar whichVariable);
+    public abstract boolean containsVar(WeatherVar variable);
 
     public String rightAlign(String str, int intendedLength) {
         return String.format("%1$" + intendedLength + "s", str);
