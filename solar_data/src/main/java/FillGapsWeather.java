@@ -18,8 +18,6 @@ public class FillGapsWeather {
 
                 // create a weather data object and add it to the list
                 Main.wds.add(i, new ActualWD(currDateTIme, null));
-
-//                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
             }
         }
     }
@@ -35,7 +33,6 @@ public class FillGapsWeather {
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
-        //double[] values = linearInterpolate(from, to, gapSize);
         // how to fill in the gaps:
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j
@@ -46,36 +43,6 @@ public class FillGapsWeather {
             currReading.fillCount++;
         }
     }
-
-//    // map which variable to the attributes in WeatherData
-//    public static Reading getReading(int index, int whichVariable) {
-//        switch (whichVariable) {
-//            case PRECIP:
-//                return Main.wds.get(index).precip;
-//            case WBTEMP:
-//                return Main.wds.get(index).wbTemp;
-//            case DPTEMP:
-//                return Main.wds.get(index).dpTemp;
-//            case AIRTEMP:
-//                return Main.wds.get(index).airTemp;
-//            case HUMIDITY:
-//                return Main.wds.get(index).humidity;
-//            case VAP:
-//                return Main.wds.get(index).vapPressure;
-//            case SATVAP:
-//                return Main.wds.get(index).satVapPressure;
-//            case WINDSPD:
-//                return Main.wds.get(index).windSpeed;
-//            case WINDDIR:
-//                return Main.wds.get(index).windDir;
-//            case WINDGUST:
-//                return Main.wds.get(index).windGust;
-//            case SEALVL:
-//                return Main.wds.get(index).seaLvlPressure;
-//            default:
-//                return null;
-//        }
-//    }
 
     public static void fillLongGap(int gapIndex, int gapSize, WeatherVar wv) {
         // gapIndex - gapSize is the start of the gap
@@ -91,12 +58,11 @@ public class FillGapsWeather {
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
-//                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
 
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-//            System.out.println("Cannot fill the long gap at index " + gapIndex + " because either the previous or next day is out of bounds");
+
         }
 
 
@@ -189,11 +155,11 @@ public class FillGapsWeather {
                 // if we are dealing with NT or SA states, we want to average them into hourly at the 30 minute mark so that it matches
                 // the solar data offset (since their timezone is offset by 9h30min)
                 LocalDateTime newdt;
-                if (Main.stateName.equals("NT") || Main.stateName.equals("SA"))
-                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 30, currDateTIme.getSecond());
-                // otherwise any other state can be averaged into hourly at the 00 minute mark
-                else
-                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 0, currDateTIme.getSecond());
+//                if (Main.stateName.equals("NT") || Main.stateName.equals("SA"))
+//                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 30, currDateTIme.getSecond());
+//                // otherwise any other state can be averaged into hourly at the 00 minute mark
+//                else
+                newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 0, currDateTIme.getSecond());
                 WeatherData wd = new ActualWD(newdt, null);
 
                 for (int j = 0; j < 11; j++) {

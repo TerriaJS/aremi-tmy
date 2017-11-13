@@ -135,6 +135,11 @@ public class Main {
                     LocalDateTime solarDateTime = sds.get(i).dateTime;
                     LocalDateTime weatherDateTime = wds.get(j).dateTime;
 
+                    // for NT and SA datasets, add the timestamp on the hour by 30 mins to match the solar timestamps
+                    if (stateName.equals("NT") || stateName.equals("SA")) {
+                        weatherDateTime = weatherDateTime.plusMinutes(30);
+                    }
+
                     if (solarDateTime.isAfter(weatherDateTime)) {
                         // ignore the current weather reading because there are no solar reading to merge with
                         j++;
@@ -168,26 +173,6 @@ public class Main {
                 if (!checkValidDirectory(WRITE_TO_SOLAR_PROCESSED, stateName)) {
                     return false;
                 }
-//                if (new File(WRITE_TO_SOLAR_PROCESSED).isDirectory()) {
-//                    if (!new File(WRITE_TO_SOLAR_PROCESSED + stateName + "/").isDirectory()) {
-//                        if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
-//                            System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-//                        else {
-//                            System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-//                            return false;
-//                        }
-//                    }
-//                } else {
-//                    if (new File(WRITE_TO_SOLAR_PROCESSED).mkdir()) {
-//                        if (new File(WRITE_TO_SOLAR_PROCESSED + stateName).mkdir())
-//                            System.out.println("Created a new directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-//                        else
-//                            System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED + stateName);
-//
-//                    } else {
-//                        System.out.println("Failed to create a directory at " + WRITE_TO_SOLAR_PROCESSED);
-//                    }
-//                }
 
                 CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + stateName + "/" + stnNum + "_dni_ghi_processed.csv"));
 

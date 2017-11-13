@@ -22,22 +22,10 @@ public class FillGapsSolar {
 
                 Main.sds.add(i, new SolarData(currDateTIme, solarReadings));
 
-//                System.out.println("At index " + i + ", we found a timestamp gap and took care of it");
             }
         }
     }
 
-//    // map which variable to the attributes in WeatherData
-//    public static Reading getReading(int index, int whichVariable) {
-//        switch (whichVariable) {
-//            case DNI:
-//                return Main.sds.get(index).dni;
-//            case GHI:
-//                return Main.sds.get(index).ghi;
-//            default:
-//                return null;
-//        }
-//    }
 
 
     public static void fillShortGap(int from, int to, int gapSize, SolarVar sv) {
@@ -48,7 +36,6 @@ public class FillGapsSolar {
 
         double[] values = FillGaps.linearInterpolate(prevReading.value, nextReading.value, gapSize);
 
-        //double[] values = linearInterpolate(from, to, gapSize);
         // how to fill in the gaps:
         // take the gap count and the array returned by linear interpolation
         // for loop j to fill in the values: index of weather data would be i - (gapCount + 1) - j

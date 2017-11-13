@@ -64,7 +64,6 @@ public abstract class WeatherData {
     }
 
     public abstract String[] combineValues();
-    public abstract void averageValues(WeatherData toCombine);
     public abstract Reading getReading(WeatherVar whichVariable);
     public abstract boolean containsVar(WeatherVar variable);
 
@@ -73,7 +72,7 @@ public abstract class WeatherData {
     }
 
     public boolean checkQuality(String quality) {
-        return (ALLOWEDQUALITY.contains(quality));
+        return (!quality.equals("") && ALLOWEDQUALITY.contains(quality));
     }
 
     public boolean checkParsable(String str) {
@@ -106,8 +105,7 @@ public abstract class WeatherData {
 
     public String parseValue(Reading reading) {
         DecimalFormat df = new DecimalFormat("#.#");
-        String toParse = (reading.isValid()) ? (df.format(reading.value)) : "";
-        return toParse; //rightAlign(toParse, 6);
+        return (reading.isValid()) ? (df.format(reading.value)) : "";
 
     }
 

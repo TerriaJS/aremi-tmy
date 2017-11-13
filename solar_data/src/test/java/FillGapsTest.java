@@ -72,33 +72,4 @@ public class FillGapsTest {
         assertTrue(Main.wds.get(Main.wds.size() - 1).dateTime.isEqual(test1.plusMinutes((Main.wds.size() - 1) * 30)));
 
     }
-
-    @Test
-    public void testGetReadingWeather() {
-        Main.stnNum = "99999";
-        Main.wds = new ArrayList<>();
-
-        LocalDateTime test1 = LocalDateTime.of(LocalDate.now(), LocalTime.now());
-        Main.wds.add(new ActualWD(test1, null));
-        LocalDateTime test2 = test1.plusHours(1);
-        Main.wds.add(new ActualWD(test2, null));
-        LocalDateTime test3 = test2.plusMinutes(30);
-        Main.wds.add(new ActualWD(test3, null));
-
-        for (int i = 0; i < Main.wds.size(); i++) {
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[0]).varName.equals("Precipitation"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[1]).varName.equals("Air temperature"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[2]).varName.equals("Wet bulb temperature"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[3]).varName.equals("Dew point temperature"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[4]).varName.equals("Humidity"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[5]).varName.equals("Vapour pressure"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[6]).varName.equals("Saturated vapour pressure"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[7]).varName.equals("Wind speed"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[8]).varName.equals("Wind direction"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[9]).varName.equals("Wind gust"));
-            assertTrue(Main.wds.get(i).getReading(WeatherVar.values()[10]).varName.equals("Sea level pressure"));
-
-        }
-
-    }
 }

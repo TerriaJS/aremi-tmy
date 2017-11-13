@@ -13,33 +13,14 @@ public class ChangeYear {
     private final static String WRITE_TO_TMY = "BoM_observations/tmy/";
 
     public static void main(String[] args) throws IOException {
-        String stateName = "NSW";
-        String stnNum = "046012";
+        String stateName = "NT";
+        String stnNum = "014015";
 
         CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged_tmy.csv")));
 
         // if the directory doesn't exist, then write the create the directory first
         // handles any potential file not found error
         if (!Main.checkValidDirectory(WRITE_TO_TMY, stateName)) return;
-//        if (new File(WRITE_TO_TMY).isDirectory()) {
-//            if (!new File(WRITE_TO_TMY + stateName + "/").isDirectory()) {
-//                if (new File(WRITE_TO_TMY + stateName).mkdir())
-//                    System.out.println("Created a new directory at " + WRITE_TO_TMY + stateName);
-//                else {
-//                    System.out.println("Failed to create a directory at " + WRITE_TO_TMY + stateName);
-//                }
-//            }
-//        } else {
-//            if (new File(WRITE_TO_TMY).mkdir()) {
-//                if (new File(WRITE_TO_TMY + stateName).mkdir())
-//                    System.out.println("Created a new directory at " + WRITE_TO_TMY + stateName);
-//                else
-//                    System.out.println("Failed to create a directory at " + WRITE_TO_TMY + stateName);
-//
-//            } else {
-//                System.out.println("Failed to create a directory at " + WRITE_TO_TMY);
-//            }
-//        }
 
         CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_TMY + stateName + "/" + stnNum + "_tmy_with_uniform_year.csv"));
 

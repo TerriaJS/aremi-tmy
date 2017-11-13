@@ -52,22 +52,6 @@ public class ActualWD extends WeatherData {
         seaLvlPressure = new Reading("Sea level pressure", isGap ? Double.parseDouble(dataString[32]) : 0, dataString[33], isGap);
     }
 
-    public void averageValues(WeatherData toCombine) {
-        if (toCombine instanceof ActualWD) {
-            this.airTemp.value = (this.airTemp.value + toCombine.airTemp.value) / 2;
-            this.humidity.value = (this.humidity.value + toCombine.humidity.value) / 2;
-            this.windSpeed.value = (this.windSpeed.value + toCombine.windSpeed.value) / 2;
-            this.windDir.value = (this.windDir.value + toCombine.windDir.value) / 2;
-            this.windGust.value = (this.windGust.value + toCombine.windGust.value) / 2;
-            this.precip.value = (this.precip.value + toCombine.precip.value) / 2;
-            this.vapPressure.value = (this.vapPressure.value + toCombine.vapPressure.value) / 2;
-            this.satVapPressure.value = (this.satVapPressure.value + toCombine.satVapPressure.value) / 2;
-            this.wbTemp.value = (this.wbTemp.value + toCombine.wbTemp.value) / 2;
-            this.dpTemp.value = (this.dpTemp.value + toCombine.dpTemp.value) / 2;
-            this.seaLvlPressure.value = (this.seaLvlPressure.value + toCombine.seaLvlPressure.value) / 2;
-        }
-    }
-
     public boolean containsVar(WeatherVar variable) {
         return variable == WeatherVar.PRECIP ||
                 variable == WeatherVar.DPTEMP ||

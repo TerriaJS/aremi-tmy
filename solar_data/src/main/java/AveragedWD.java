@@ -26,22 +26,6 @@ public class AveragedWD extends WeatherData {
 
     }
 
-    public void averageValues(WeatherData toCombine) {
-        this.airTemp.value = (this.airTemp.value + toCombine.airTemp.value) / 2;
-        this.airTemp.count += toCombine.airTemp.count;
-
-        this.humidity.value = (this.humidity.value + toCombine.humidity.value) / 2; // humidity doesn't have count
-
-        this.windSpeed.value = (this.windSpeed.value + toCombine.windSpeed.value) / 2;
-        this.windSpeed.count += toCombine.windSpeed.count;
-
-        this.windDir.value = (this.windDir.value + toCombine.windDir.value) / 2;
-        this.windDir.count += toCombine.windDir.count;
-
-        this.windGust.value = (this.windGust.value + toCombine.windGust.value) / 2;
-        this.windGust.count += toCombine.windGust.count;
-    }
-
     public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
             case AIRTEMP:

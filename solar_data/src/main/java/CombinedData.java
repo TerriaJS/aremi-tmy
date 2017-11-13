@@ -8,8 +8,8 @@ public class CombinedData {
 
 
 
-    // only works for ActualWD for now
-    // TODO: make it work for other kinds of weather data (the different classes)
+    // only works for ActualWD and ActualWDBrief for now
+    // TODO: make it work for other kinds of weather data (AveragedWD)
     public CombinedData(SolarData sd, WeatherData wd) {
         this.sd = sd;
         this.wd = wd;
@@ -26,10 +26,6 @@ public class CombinedData {
             dataString[3 * i + 3] = Integer.toString(sd.getReading(SolarVar.values()[i]).count);
             dataString[3 * i + 4] = Integer.toString(sd.getReading(SolarVar.values()[i]).fillCount);
         }
-//        dataString[2] = sd.dataString[1];
-//        dataString[3] = Integer.toString(sd.getReading(0).count);
-//        dataString[4] = Integer.toString(sd.getReading(0).fillCount);
-//        dataString[5] = sd.dataString[2];
 
         // go through the values from weather data String[] and copy it over to the new dataString
         // keep track of the counts and fill counts
