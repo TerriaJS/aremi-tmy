@@ -10,15 +10,18 @@ public class FillGapsWeather {
 
     // only works for ActualWD for now
     public static void fillMissingTimeStamp() {
-        LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
-        for (int i = 1; i < Main.wds.size(); i++) {
-            currDateTIme = currDateTIme.plusMinutes(30);
-            if (!Main.wds.get(i).dateTime.equals(currDateTIme)) {
-                // we found a gap, meaning we skipped one half-hourly reading
-
-                // create a weather data object and add it to the list
-                Main.wds.add(i, new ActualWD(currDateTIme, null));
+        try {
+            LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
+            for (int i = 1; i < Main.wds.size(); i++) {
+                currDateTIme = currDateTIme.plusMinutes(30);
+                if (!Main.wds.get(i).dateTime.equals(currDateTIme)) {
+                    // we found a gap, meaning we skipped one half-hourly reading
+                    // create a weather data object and add it to the list
+                    Main.wds.add(i, new ActualWD(currDateTIme, null));
+                }
             }
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("Index out of bounds - the list is empty");
         }
     }
 
@@ -48,7 +51,6 @@ public class FillGapsWeather {
         // gapIndex - gapSize is the start of the gap
         // gapIndex - 1 is the end of the gap
 
-        // if (gapIndex - gapSize < 0) return; // this gap is at the beginning of the file and there's no way of filling in this gap
         try {
             for (int i = gapIndex - gapSize; i < gapIndex; i++) {
                 Reading prev = Main.wds.get(i - 48).getReading(wv);

@@ -238,7 +238,7 @@ def updateSolarStationsCsv(station_num, tmys, config, years, merged_csv_filepath
         solar_stations.reset_index(drop=False, inplace=True)
         solar_stations = solar_stations[cols]
         print("Writing solar stations csv to existing file %s" % new_solar_path)
-        solar_stations.to_csv(new_solar_path, index=False, cols=cols)
+        solar_stations.to_csv(new_solar_path, index=False, columns=cols)
     return new_solar_path
 
 
@@ -307,6 +307,7 @@ def doAll(args, config):
         zfile = zipfile.ZipFile(hist_objs_zip)
         # Can only be used with trustworthy zips
         zfile.extractall()
+        zfile.close()
         os.remove(hist_objs_zip)
 
     hist_obs_csvs = os.listdir(os.getcwd())

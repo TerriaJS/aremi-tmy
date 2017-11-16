@@ -9,14 +9,13 @@ import static org.apache.commons.lang3.ArrayUtils.addAll;
 
 public class ChangeYear {
 
-    private final static String WRITE_TO_MERGED = "BoM_observations/Hourly-merged/";
     private final static String WRITE_TO_TMY = "BoM_observations/tmy/";
 
     public static void main(String[] args) throws IOException {
-        String stateName = "NT";
-        String stnNum = "014015";
+        String stateName = new File(args[0]).getParentFile().getName();
+        String stnNum = new File(args[0]).getName().split("_")[0];
 
-        CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged_tmy.csv")));
+        CSVReader reader = new CSVReader(new BufferedReader(new FileReader(args[0])));
 
         // if the directory doesn't exist, then write the create the directory first
         // handles any potential file not found error

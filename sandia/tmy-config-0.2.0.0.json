@@ -18,7 +18,7 @@
   },
   "cdf_bins": 50,
   "min_years_required": 9,
-  "solar_stations_url": "http://nationalmap.gov.au/renewables/datasets/SolarStationHistoricalObservations/SolarStations.csv",
-  "csv_datasets_url": "http://static.aremi.nicta.com.au/datasets/SolarStationHistoricalObservations-0.1.1.0/",
+  "solar_stations_url": "http://static.aremi.data61.io/datasets/SolarStationHistoricalObservations/SolarStations-0.2.0.0.csv",
+  "csv_datasets_url": "http://static.aremi.data61.io/datasets/SolarStationHistoricalObservations-0.2.0.0/",
   "ss_download_historical_obs": "Download historical observations (CSV)"
 }

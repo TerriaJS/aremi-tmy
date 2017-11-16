@@ -10,19 +10,23 @@ public class FillGapsSolar {
     private static final int[] counter = new int[SolarVar.values().length];
 
     public static void fillMissingTimeStamp() {
-        LocalDateTime currDateTIme = Main.sds.get(0).dateTime;
-        for (int i = 1; i < Main.sds.size(); i++) {
-            currDateTIme = currDateTIme.plusHours(1);
-            if (!Main.sds.get(i).dateTime.equals(currDateTIme)) {
-                // we found a gap, meaning we skipped one half-hourly reading
+        try {
+            LocalDateTime currDateTIme = Main.sds.get(0).dateTime;
+            for (int i = 1; i < Main.sds.size(); i++) {
+                currDateTIme = currDateTIme.plusHours(1);
+                if (!Main.sds.get(i).dateTime.equals(currDateTIme)) {
+                    // we found a gap, meaning we skipped one half-hourly reading
 
-                // create a weather data object and add it to the list
-                String[] solarReadings = new String[3];
-                solarReadings[0] = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(currDateTIme);
+                    // create a weather data object and add it to the list
+                    String[] solarReadings = new String[3];
+                    solarReadings[0] = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(currDateTIme);
 
-                Main.sds.add(i, new SolarData(currDateTIme, solarReadings));
+                    Main.sds.add(i, new SolarData(currDateTIme, solarReadings));
 
+                }
             }
+        } catch (IndexOutOfBoundsException e) {
+            System.out.println("Index out of bounds - the list is empty");
         }
     }
 
