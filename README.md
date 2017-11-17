@@ -12,8 +12,9 @@ Everything in here is &copy; CSIRO Data61 2017.
 
 ## Instructions
 
-This software is written in Haskell - full instructions for building and running below.
+There are two programs, one written in Haskell and the other in Java - full instructions for building and running below.
 
+### Java Software
 
 ### Building
 _Building this software requires Haskell Stack._
