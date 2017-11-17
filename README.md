@@ -47,6 +47,7 @@ Building and compiling the files can be done using the IDE or command line:
 
 #### Running
 **Run the Java software to obtain the averaged data of each station**
+
 Running the Main class can be done using the IDE or command line:
 
 `java solar_data/target/classes/Main`
@@ -59,6 +60,7 @@ Once the TMY has been obtained, to modify the output to have the same uniform ye
 
 ### TMY Python Script
 **Once the solar and weather data has been processed for each station, run the Python software to calculate the TMY for each station**
+
 _Requires Python 2 (does not work with Python 3) and Anaconda 2*._
 * To calculate TMY for a specific station:
 
