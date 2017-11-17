@@ -18,7 +18,7 @@ public class Main {
 
     private final static String WRITE_TO_AVERAGED = "BoM_observations/Hourly-averaged-data/";
     private final static String WRITE_TO_ACTUAL = "BoM_observations/Hourly-data/";
-    private final static String WRITE_TO_SOLAR = "BoM_observations/Hourly-solar-data/";
+    private final static String WRITE_TO_SOLAR = "BoM_observations/Hourly-solar/";
     private final static String WRITE_TO_SOLAR_PROCESSED = "BoM_observations/Hourly-solar-data-processed/";
     private final static String WRITE_TO_MERGED = "BoM_observations/Hourly-merged/";
 
@@ -67,6 +67,10 @@ public class Main {
         stationsWriter.writeNext(header, false);
 
         File file = new File("BoM_observations/Half-hourly-data");
+        if (!file.exists()) {
+            System.out.println("Cannot find the directory BoM_observations/Half-hourly-data");
+            return;
+        }
         String pathToStnDet = "";
         for (File stateFolders : file.listFiles()) {
             System.out.println("In " + stateFolders.getPath());
@@ -131,9 +135,6 @@ public class Main {
                 stationDetails[9] = line[11]; // height of barometer above sea lvl
                 stationDetails[10] = "<a href=\'http://static.aremi.nicta.com.au/datasets/SolarStationHistoricalObservations-0.1.1.0/" + stnNum + "_averaged.zip\'>" + yearsOfData + " years of data</a>"; // link to historical observations
 
-//                    for (int i = 0; i < stationDetails.length; i++) {
-//                        System.out.print(stationDetails[i] + " ");
-//                    }
                 stationsWriter.writeNext(stationDetails, false);
 
             }
@@ -148,109 +149,100 @@ public class Main {
 
 
     private static void mergeDatasets() throws IOException {
-//        if (stnNum.equals(TEST_STATION)) {
-//            System.out.println("Working on merging solar and weather values");
-            if (sds != null && wds != null) {
-                int i = 0; // iterator for SolarData array
-                int j = 0; // iterator for WeatherData array
+        if (sds != null && wds != null) {
+            int i = 0; // iterator for SolarData array
+            int j = 0; // iterator for WeatherData array
 
-                // create the directory first if it doesn't already exist
-                if (!checkValidDirectory(WRITE_TO_MERGED, stateName)) {
-                    return;
-                }
-
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged.csv"));
-
-                String[] header = new String[]{"station", "local standard time",
-                        "dni mean", "dni count", "dni fill count",
-                        "ghi mean", "ghi count", "ghi fill count",
-                        "precipitation"                 , "precipitation count"            , "precipitation fill count",
-                        "air temperature mean"          , "air temperature count"          , "air temperature fill count",
-                        "wet bulb temperature mean"     , "wet bulb temperature count"     , "wet bulb temperature fill count",
-                        "dew point temperature mean"    , "dew point temperature count"    , "dew point temperature fill count",
-                        "humidity mean"                 , "humidity count"                 , "humidity fill count",
-                        "vapour pressure mean"          , "vapour pressure count"          , "vapour pressure fill count",
-                        "saturated vapour pressure mean", "saturated vapour pressure count", "saturated vapour pressure fill count",
-                        "wind speed mean"               , "wind speed count"               , "wind speed fill count",
-                        "wind direction mean"           , "wind direction count"           , "wind direction fill count",
-                        "wind gust mean"                , "wind gust count"                , "wind gust fill count",
-                        "sea level pressure mean"       , "sea level pressure count"       , "sea level pressure fill count"};
-
-                writer.writeNext(header);
-
-                while (i < sds.size() && j < wds.size()) {
-
-                    LocalDateTime solarDateTime = sds.get(i).dateTime;
-                    LocalDateTime weatherDateTime = wds.get(j).dateTime;
-
-                    // for NT and SA datasets, add the timestamp on the hour by 30 mins to match the solar timestamps
-                    if (stateName.equals("NT") || stateName.equals("SA")) {
-                        weatherDateTime = weatherDateTime.plusMinutes(30);
-                    }
-
-                    if (solarDateTime.isAfter(weatherDateTime)) {
-                        // ignore the current weather reading because there are no solar reading to merge with
-                        j++;
-                    } else if (solarDateTime.isBefore(weatherDateTime)) {
-                        // ignore the current solar reading because there are no weather reading to merge with
-                        i++;
-                    } else if (solarDateTime.isEqual(weatherDateTime)) {
-                        WeatherData wd = wds.get(j);
-                        CombinedData cd = new CombinedData(sds.get(i), wd);
-
-                        writer.writeNext(cd.dataString, false);
-                        i++;
-                        j++;
-                    }
-                }
-
-                writer.close();
+            // create the directory first if it doesn't already exist
+            if (!checkValidDirectory(WRITE_TO_MERGED, stateName)) {
+                return;
             }
-//        }
+
+            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_MERGED + stateName + "/" + stnNum + "_averaged.csv"));
+
+            String[] header = new String[]{"station", "local standard time",
+                    "dni mean", "dni count", "dni fill count",
+                    "ghi mean", "ghi count", "ghi fill count",
+                    "precipitation"                 , "precipitation count"            , "precipitation fill count",
+                    "air temperature mean"          , "air temperature count"          , "air temperature fill count",
+                    "wet bulb temperature mean"     , "wet bulb temperature count"     , "wet bulb temperature fill count",
+                    "dew point temperature mean"    , "dew point temperature count"    , "dew point temperature fill count",
+                    "humidity mean"                 , "humidity count"                 , "humidity fill count",
+                    "vapour pressure mean"          , "vapour pressure count"          , "vapour pressure fill count",
+                    "saturated vapour pressure mean", "saturated vapour pressure count", "saturated vapour pressure fill count",
+                    "wind speed mean"               , "wind speed count"               , "wind speed fill count",
+                    "wind direction mean"           , "wind direction count"           , "wind direction fill count",
+                    "wind gust mean"                , "wind gust count"                , "wind gust fill count",
+                    "sea level pressure mean"       , "sea level pressure count"       , "sea level pressure fill count"};
+
+            writer.writeNext(header);
+
+            while (i < sds.size() && j < wds.size()) {
+
+                LocalDateTime solarDateTime = sds.get(i).dateTime;
+                LocalDateTime weatherDateTime = wds.get(j).dateTime;
+
+                // for NT and SA datasets, add the timestamp on the hour by 30 mins to match the solar timestamps
+                if (stateName.equals("NT") || stateName.equals("SA")) {
+                    weatherDateTime = weatherDateTime.plusMinutes(30);
+                }
+
+                if (solarDateTime.isAfter(weatherDateTime)) {
+                    // ignore the current weather reading because there are no solar reading to merge with
+                    j++;
+                } else if (solarDateTime.isBefore(weatherDateTime)) {
+                    // ignore the current solar reading because there are no weather reading to merge with
+                    i++;
+                } else if (solarDateTime.isEqual(weatherDateTime)) {
+                    WeatherData wd = wds.get(j);
+                    CombinedData cd = new CombinedData(sds.get(i), wd);
+
+                    writer.writeNext(cd.dataString, false);
+                    i++;
+                    j++;
+                }
+            }
+
+            writer.close();
+        }
 
     }
 
     private static boolean processSolarValues() throws IOException {
-//        if (stnNum.equals(TEST_STATION)) {
-//            System.out.println("Processing solar values");
-            try {
-                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + stateName + "/" + stnNum + "_dni_ghi.csv")));
+        try {
+            CSVReader reader = new CSVReader(new BufferedReader(new FileReader(WRITE_TO_SOLAR + stateName + "/" + stnNum + "_dni_ghi.csv")));
 
-                // if the directory doesn't exist, then write the create the directory first
-                // handles any potential file not found error
-                if (!checkValidDirectory(WRITE_TO_SOLAR_PROCESSED, stateName)) {
-                    return false;
-                }
-
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + stateName + "/" + stnNum + "_dni_ghi_processed.csv"));
-
-                String[] headers = reader.readNext(); // keep the headers as it is
-                writer.writeNext(headers, false);
-
-                String[] solarReadings;
-                sds = new ArrayList<>();
-                while ((solarReadings = reader.readNext()) != null) {
-                    sds.add(new SolarData(solarReadings));
-                }
-
-                FillGapsSolar.fillMissingTimeStamp();
-                FillGapsSolar.findGaps(sds);
-                for (SolarData sd : sds) {
-                    writer.writeNext(sd.combineValues(), false);
-                }
-                return true;
-            } catch (Exception e) {
-                sds = null;
-                System.out.println("Cannot process solar values for station " + stnNum + ", caught an exception \"" + e.getMessage() + "\".");
+            // if the directory doesn't exist, then write the create the directory first
+            // handles any potential file not found error
+            if (!checkValidDirectory(WRITE_TO_SOLAR_PROCESSED, stateName)) {
                 return false;
             }
-//        }
-//        return false;
+
+            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_SOLAR_PROCESSED + stateName + "/" + stnNum + "_dni_ghi_processed.csv"));
+
+            String[] headers = reader.readNext(); // keep the headers as it is
+            writer.writeNext(headers, false);
+
+            String[] solarReadings;
+            sds = new ArrayList<>();
+            while ((solarReadings = reader.readNext()) != null) {
+                sds.add(new SolarData(solarReadings));
+            }
+
+            FillGapsSolar.fillMissingTimeStamp();
+            FillGapsSolar.findGaps(sds);
+            for (SolarData sd : sds) {
+                writer.writeNext(sd.combineValues(), false);
+            }
+            return true;
+        } catch (Exception e) {
+            sds = null;
+            System.out.println("Cannot process solar values for station " + stnNum + ", caught an exception \"" + e.getMessage() + "\".");
+            return false;
+        }
     }
 
     private static void averageHalfHourlyData(String station) throws IOException {
-
-//        System.out.println("Working on " + station);
 
         CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + station + filenameSuff)));
         CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_AVERAGED + "/" + stateName + "/" + station + "_averaged.csv"));
@@ -283,65 +275,61 @@ public class Main {
 
     private static boolean halfHourlyData() throws IOException {
 
-//        if (stnNum.equals(TEST_STATION)) {
-            try {
-//                System.out.println("Processing weather values");
+        try {
 
-                CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + stnNum + filenameSuff)));
+            CSVReader reader = new CSVReader(new BufferedReader(new FileReader(parentDir + "/" + filenamePref + "Data_" + stnNum + filenameSuff)));
 
-                // if the directory doesn't exist, then write the create the directory first
-                // handles any potential file not found error
-                if (!checkValidDirectory(WRITE_TO_ACTUAL, stateName)) {
-                    return false;
-                }
-                CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + stateName + "/" + stnNum + "_averaged.csv"));
-
-                String[] headers = reader.readNext();
-                writer.writeNext(headers, false);
-
-                String[] weatherReadings;
-
-                wds = new ArrayList<>();
-
-                while ((weatherReadings = reader.readNext()) != null) {
-
-                    // use the standard time
-                    LocalDateTime dt = LocalDateTime.of(Integer.parseInt(weatherReadings[7]), // year
-                            Integer.parseInt(weatherReadings[8]),                             // month
-                            Integer.parseInt(weatherReadings[9]),                             // date
-                            Integer.parseInt(weatherReadings[10]),                            // hours
-                            Integer.parseInt(weatherReadings[11]));                           // minutes
-
-                    // initialise w1 depending on which state we are dealing with
-                    if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
-                        wds.add(new ActualWD(dt, weatherReadings));
-                    } else {
-                        wds.add(new ActualWDBrief(dt, weatherReadings));
-                    }
-
-                }
-
-                FillGapsWeather.fillMissingTimeStamp();
-                FillGapsWeather.checkForGaps(wds);
-                yearsOfData = calculateYearsOfData();
-//                System.out.println("This station has " + yearsOfData + " years of data");
-                Main.wds = FillGapsWeather.averageValues();
-
-                for (WeatherData wd : wds) {
-                    writer.writeNext(wd.combineValues(), false);
-                }
-
-                reader.close();
-                writer.close();
-
-                return true;
-            } catch (Exception e) {
-                wds = null;
-                System.out.println("Cannot process solar values for station " + stnNum + ", caught an exception \"" + e.getMessage() + "\".");
+            // if the directory doesn't exist, then write the create the directory first
+            // handles any potential file not found error
+            if (!checkValidDirectory(WRITE_TO_ACTUAL, stateName)) {
                 return false;
             }
-//        }
-//        return false;
+            CSVWriter writer = new CSVWriter(new FileWriter(WRITE_TO_ACTUAL + stateName + "/" + stnNum + "_averaged.csv"));
+
+            String[] headers = reader.readNext();
+            writer.writeNext(headers, false);
+
+            String[] weatherReadings;
+
+            wds = new ArrayList<>();
+
+            while ((weatherReadings = reader.readNext()) != null) {
+
+                // use the standard time
+                LocalDateTime dt = LocalDateTime.of(Integer.parseInt(weatherReadings[7]), // year
+                        Integer.parseInt(weatherReadings[8]),                             // month
+                        Integer.parseInt(weatherReadings[9]),                             // date
+                        Integer.parseInt(weatherReadings[10]),                            // hours
+                        Integer.parseInt(weatherReadings[11]));                           // minutes
+
+                // initialise w1 depending on which state we are dealing with
+                if (stateName.equals("NSW") || stateName.equals("QLD") || stateName.equals("WA")) {
+                    wds.add(new ActualWD(dt, weatherReadings));
+                } else {
+                    wds.add(new ActualWDBrief(dt, weatherReadings));
+                }
+
+            }
+
+            FillGapsWeather.fillMissingTimeStamp();
+            FillGapsWeather.checkForGaps(wds);
+            yearsOfData = calculateYearsOfData();
+//                System.out.println("This station has " + yearsOfData + " years of data");
+            Main.wds = FillGapsWeather.averageValues();
+
+            for (WeatherData wd : wds) {
+                writer.writeNext(wd.combineValues(), false);
+            }
+
+            reader.close();
+            writer.close();
+
+            return true;
+        } catch (Exception e) {
+            wds = null;
+            System.out.println("Cannot process solar values for station " + stnNum + ", caught an exception \"" + e.getMessage() + "\".");
+            return false;
+        }
     }
 
     private static void combineSolarValues(String station, String latitude, String longitude) throws IOException {
