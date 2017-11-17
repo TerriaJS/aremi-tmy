@@ -79,7 +79,6 @@ public class FillGapsWeather {
                 // do linear interpolation if gap less than 5 hours
                 if (counter[wv.ordinal()] <= 10) {
                     fillShortGap(gapIndex - counter[wv.ordinal()] - 1, gapIndex, counter[wv.ordinal()], wv);
-//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[wv]) + " for " + whichVariable.varName);
                 }
                 counter[wv.ordinal()] = 0;
             }
@@ -94,8 +93,8 @@ public class FillGapsWeather {
             if (counter[wv.ordinal()] > 0) {
                 // something is wrong if we find an uninterpolated gap of less than 5 hours in the middle of the file,
                 // but it is okay if it is at the beginning of the file because we cannot interpolate at the beginning
-                if (counter[wv.ordinal()] <= 10 && gapIndex < 10) {
-                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours in the middle of the file for " + r.varName + " at index " + gapIndex + "!");
+                if (counter[wv.ordinal()] <= 10) {
+                    System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
                 }
 
                 // take average from previous and next day if gap less than 24 hours
@@ -103,7 +102,6 @@ public class FillGapsWeather {
                     // just leave precipitation as it is
                     if (wv != WeatherVar.PRECIP)
                         fillLongGap(gapIndex, counter[wv.ordinal()],wv);
-                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[wv]) + " for " + whichVariable.varName);
                 }
 
                 // don't do anything to gaps over 24 hours and just refresh the gap count
@@ -119,6 +117,9 @@ public class FillGapsWeather {
         // linear interpolate for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
             for (WeatherVar wv : WeatherVar.values()) {
+
+                // if the variable isn't part of the dataset, then don't do anything
+                // this enables the program to work for the dataset with fewer variables
                 if (list.get(i).containsVar(wv))
                     handleSmallGaps(i, wv);
             }
@@ -127,9 +128,12 @@ public class FillGapsWeather {
         // check every WeatherData object in the list
         // check every variable of the WeatherData object
         // record the ones that are valid and invalid data
-        // linear interpolate for gaps that are less than 5 hours
+        // average adjacent values for gaps that are less than 5 hours
         for (int i = 0; i < list.size(); i++) {
             for (WeatherVar wv : WeatherVar.values()) {
+
+                // if the variable isn't part of the dataset, then don't do anything
+                // this enables the program to work for the dataset with fewer variables
                 if (list.get(i).containsVar(wv))
                     handleBigGaps(i, wv);
             }
@@ -137,7 +141,6 @@ public class FillGapsWeather {
     }
 
     public static List<WeatherData> averageValues() {
-//        System.out.println("Now averaging the data");
         LocalDateTime currDateTIme = Main.wds.get(0).dateTime;
         List<WeatherData> res = new ArrayList<>();
         double[] sums = new double[11];
@@ -156,22 +159,22 @@ public class FillGapsWeather {
 
                 // if we are dealing with NT or SA states, we want to average them into hourly at the 30 minute mark so that it matches
                 // the solar data offset (since their timezone is offset by 9h30min)
-                LocalDateTime newdt;
-//                if (Main.stateName.equals("NT") || Main.stateName.equals("SA"))
-//                    newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 30, currDateTIme.getSecond());
-//                // otherwise any other state can be averaged into hourly at the 00 minute mark
-//                else
-                newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 0, currDateTIme.getSecond());
+                LocalDateTime newdt = LocalDateTime.of(currDateTIme.getYear(), currDateTIme.getMonth(), currDateTIme.getDayOfMonth(), currDateTIme.getHour(), 0, currDateTIme.getSecond());
                 WeatherData wd = new ActualWD(newdt, null);
 
                 for (int j = 0; j < 11; j++) {
                     Reading reading = wd.getReading(WeatherVar.values()[j]);
                     // if it's precipitation, then add the values
                     reading.value = (j == 0) ? sums[j] : FillGaps.average(sums[j], readingsCount[j] + gapsCount[j]);
+
+                    // if it wasn't an actual reading or a gap then it's considered invalid data and stays null
+                    // otherwise it's valid
                     if (readingsCount[j] == 0 && gapsCount[j] == 0) reading.v = Value.Invalid;
                     else reading.v = Value.Valid;
                     reading.count = readingsCount[j];
                     reading.fillCount = gapsCount[j];
+
+                    // refresh all the counters back to zero
                     sums[j] = 0;
                     readingsCount[j] = 0;
                     gapsCount[j] = 0;

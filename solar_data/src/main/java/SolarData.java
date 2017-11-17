@@ -33,6 +33,7 @@ public class SolarData {
         this.ghi = new Reading("Global horizontal irradiance", (isGap) ? Integer.parseInt(data[2]) : 0, isGap);
     }
 
+    // checks if the string can be parsed into integer
     public boolean checkParsable(String str) {
         if (str == null || str.equals("")) return false;
         for (int i = 0; i < str.length(); i++) {
@@ -43,6 +44,7 @@ public class SolarData {
         return true;
     }
 
+    // map which the enum variable to the attributes in SolarData
     public Reading getReading(SolarVar whichVariable) {
         switch (whichVariable) {
             case DNI:
@@ -54,11 +56,8 @@ public class SolarData {
         }
     }
 
-    public String rightAlign(String str, int intendedLength) {
-        return String.format("%1$" + intendedLength + "s", str);
-    }
-
-
+    // since updating of values take place in the class attributes rather than the string
+    // this function is used to update the String[] with the updated values
     public String[] combineValues() {
         dataString[1] = (dni.isValid()) ? Integer.toString((int) dni.value) : "";
         dataString[2] = (ghi.isValid()) ? Integer.toString((int) ghi.value) : "";

@@ -26,6 +26,7 @@ public class AveragedWD extends WeatherData {
 
     }
 
+    // map which the enum variable to the attributes in WeatherData
     public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
             case AIRTEMP:
@@ -43,6 +44,7 @@ public class AveragedWD extends WeatherData {
         }
     }
 
+    // checks if the given enum variable is a variable of this dataset
     public boolean containsVar(WeatherVar variable) {
         return variable == WeatherVar.AIRTEMP ||
                 variable == WeatherVar.HUMIDITY ||
@@ -51,6 +53,8 @@ public class AveragedWD extends WeatherData {
                 variable == WeatherVar.WINDGUST;
     }
 
+    // since updating of values take place in the class attributes rather than the string
+    // this function is used to update the String[] with the updated values
     public String[] combineValues() {
         alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");

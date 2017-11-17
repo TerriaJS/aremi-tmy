@@ -56,7 +56,7 @@ public class Main {
         TIME_ZONE_LOOKUP.put("SA", ACST);
         TIME_ZONE_LOOKUP.put("NT", ACST);
 
-        // write the site details to a file
+        // write the site details to the file SolarStations.csv
         CSVWriter stationsWriter = new CSVWriter(new BufferedWriter(new FileWriter("SolarStations.csv")));
 
         String[] header = {"Station name", "Bureau of Meteorology station number",
@@ -66,80 +66,85 @@ public class Main {
 
         stationsWriter.writeNext(header, false);
 
+        // first check if the BoM_observations directory exists or not
         File file = new File("BoM_observations/Half-hourly-data");
         if (!file.exists()) {
             System.out.println("Cannot find the directory BoM_observations/Half-hourly-data");
             return;
         }
         String pathToStnDet = "";
-        for (File stateFolders : file.listFiles()) {
-            System.out.println("In " + stateFolders.getPath());
-            for (File stationFiles : stateFolders.listFiles()) {
-                String fileName = stationFiles.getName();
-                if (fileName.contains("StnDet")) pathToStnDet = stationFiles.getPath();
+        try {
+            for (File stateFolders : file.listFiles()) {
+                for (File stationFiles : stateFolders.listFiles()) {
+                    String fileName = stationFiles.getName();
+                    if (fileName.contains("StnDet")) pathToStnDet = stationFiles.getPath();
+                }
+
+
+                File stndet = new File(pathToStnDet);
+                parentDir = stndet.getParent(); // get path of the parent to read the station files
+
+                // find out which state we are working with to know which directory to write into
+
+                CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader(pathToStnDet)));
+
+                String[] line;
+
+                while ((line = stationsReader.readNext()) != null) {
+                    stnNum = line[1].trim();
+                    String latitude = line[6].trim();
+                    String longitude = line[7].trim();
+                    stateName = line[9].trim();
+
+                    // need the exact format of the way the files are named,
+                    String fileName = stndet.getName();
+                    String[] splitName = fileName.split(Pattern.quote("StnDet"));
+                    filenamePref = splitName[0];
+                    filenameSuff = splitName[1];
+
+                    System.out.println("Working on station " + stnNum);
+
+                    // this fills in the gaps in the combined dni and ghi file
+                    boolean solarSuccess = processSolarValues();
+
+                    // if the solar data can't be processed then we know that we don't need to process anything else
+                    if (!solarSuccess) continue;
+
+                    // this fills in the gaps in the weather data and averages the values into hours
+                    boolean weatherSuccess = halfHourlyData();
+
+                    // if the weather data can't be processed then we know not to merge the data and skip the merging process
+                    if (!weatherSuccess) continue;
+
+                    // this only combines dni and ghi values
+                    //combineSolarValues(stnNum, latitude, longitude);
+
+                    // if we can merge the datasets we can find the TMY
+                    // if we can find the TMY add the station to the csv file
+                    mergeDatasets();
+
+                    String[] stationDetails = new String[header.length];
+                    stationDetails[0] = line[3]; // stn name
+                    stationDetails[1] = stnNum; // stn number
+                    stationDetails[2] = line[12]; // wmo index number
+                    stationDetails[3] = Double.toString(yearsOfData); // years of data
+                    stationDetails[4] = line[2]; // rainfall district code
+                    stationDetails[5] = (line[5].trim().equals("")) ? "OPEN" : line[5]; // month/year closed
+                    stationDetails[6] = latitude; // lat
+                    stationDetails[7] = longitude; // long
+                    stationDetails[8] = line[10]; // height of stn above sea lvl
+                    stationDetails[9] = line[11]; // height of barometer above sea lvl
+                    stationDetails[10] = "<a href=\'http://static.aremi.nicta.com.au/datasets/SolarStationHistoricalObservations-0.1.1.0/" + stnNum + "_averaged.zip\'>" + yearsOfData + " years of data</a>"; // link to historical observations
+
+                    stationsWriter.writeNext(stationDetails, false);
+
+                }
+
+
+                stationsReader.close();
             }
-
-
-            File stndet = new File(pathToStnDet);
-            parentDir = stndet.getParent(); // get path of the parent to read the station files
-
-            // find out which state we are working with to know which directory to write into
-
-            CSVReader stationsReader = new CSVReader(new BufferedReader(new FileReader(pathToStnDet)));
-
-            String[] line;
-
-            while ((line = stationsReader.readNext()) != null) {
-                stnNum = line[1].trim();
-                String latitude = line[6].trim();
-                String longitude = line[7].trim();
-                stateName = line[9].trim();
-
-                // need the exact format of the way the files are named,
-                String fileName = stndet.getName();
-                String[] splitName = fileName.split(Pattern.quote("StnDet"));
-                filenamePref = splitName[0];
-                filenameSuff = splitName[1];
-
-                System.out.println("Working on station " + stnNum);
-
-                // this fills in the gaps in the combined dni and ghi file
-                boolean solarSuccess = processSolarValues();
-
-                // if the solar data can't be processed then we know that we don't need to process anything else
-                if (!solarSuccess) continue;
-
-                // this fills in the gaps in the weather data and averages the values into hours
-                boolean weatherSuccess = halfHourlyData();
-
-                // if the weather data can't be processed then we know not to merge the data and skip the merging process
-                if (!weatherSuccess) continue;
-
-                // this only combines dni and ghi values
-                //combineSolarValues(stnNum, latitude, longitude);
-
-//                    System.out.println("I'm writing station " + stnNum + " to the file");
-                mergeDatasets(); // if we can merge the datasets we can find the TMY
-                // if we can find the TMY add the station to the csv file
-
-                String[] stationDetails = new String[header.length];
-                stationDetails[0] = line[3]; // stn name
-                stationDetails[1] = stnNum; // stn number
-                stationDetails[2] = line[12]; // wmo index number
-                stationDetails[3] = Double.toString(yearsOfData); // years of data
-                stationDetails[4] = line[2]; // rainfall district code
-                stationDetails[5] = (line[5].trim().equals("")) ? "OPEN" : line[5]; // month/year closed
-                stationDetails[6] = latitude; // lat
-                stationDetails[7] = longitude; // long
-                stationDetails[8] = line[10]; // height of stn above sea lvl
-                stationDetails[9] = line[11]; // height of barometer above sea lvl
-                stationDetails[10] = "<a href=\'http://static.aremi.nicta.com.au/datasets/SolarStationHistoricalObservations-0.1.1.0/" + stnNum + "_averaged.zip\'>" + yearsOfData + " years of data</a>"; // link to historical observations
-
-                stationsWriter.writeNext(stationDetails, false);
-
-            }
-
-            stationsReader.close();
+        } catch (Exception e) {
+            System.out.println("Cannot find any files inside BoM_observations/Half-hourly-data");
         }
 
         stationsWriter.close();
@@ -314,7 +319,6 @@ public class Main {
             FillGapsWeather.fillMissingTimeStamp();
             FillGapsWeather.checkForGaps(wds);
             yearsOfData = calculateYearsOfData();
-//                System.out.println("This station has " + yearsOfData + " years of data");
             Main.wds = FillGapsWeather.averageValues();
 
             for (WeatherData wd : wds) {

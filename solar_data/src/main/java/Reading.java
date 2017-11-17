@@ -30,6 +30,7 @@ public class Reading {
         this.v = (isValid) ? Value.Valid : Value.Invalid;
     }
 
+    // checks if the value of this reading is valid
     public boolean isValid() {
         return v == Value.Filled || v == Value.Valid;
     }

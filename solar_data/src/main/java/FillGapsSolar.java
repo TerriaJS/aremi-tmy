@@ -66,7 +66,6 @@ public class FillGapsSolar {
                     curr.value = (prev.value + next.value) / 2;
                     curr.v = Value.Filled;
                     curr.fillCount++;
-//                System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + gapSize + " for " + curr.varName);
                 }
             }
         } catch (IndexOutOfBoundsException e) {
@@ -85,7 +84,6 @@ public class FillGapsSolar {
                 // do linear interpolation if gap less than 5 hours
                 if (counter[sv.ordinal()] <= 10) {
                     fillShortGap(gapIndex - counter[sv.ordinal()] - 1, gapIndex, counter[sv.ordinal()], sv);
-//                    System.out.println("At index " + gapIndex + " we interpolated this gap of length " + (counter[sv]) + " for " + whichVariable.varName);
                 }
                 counter[sv.ordinal()] = 0;
             }
@@ -98,7 +96,6 @@ public class FillGapsSolar {
             counter[sv.ordinal()]++;
         } else {
             if (counter[sv.ordinal()] > 0) {
-                // do linear interpolation if gap less than 5 hours
                 if (counter[sv.ordinal()] <= 10) {
                     System.out.println("Somehow we found an uninterpolated gap of less than 5 hours!");
                 }
@@ -106,7 +103,6 @@ public class FillGapsSolar {
                 // take average from previous and next day if gap less than 24 hours
                 else if (counter[sv.ordinal()] <= 48) {
                     fillLongGap(gapIndex, counter[sv.ordinal()], sv);
-                    // System.out.println("At index " + gapIndex + " we took averages of prev and next day for this gap of length "  + (counter[sv]) + " for " + whichVariable.varName);
                 }
 
                 // don't do anything to gaps over 24 hours and just refresh the gap count
@@ -129,15 +125,11 @@ public class FillGapsSolar {
         for (int i = 0; i < list.size(); i++) {
             for (SolarVar sv : SolarVar.values())
                 handleSmallGaps(i, sv);
-//            handleSmallGaps(i, SolarVar.DNI.ordinal());
-//            handleSmallGaps(i, SolarVar.GHI.ordinal());
         }
 
         for (int i = 0; i < list.size(); i++) {
             for (SolarVar sv : SolarVar.values())
                 handleBigGaps(i, sv);
-//            handleBigGaps(i, SolarVar.DNI.ordinal());
-//            handleBigGaps(i, SolarVar.GHI.ordinal());
         }
     }
 }

@@ -21,14 +21,17 @@ Both of these software produces merged (and data-filled) solar and weather data,
 _Building this software requires Haskell Stack. This software relies on minute solar and weather data provided by the Bureau of Meteorology._
 
 For initial setup, install  all of the necessary dependencies for this software:
+
 `stack setup`
 
 To build and compile the files:
+
 `stack build`
 
 
 #### Running
 **Run the Haskell software to obtain the averaged data of each station**
+
 `stack exec aremi-tmy-oneMinSolar <data>`
 
 _NOTE: click [here](#data) to see how to pass the data files_
@@ -38,30 +41,39 @@ _NOTE: click [here](#data) to see how to pass the data files_
 #### Building
 _Building this software requires Java (Maven). This software relies on half-hourly weather data provided by the Bureau of Meteorology, and hourly solar satellite data._
 
-To build and compile the files:
+Building and compiling the files can be done using the IDE or command line:
+
 `mvn package`
 
 #### Running
 **Run the Java software to obtain the averaged data of each station**
+Running the Main class can be done using the IDE or command line:
+
 `java solar_data/target/classes/Main`
 
 _NOTE: this program will rely on these [here](#data) to produce the output._
 
 Once the TMY has been obtained, to modify the output to have the same uniform year throughout the TMY file, run the ChangeYear program
+
 `java solar_data/target/classes/ChangeYear path/to/file/<station_number>_averaged_tmy.csv`
 
 ### TMY Python Script
 **Once the solar and weather data has been processed for each station, run the Python software to calculate the TMY for each station**
 _Requires Python 2 (does not work with Python 3) and Anaconda 2*._
 * To calculate TMY for a specific station:
+
 `python sandia/tmy.py -c <config_file> -b <station number>_averaged.csv`
 
 * To calculate TMY for all stations:
+
 `python sandia/tmy.py -c <config_file> -a`
 
 The config file will depend on which program has been used to process the solar and weather data:
+
 Haskell: `tmy-config.json`
+
 Java: `tmy-config-0.2.0.0.json`
+
 
 ## Typical Meteorological Year (TMY)
 TODO
@@ -103,7 +115,7 @@ The program would work if the data is laid out within the root directory in the 
 │   │   │   ├── ... (the other station files)
 │   │   ├── ... (the other states)
 ```
-
+_NOTE: the solar data CSVs within the Hourly-solar-data directory is assumed to have three columns: UTC time, DNI value and GHI value._
 ## AREMI
 TODO
 

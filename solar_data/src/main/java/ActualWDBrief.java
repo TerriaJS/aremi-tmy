@@ -41,6 +41,7 @@ public class ActualWDBrief extends WeatherData {
         seaLvlPressure = new Reading("Sea level pressure", checkParsable(dataString[26]) ? Double.parseDouble(dataString[26]) : 0, dataString[27], isGap);
     }
 
+    // map which the enum variable to the attributes in WeatherData
     public Reading getReading(WeatherVar whichVariable) {
         switch (whichVariable) {
             case PRECIP:
@@ -64,6 +65,7 @@ public class ActualWDBrief extends WeatherData {
         }
     }
 
+    // checks if the given enum variable is a variable of this dataset
     public boolean containsVar(WeatherVar variable) {
         return variable == WeatherVar.PRECIP ||
                 variable == WeatherVar.DPTEMP ||
@@ -75,6 +77,8 @@ public class ActualWDBrief extends WeatherData {
                 variable == WeatherVar.SEALVL;
     }
 
+    // since updating of values take place in the class attributes rather than the string
+    // this function is used to update the String[] with the updated values
     public String[] combineValues() {
         alignCommonVariables();
         DecimalFormat df = new DecimalFormat("#.#");
